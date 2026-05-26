@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "mcp__plugin_playwright_playwright__browser_console_messages"
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "PowerShell(npm install three @react-three/fiber @react-three/drei 2>&1)",
+      "PowerShell(npm install -D \"@types/three\" 2>&1)",
+      "PowerShell(npm install leva r3f-perf 2>&1)",
+      "PowerShell(npm run build 2>&1)",
+      "mcp__plugin_playwright_playwright__browser_resize"
     ]
   }
 }

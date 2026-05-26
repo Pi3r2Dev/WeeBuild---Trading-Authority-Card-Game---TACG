@@ -34,6 +34,12 @@ export function DevNav() {
       <Link href="/transitions" style={LINK}>
         Transitions
       </Link>
+      <Link href="/rnd" style={LINK}>
+        R&amp;D
+      </Link>
+      <Link href="/chateau" style={LINK}>
+        Château
+      </Link>
     </nav>
   );
 }

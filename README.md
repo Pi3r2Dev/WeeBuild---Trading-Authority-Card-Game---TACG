@@ -37,8 +37,11 @@ POC pleinement parcourable — le **BottomNav route réellement** (onglet actif 
 - `/preuves` — **sceaux de preuve** (liste + détail capture/timeline)
 - `/cards` — **showcase des cartes** (gabarit D × 4 niveaux × 4 états — page de référence dev)
 - `/transitions` — **showcase des transitions** chorégraphiées (vol de carte, sceau de cire, pluie de crédits — auto-loop + Replay)
+- `/rnd` — **A/B foil holographique** : carte CSS validée vs reconstruction **R3F/Three.js** (shader Fresnel), avec HUD FPS (`r3f-perf`) + panneau `leva`
 
-Tous les écrans mobile passent par `PhoneShell` (cadre téléphone). Un `DevNav` permet de basculer Hub ↔ Cartes ↔ Transitions.
+Tous les écrans mobile passent par `PhoneShell` (cadre téléphone). Un `DevNav` permet de basculer entre les vues.
+
+> **R3F est isolé à `/rnd`** : `three`/`@react-three/fiber`/`@react-three/drei`/`leva`/`r3f-perf` sont chargés en `dynamic(ssr:false)` → hors du bundle de base, lazy-loadés seulement sur cette route.
 
 ## Structure
 

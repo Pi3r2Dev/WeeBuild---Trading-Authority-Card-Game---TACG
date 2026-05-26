@@ -40,6 +40,8 @@ La valeur SEO est encodée visuellement (détail des styles → voir charte grap
 - **CSS 3D + Framer Motion** comme alternative ultra-légère (mobile, gyroscope) — bon pour niveaux 1-2, limité pour le niveau 3 (PS2).
 
 > **Décidé (2026-05-26, révisé) — CSS-first, R3F en expérience contenue** : front **Next.js 15 + React 19 + TypeScript**. Le handoff design ([design_handoff_webuild_tag](../design_handoff_webuild_tag/)) **prouve que les 4 niveaux — y compris N3 (PS2) et N4 (holo) — sont atteignables en pur CSS/React/SVG** (foil = `conic-gradient` + `mix-blend-mode`, bloom/lens-flare N3, scanlines N1, Mode-7 N2, flip = `rotateY`). Donc : **Phase 1 = port CSS fidèle** (tilt/foil réactif au pointeur façon cartes Pokémon de Simey, 100 % CSS, mobile-friendly) ; **Phase 2 = A/B sur la seule carte N4** rebâtie en R3F, comparée sur wow / FPS mobile / bundle / effort. **WebGL = amélioration ciblée décidée sur preuves, pas une fondation.** Bonnes pratiques R3F si retenu (vérifiées) : `<Canvas>` via `dynamic(ssr:false)`, `frameloop="demand"` + `invalidate()`, DPR adaptatif. *(cf. README racine + [draft-charte-graphique.md](draft-charte-graphique.md) §8)*
+>
+> **Résultat A/B (route `/rnd`, fait)** : carte CSS validée vs carte R3F (shader Fresnel). Constat — **R3F** donne une iridescence *physiquement* réactive à l'angle de vue (le foil suit la normale 3D réelle), là où le CSS l'approxime au pointeur ; mais **CSS gagne sur le coût** (≈0 bundle vs three+fiber+drei lazy-loadés, ~0 GPU vs rendu WebGL/frame, effort bien moindre). **Conclusion : CSS-first confirmé pour les cartes en production** ; R3F gardé sous le coude (route `/rnd`) pour une éventuelle carte « hero » N4 où la 3D réelle se justifie.
 
 ### 2.4 Architecture produit & flux utilisateur *(confirmé)*
 
