@@ -26,17 +26,24 @@ type Spec = { pos: [number, number, number]; rot: [number, number, number]; dims
 function buildCastle(): Spec[] {
   const specs: Spec[] = [];
   let ci = 0;
-  const color = () => LEVEL_COLORS[ci++ % 4];
-  const tent = (cx: number, baseY: number) => {
-    specs.push({ pos: [cx - DX - GAP, baseY + CYt, 0], rot: [0, 0, THETA], dims: [TW, TH, TT], color: color() });
-    specs.push({ pos: [cx + DX + GAP, baseY + CYt, 0], rot: [0, 0, -THETA], dims: [TW, TH, TT], color: color() });
-  };
-  const bridge = (cx: number, atY: number) => {
+  function color(): string {
+    return LEVEL_COLORS[ci++ % LEVEL_COLORS.length];
+  }
+  // Tente Λ (pointe en HAUT) : carte gauche penche vers la droite (-θ), carte droite vers la gauche (+θ)
+  // → les sommets se rejoignent, les pieds s'écartent. Tranche (TT) vers la caméra = profil.
+  function tent(cx: number, baseY: number) {
+    specs.push({ pos: [cx - DX - GAP, baseY + CYt, 0], rot: [0, 0, -THETA], dims: [TT, TH, TW], color: color() });
+    specs.push({ pos: [cx + DX + GAP, baseY + CYt, 0], rot: [0, 0, THETA], dims: [TT, TH, TW], color: color() });
+  }
+  function bridge(cx: number, atY: number) {
     specs.push({ pos: [cx, atY + TT / 2, 0], rot: [0, 0, 0], dims: [TH, TT, TW], color: color() });
-  };
-  [-1.5, 0, 1.5].forEach((cx) => tent(cx, 0)); // étage 1 — 3 tentes
-  [-0.75, 0.75].forEach((bx) => bridge(bx, H)); // ponts horizontaux
-  [-0.75, 0.75].forEach((cx) => tent(cx, H + TT)); // étage 2 — 2 tentes
+  }
+  // Pyramide « A » qui rétrécit vers un sommet unique (château traditionnel) : 3 → 2 → 1 tentes
+  [-1.6, 0, 1.6].forEach((cx) => tent(cx, 0)); // étage 1 — 3 tentes
+  [-0.8, 0.8].forEach((bx) => bridge(bx, H)); // plancher 1
+  [-0.8, 0.8].forEach((cx) => tent(cx, H + TT)); // étage 2 — 2 tentes
+  bridge(0, 2 * H + TT); // plancher 2
+  tent(0, 2 * H + 2 * TT); // étage 3 — sommet (1 tente)
   return specs;
 }
 
@@ -44,7 +51,7 @@ const CASTLE = buildCastle();
 
 function PhysCard({ spec, live, onWake }: { spec: Spec; live: boolean; onWake: () => void }) {
   const ref = useRef<RapierRigidBody>(null);
-  const push = (e: ThreeEvent<PointerEvent>) => {
+  function push(e: ThreeEvent<PointerEvent>) {
     e.stopPropagation();
     const d = e.ray.direction;
     if (!live) onWake();
@@ -55,7 +62,7 @@ function PhysCard({ spec, live, onWake }: { spec: Spec; live: boolean; onWake: (
         ref.current?.applyTorqueImpulse({ x: (Math.random() - 0.5) * 0.3, y: (Math.random() - 0.5) * 0.3, z: (Math.random() - 0.5) * 0.3 }, true);
       })
     );
-  };
+  }
   return (
     <RigidBody ref={ref} type={live ? "dynamic" : "fixed"} position={spec.pos} rotation={spec.rot} friction={1.1} restitution={0} colliders={false}>
       <CuboidCollider args={[spec.dims[0] / 2, spec.dims[1] / 2, spec.dims[2] / 2]} />
@@ -82,7 +89,7 @@ function Ground() {
 function Rig() {
   const cam = useThree((s) => s.camera);
   useEffect(() => {
-    cam.lookAt(0, 1.3, 0);
+    cam.lookAt(0, 1.9, 0);
   }, [cam]);
   return null;
 }
@@ -92,14 +99,14 @@ export default function CardCastle({ width = 680, height = 540 }: { width?: numb
   const [resetKey, setResetKey] = useState(0);
   const [live, setLive] = useState(false);
 
-  const reset = () => {
+  function reset() {
     setLive(false);
     setResetKey((k) => k + 1);
-  };
+  }
 
   return (
     <div style={{ width: "100%", maxWidth: width, height, position: "relative", margin: "0 auto" }}>
-      <Canvas dpr={[1, 2]} camera={{ position: [0, 1.8, 9], fov: 40 }}>
+      <Canvas dpr={[1, 2]} camera={{ position: [5, 3.4, 9.5], fov: 44 }}>
         <color attach="background" args={["#0b0c10"]} />
         <Rig />
         <ambientLight intensity={1.2} />

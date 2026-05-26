@@ -38,6 +38,7 @@ POC pleinement parcourable — le **BottomNav route réellement** (onglet actif 
 - `/cards` — **showcase des cartes** (gabarit D × 4 niveaux × 4 états — page de référence dev)
 - `/transitions` — **showcase des transitions** chorégraphiées (vol de carte, sceau de cire, pluie de crédits — auto-loop + Replay)
 - `/rnd` — **A/B foil holographique** : carte CSS validée vs reconstruction **R3F/Three.js** (shader Fresnel), avec HUD FPS (`r3f-perf`) + panneau `leva`
+- `/chateau` — **château de cartes physique** (Rapier) : pyramide A (3→2→1 tentes), figée au départ, s'effondre au tap
 
 Tous les écrans mobile passent par `PhoneShell` (cadre téléphone). Un `DevNav` permet de basculer entre les vues.
 

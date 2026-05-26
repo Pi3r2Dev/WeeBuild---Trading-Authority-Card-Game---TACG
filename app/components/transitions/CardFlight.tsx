@@ -7,12 +7,21 @@ import { StatusBar } from "../hub/primitives";
 import { Card } from "../card/Card";
 import { TransitionFrame } from "./TransitionFrame";
 
-const target = NAV_DECK.find((c) => c.id === "jdg")!;
+const target = NAV_DECK.find((card) => card.id === "jdg")!;
 
-const FROM = { x: 18, y: 558, scale: 0.32 };
-const TO = { x: 24, y: 250, scale: 0.26 };
+// Dimensions de base de la carte (px), avant mise à l'échelle.
+const CARD_W = 320;
+const CARD_H = 540;
 
-const c = (p: typeof FROM) => ({ cx: p.x + 320 * p.scale * 0.5, cy: p.y + 540 * p.scale * 0.5 });
+type Placement = { x: number; y: number; scale: number };
+
+const FROM: Placement = { x: 18, y: 558, scale: 0.32 };
+const TO: Placement = { x: 24, y: 250, scale: 0.26 };
+
+/** Centre (cx, cy) d'une carte placée, en tenant compte de son échelle. */
+function center(p: Placement) {
+  return { cx: p.x + CARD_W * p.scale * 0.5, cy: p.y + CARD_H * p.scale * 0.5 };
+}
 
 /** La carte cible « vole » du drawer Écosystème vers le slot MEILLEUR FIT de Donner. */
 export function CardFlight() {
@@ -24,8 +33,8 @@ export function CardFlight() {
     return () => clearTimeout(t);
   }, [eco, cycle]);
 
-  const f = c(FROM);
-  const t = c(TO);
+  const f = center(FROM);
+  const t = center(TO);
   const ctrlX = (f.cx + t.cx) / 2 + 90;
   const ctrlY = (f.cy + t.cy) / 2;
 

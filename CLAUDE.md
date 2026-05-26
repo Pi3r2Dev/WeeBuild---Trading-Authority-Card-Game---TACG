@@ -8,7 +8,8 @@ The repo now holds **both the design docs (`docs/`, French) and a Next.js 15 app
 
 - **Stack**: Next.js 15 (App Router) + React 19 + TypeScript; fonts via `next/font`; design tokens ported to `app/styles/tokens.css` (from `design_handoff_webuild_tag/tokens.css`); `motion` (transitions) + `zustand` (game state). **No Tailwind** — tokens.css + CSS Modules. No tests yet.
 - **Commands**: `npm run dev` (Turbopack), `npm run build`, `npm run lint`. Verified building on Next 15.5.18.
-- **Rendering approach (decided 2026-05-26)**: **CSS-first** — the hi-fi design is fully achievable in CSS/React/SVG (proven by the handoff: foil = `conic-gradient` + `mix-blend-mode`, bloom N3, scanlines N1, flip = `rotateY`). **R3F/Three.js is a contained A/B experiment on the N4 holo card only**, decided on evidence (wow, mobile FPS, bundle, effort), not a foundation bet.
+- **Rendering approach (decided + A/B done 2026-05-26)**: **CSS-first** — the hi-fi design is fully achievable in CSS/React/SVG (foil = `conic-gradient` + `mix-blend-mode`, bloom N3, scanlines N1, flip = `rotateY`, pointer tilt/glare). The **R3F/Three.js A/B** (route `/rnd`, N4 holo shader Fresnel) confirmed it: **CSS wins on bundle (~0) / GPU / effort**; R3F gives *physically* angle-reactive iridescence → **reserved for hero moments only** (e.g. `/chateau` physics toy). All R3F is **isolated to R&D routes** (`/rnd`, `/chateau`) via `dynamic(ssr:false)` → `three`/`@react-three/fiber`/`drei`/`@react-three/rapier`/`leva`/`r3f-perf` lazy-loaded, **not in the product bundle**.
+- **3D / R3F learnings & pitfalls** (card orientation & angles, Λ-tent geometry, house-of-cards physics via fixed→dynamic, ContactShadows vs shadow maps, holo shader screen-blend, Next+R3F dev traps) → **[docs/draft-rendu-3d.md](docs/draft-rendu-3d.md)**. Read it before touching any 3D code.
 - **UI source of truth** = `design_handoff_webuild_tag/` (hi-fi handoff: 9 hub screens, gabarit-D card × 4 levels × 4 states, 5 transitions, tokens.css). Gitignored from versioning but present locally; its own README has the full spec.
 
 Start by reading, in this order:
@@ -19,6 +20,7 @@ Start by reading, in this order:
 - [docs/draft-metrique-autorite.md](docs/draft-metrique-autorite.md) — **keystone**: the Authority Score (SEO+GEO) that drives level, rarity, stats, matching.
 - [docs/draft-pipeline-ia.md](docs/draft-pipeline-ia.md) — the AI pipeline, grounded in the existing shared infrastructure.
 - [docs/draft-charte-graphique.md](docs/draft-charte-graphique.md) — visual identity / design system.
+- [docs/draft-rendu-3d.md](docs/draft-rendu-3d.md) — **3D / R3F technical notes** from the POC: card orientation & 3D angles, Λ-tent + A-pyramid geometry, Rapier house-of-cards physics, ContactShadows, holo shader, Next+R3F dev pitfalls. **Mandatory read before any 3D/Three.js work.**
 - [docs/draft-infra-poc.md](docs/draft-infra-poc.md) — **SSH-verified live infra baseline** (2026-05-26): what the POC reuses as-is vs the real gaps (gemma4-vision backend down, Langfuse/monitoring not deployed, ~50 GB disk to prune). Trust this over `unified-infrastructure/docs/UNIFIED_INFRASTRUCTURE.md`, which has drifted.
 
 The FAQ and the drafts must never contradict each other: when a `🚧` item is decided, update both.

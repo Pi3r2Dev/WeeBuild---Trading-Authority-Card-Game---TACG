@@ -7,6 +7,9 @@ import { useControls } from "leva";
 import * as THREE from "three";
 import type { CardData } from "../card/types";
 
+/** Valeurs par défaut du shader holo, partagées entre les uniforms initiaux et les contrôles leva (évite la dérive). */
+const HOLO_DEFAULTS = { foil: 1.1, fresnel: 2.6, bands: 3 };
+
 const VERT = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vN;
@@ -154,7 +157,7 @@ function useContentTexture(data: CardData) {
 
     // Stats HP / ATK
     const sy = iy + ih + 30;
-    const drawStat = (label: string, value: number, yy: number, color: string) => {
+    function drawStat(label: string, value: number, yy: number, color: string) {
       ctx.fillStyle = "rgba(255,255,255,0.65)";
       ctx.font = "11px monospace";
       ctx.fillText(label, 26, yy);
@@ -165,7 +168,7 @@ function useContentTexture(data: CardData) {
       ctx.fillRect(26, yy + 8, W - 74, 10);
       ctx.fillStyle = color;
       ctx.fillRect(26, yy + 8, (W - 74) * Math.min(1, value / 100), 10);
-    };
+    }
     drawStat("HP", data.hp, sy, "#ff3df0");
     drawStat("ATK", data.atk, sy + 38, "#00ffff");
 
@@ -209,9 +212,9 @@ function CardMesh({ data }: { data: CardData }) {
   const pointer = useThree((s) => s.pointer);
 
   const { foil, fresnel, bands } = useControls("Holo R3F", {
-    foil: { value: 1.1, min: 0, max: 1.8, step: 0.05 },
-    fresnel: { value: 2.6, min: 0.5, max: 6, step: 0.1 },
-    bands: { value: 3, min: 1, max: 8, step: 0.5 },
+    foil: { value: HOLO_DEFAULTS.foil, min: 0, max: 1.8, step: 0.05 },
+    fresnel: { value: HOLO_DEFAULTS.fresnel, min: 0.5, max: 6, step: 0.1 },
+    bands: { value: HOLO_DEFAULTS.bands, min: 1, max: 8, step: 0.5 },
   });
 
   const material = useMemo(
@@ -221,9 +224,9 @@ function CardMesh({ data }: { data: CardData }) {
           uContent: { value: tex },
           uTime: { value: 0 },
           uPointer: { value: new THREE.Vector2(0, 0) },
-          uFoil: { value: 1.1 },
-          uFresnel: { value: 2.6 },
-          uBands: { value: 3 },
+          uFoil: { value: HOLO_DEFAULTS.foil },
+          uFresnel: { value: HOLO_DEFAULTS.fresnel },
+          uBands: { value: HOLO_DEFAULTS.bands },
         },
         vertexShader: VERT,
         fragmentShader: FRAG,
@@ -231,6 +234,12 @@ function CardMesh({ data }: { data: CardData }) {
       }),
     [tex]
   );
+
+  // Libère la texture du canvas quand elle est remplacée (changement de `data`) ou au démontage.
+  useEffect(() => () => tex.dispose(), [tex]);
+
+  // Libère le ShaderMaterial quand il est recréé (changement de `tex`) ou au démontage.
+  useEffect(() => () => material.dispose(), [material]);
 
   useEffect(() => {
     material.uniforms.uFoil.value = foil;

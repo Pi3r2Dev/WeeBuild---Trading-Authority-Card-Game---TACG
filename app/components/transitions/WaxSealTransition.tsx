@@ -11,6 +11,23 @@ type Phase = "ready" | "stamping" | "sealed";
 
 const target = NAV_DECK.find((c) => c.id === "jdg")!;
 
+// Calendrier de la séquence (ms, relatifs au début du cycle).
+const STAMP_DELAY = 1800; // ready → stamping
+const SEAL_DELAY = STAMP_DELAY + 950; // stamping → sealed
+const REPLAY_DELAY = SEAL_DELAY + 3000; // sealed → cycle suivant
+
+/** Index de la phase active dans le HUD. */
+function phaseIndex(phase: Phase): number {
+  switch (phase) {
+    case "ready":
+      return 0;
+    case "stamping":
+      return 1;
+    default:
+      return 2;
+  }
+}
+
 /** La carte publiée se replie et frappe l'écran comme un sceau de cire vert. */
 export function WaxSealTransition() {
   const [phase, setPhase] = useState<Phase>("ready");
@@ -19,9 +36,9 @@ export function WaxSealTransition() {
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     setPhase("ready");
-    timers.push(setTimeout(() => setPhase("stamping"), 1800));
-    timers.push(setTimeout(() => setPhase("sealed"), 1800 + 950));
-    timers.push(setTimeout(() => setCycle((n) => n + 1), 1800 + 950 + 3000));
+    timers.push(setTimeout(() => setPhase("stamping"), STAMP_DELAY));
+    timers.push(setTimeout(() => setPhase("sealed"), SEAL_DELAY));
+    timers.push(setTimeout(() => setCycle((n) => n + 1), REPLAY_DELAY));
     return () => timers.forEach(clearTimeout);
   }, [cycle]);
 
@@ -35,7 +52,7 @@ export function WaxSealTransition() {
         { label: "SCEAU", color: "#fbbf24" },
         { label: "5·PREUVE", color: ACCENT_VIOLET },
       ]}
-      active={ready ? 0 : stamping ? 1 : 2}
+      active={phaseIndex(phase)}
       onReplay={() => setCycle((n) => n + 1)}
     >
       <StatusBar />
@@ -167,11 +184,13 @@ function ShockwaveRing() {
   );
 }
 
+const SPARK_COUNT = 12;
+
 function ImpactSparks() {
   return (
     <>
-      {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i / 12) * 360;
+      {Array.from({ length: SPARK_COUNT }).map((_, i) => {
+        const angle = (i / SPARK_COUNT) * 360;
         return (
           <div
             key={i}

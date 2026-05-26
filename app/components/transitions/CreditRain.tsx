@@ -7,8 +7,21 @@ import { TransitionFrame } from "./TransitionFrame";
 
 const FROM = 47;
 const GAIN = 12;
+const COIN_COUNT = 12;
 
 type Phase = "idle" | "notify" | "pouring" | "final";
+
+/** Index de la phase active dans le HUD (0 = idle, 1 = en cours, 2 = final). */
+function phaseIndex(phase: Phase): number {
+  switch (phase) {
+    case "idle":
+      return 0;
+    case "final":
+      return 2;
+    default:
+      return 1;
+  }
+}
 
 /** Les crédits gagnés « tombent » dans le solde après vérification d'un lien. */
 export function CreditRain() {
@@ -41,7 +54,7 @@ export function CreditRain() {
   }, [cycle]);
 
   const popping = phase === "pouring" || phase === "final";
-  const active = phase === "idle" ? 0 : phase === "final" ? 2 : 1;
+  const active = phaseIndex(phase);
 
   return (
     <TransitionFrame
@@ -112,7 +125,7 @@ export function CreditRain() {
 
       {/* Pluie de pièces */}
       {phase === "pouring" &&
-        Array.from({ length: 12 }).map((_, i) => (
+        Array.from({ length: COIN_COUNT }).map((_, i) => (
           <div
             key={i}
             style={{
