@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ACCENT_VIOLET } from "./constants";
 import { icons } from "./icons";
 
 /** Cadre téléphone 390×844 (présentation mobile-first sur desktop). */
@@ -112,77 +111,6 @@ export function StatusBar() {
           <rect x="19.5" y="3.5" width="2" height="4" fill="currentColor" />
         </svg>
       </span>
-    </div>
-  );
-}
-
-const NAV_ITEMS = [
-  { id: "hub", label: "Hub", icon: "⬢" },
-  { id: "ecosysteme", label: "Écosystème", icon: "◯" },
-  { id: "donner", label: "Donner", icon: "↗" },
-  { id: "decouvrir", label: "Découvrir", icon: "◆" },
-  { id: "preuve", label: "Preuves", icon: "⌖" },
-];
-
-export function BottomNav({ active }: { active: string }) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 72,
-        background: "rgba(13,14,21,0.96)",
-        borderTop: "1px solid rgba(255,255,255,0.07)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        display: "flex",
-        paddingBottom: 12,
-        zIndex: 20,
-      }}
-    >
-      {NAV_ITEMS.map((it) => {
-        const on = it.id === active;
-        return (
-          <div
-            key={it.id}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              paddingTop: 12,
-              color: on ? ACCENT_VIOLET : "var(--hub-fg-soft)",
-              fontFamily: "var(--font-hub)",
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: 0.3,
-              position: "relative",
-            }}
-          >
-            {on && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: 28,
-                  height: 3,
-                  background: ACCENT_VIOLET,
-                  borderRadius: 2,
-                  boxShadow: `0 0 8px ${ACCENT_VIOLET}`,
-                }}
-              />
-            )}
-            <span style={{ fontSize: 18, lineHeight: 1 }}>{it.icon}</span>
-            <span>{it.label}</span>
-          </div>
-        );
-      })}
     </div>
   );
 }

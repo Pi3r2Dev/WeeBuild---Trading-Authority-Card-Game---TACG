@@ -149,3 +149,58 @@ export const NAV_DECK: NavCard[] = [
   { id: "forbes", level: 3, domain: "forbes.fr", url: "forbes.fr/finance/inflation-2026", anchor: "inflation 2026", element: "finance", thematique: "FINANCE", summary: "Magazine business haut de gamme, lectorat CSP+.", hp: 82, atk: 74, tf: 72, cf: 80, dr: 88, linkType: "dofollow", owner: "Forbes Media", status: "verrouillee", price: 14, edition: "003", editionTotal: "048", biome: "finance", mapX: 84, mapY: 36 },
   { id: "wikipedia", level: 4, domain: "wikipedia.org", url: "wikipedia.org/wiki/Référencement_naturel", anchor: "référencement naturel", element: "media", thematique: "ENCYCLO", summary: "Référence absolue. Lien quasi inaccessible.", hp: 99, atk: 95, tf: 92, cf: 96, dr: 96, linkType: "nofollow", owner: "Communauté WP", status: "verrouillee", price: 24, edition: "001", editionTotal: "012", biome: "encyclo", mapX: 50, mapY: 78 },
 ];
+
+function navById(id: string): NavCard {
+  const card = NAV_DECK.find((c) => c.id === id);
+  if (!card) throw new Error(`NavCard introuvable: ${id}`);
+  return card;
+}
+
+export interface Partner {
+  id: string;
+  card: NavCard;
+  relevance: number;
+  credits: number;
+  reason: string;
+}
+
+/** Partenaires suggérés par l'IA pour le flux « Donner ». */
+export const PARTNERS_SUGGESTED: Partner[] = [
+  { id: "jdg", card: navById("jdg"), relevance: 0.94, credits: 12, reason: "Audience tech compatible. Niche outils SEO ouverte." },
+  { id: "marie", card: navById("marie"), relevance: 0.71, credits: 6, reason: "Niche cuisine + curiosité dev. Bon ratio découverte." },
+  { id: "tom", card: navById("tom-tech"), relevance: 0.68, credits: 5, reason: "Hardware reviews. Lecteurs friends-of." },
+];
+
+export interface Topic {
+  id: string;
+  title: string;
+  angle: string;
+  fit: number;
+  credits: number;
+}
+
+export const AI_TOPICS: Topic[] = [
+  { id: "t1", title: "Les 7 outils SEO indispensables en 2026", angle: "top list utile, axe pratique", fit: 0.91, credits: 12 },
+  { id: "t2", title: "Pourquoi l'IA générative bouleverse le link-building", angle: "analyse, point de vue", fit: 0.86, credits: 10 },
+  { id: "t3", title: "Trust Flow vs DR : que mesure-t-on vraiment ?", angle: "pédagogique, démystification", fit: 0.82, credits: 9 },
+];
+
+export type ProofStatus = "verified" | "capturing" | "pending" | "broken";
+
+export interface Proof {
+  id: string;
+  target: string;
+  date: string;
+  status: ProofStatus;
+  link: string;
+  credits: number;
+}
+
+/** Sceaux de preuve émis (captures attestant les liens posés). */
+export const PROOF_LIST: Proof[] = [
+  { id: "p1", target: "jdg", date: "2026-05-24", status: "verified", link: "journal-du-geek.fr/dossiers/seo-2026", credits: 12 },
+  { id: "p2", target: "marie", date: "2026-05-22", status: "capturing", link: "marie-cuisine.fr/recettes/dev", credits: 8 },
+  { id: "p3", target: "tom-tech", date: "2026-05-18", status: "verified", link: "tom-tech-blog.fr/seo-tips", credits: 5 },
+  { id: "p4", target: "forbes", date: "2026-05-12", status: "broken", link: "forbes.fr/finance/ia-pmes", credits: 14 },
+  { id: "p5", target: "lemonde", date: "2026-05-08", status: "verified", link: "lemonde.fr/eco/numerique", credits: 18 },
+];

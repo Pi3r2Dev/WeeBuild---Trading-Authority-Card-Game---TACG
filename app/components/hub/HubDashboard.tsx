@@ -1,6 +1,7 @@
 import { ACCENT_VIOLET } from "./constants";
 import { AI_SUGGESTIONS, ME, MY_SITES, NAV_DECK, RECENT_ACTIVITY } from "./data";
-import { Body, BottomNav, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
+import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
+import { BottomNav } from "./BottomNav";
 import { MyHand } from "./MiniCard";
 import { AISuggestionTCG, ActivityRow } from "./HubWidgets";
 
@@ -86,7 +87,7 @@ export function HubDashboard() {
 
         <div style={{ height: 16 }} />
       </Body>
-      <BottomNav active="hub" />
+      <BottomNav />
     </>
   );
 }

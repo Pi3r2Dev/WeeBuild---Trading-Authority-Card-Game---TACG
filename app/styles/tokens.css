@@ -288,3 +288,66 @@
     box-shadow: 0 0 22px rgba(138, 43, 226, 0.9);
   }
 }
+
+/* ── Transitions chorégraphiées ──────────────────────────── */
+
+/* Particules qui montent (Donner étape 4) */
+@keyframes floatUp0 {
+  from { transform: translateY(0); opacity: 0.8; }
+  to { transform: translateY(-50px); opacity: 0; }
+}
+@keyframes floatUp1 {
+  from { transform: translateY(0) translateX(0); opacity: 0.7; }
+  to { transform: translateY(-40px) translateX(8px); opacity: 0; }
+}
+@keyframes floatUp2 {
+  from { transform: translateY(0) translateX(0); opacity: 0.65; }
+  to { transform: translateY(-60px) translateX(-6px); opacity: 0; }
+}
+
+/* Sceau de cire — onde de choc + étincelles */
+@keyframes sealShockwave {
+  0% { transform: scale(0.4); opacity: 0.95; border-width: 3px; }
+  100% { transform: scale(2.2); opacity: 0; border-width: 1px; }
+}
+@keyframes sealSpark0 {
+  0% { transform: rotate(var(--a, 0deg)) translateX(20px); opacity: 1; }
+  100% { transform: rotate(var(--a, 0deg)) translateX(80px); opacity: 0; }
+}
+@keyframes sealSpark1 {
+  0% { transform: rotate(var(--a, 0deg)) translateX(15px); opacity: 1; }
+  100% { transform: rotate(var(--a, 0deg)) translateX(95px); opacity: 0; }
+}
+@keyframes sealSpark2 {
+  0% { transform: rotate(var(--a, 0deg)) translateX(10px); opacity: 1; }
+  100% { transform: rotate(var(--a, 0deg)) translateX(70px); opacity: 0; }
+}
+
+/* Pluie de crédits — pièces qui volent vers le solde */
+@keyframes coinFly0 {
+  0% { transform: translate(170px, 150px) scale(1.6); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate(220px, 60px) scale(1.1); }
+  100% { transform: translate(300px, 30px) scale(0.45); opacity: 0; }
+}
+@keyframes coinFly1 {
+  0% { transform: translate(200px, 150px) scale(1.6); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate(260px, 40px) scale(1.1); }
+  100% { transform: translate(300px, 30px) scale(0.45); opacity: 0; }
+}
+@keyframes coinFly2 {
+  0% { transform: translate(230px, 150px) scale(1.6); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate(290px, 90px) scale(1.1); }
+  100% { transform: translate(300px, 30px) scale(0.45); opacity: 0; }
+}
+
+@keyframes badgePop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+@keyframes notifSlide {
+  from { transform: translateY(-50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

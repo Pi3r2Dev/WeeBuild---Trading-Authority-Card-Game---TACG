@@ -31,6 +31,9 @@ export function DevNav() {
       <Link href="/cards" style={LINK}>
         Cartes
       </Link>
+      <Link href="/transitions" style={LINK}>
+        Transitions
+      </Link>
     </nav>
   );
 }

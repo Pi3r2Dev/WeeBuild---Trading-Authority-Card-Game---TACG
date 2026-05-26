@@ -28,18 +28,26 @@ npm run lint
 
 ## Routes
 
-- `/` — **Hub** (écran d'accueil de l'app, dans un cadre téléphone)
-- `/cards` — **showcase des cartes** (gabarit D × 4 niveaux × 4 états — page de référence dev)
+POC pleinement parcourable — le **BottomNav route réellement** (onglet actif dérivé du pathname) :
 
-Le routing applicatif réel (onglets BottomNav → écrans Donner / Écosystème / Preuves) viendra avec les autres écrans ; pour l'instant un `DevNav` permet de basculer Hub ↔ Cartes.
+- `/` — **Hub** (dashboard : solde, progression, main en éventail, suggestions IA, activité)
+- `/ecosysteme` — **carte arcade** des sites alliés (biomes, nœuds, drawer)
+- `/donner` — **flux Donner** en 4 étapes (carte → territoire → article IA → publication)
+- `/decouvrir` — **brandir un étendard** (budget crédits, estimation IA, ligne rouge)
+- `/preuves` — **sceaux de preuve** (liste + détail capture/timeline)
+- `/cards` — **showcase des cartes** (gabarit D × 4 niveaux × 4 états — page de référence dev)
+- `/transitions` — **showcase des transitions** chorégraphiées (vol de carte, sceau de cire, pluie de crédits — auto-loop + Replay)
+
+Tous les écrans mobile passent par `PhoneShell` (cadre téléphone). Un `DevNav` permet de basculer Hub ↔ Cartes ↔ Transitions.
 
 ## Structure
 
 ```
 app/
   layout.tsx                 # polices next/font + tokens
-  page.tsx                   # route / → Hub
-  cards/page.tsx             # route /cards → showcase cartes
+  page.tsx                   # / → Hub
+  ecosysteme/ donner/ decouvrir/ preuves/   # une page.tsx par écran (→ PhoneShell)
+  cards/page.tsx             # /cards → showcase cartes (dev)
   globals.css
   styles/tokens.css          # design system (4 niveaux, effets, keyframes)
   components/
@@ -49,12 +57,11 @@ app/
       CardFront.tsx CardBack.tsx SiteShot.tsx StatBar.tsx glyphs.tsx
       usePointerTilt.ts      # tilt 3D réactif (CSS vars, rAF, sans re-render)
       types.ts demo.ts
-    hub/                     # la coque applicative
-      HubDashboard.tsx       # écran Hub
-      primitives.tsx         # PhoneFrame, StatusBar, BottomNav, CreditsBadge…
+    hub/                     # la coque + les écrans
+      PhoneShell.tsx primitives.tsx BottomNav.tsx   # coque (cadre, nav routée)
+      HubDashboard.tsx EcosystemeMap.tsx DonnerFlow.tsx EtreDecouvert.tsx PreuveScreen.tsx
       MiniCard.tsx           # carte scalée + MyHand (éventail) + PlayLink
-      HubWidgets.tsx         # AISuggestionTCG, ActivityRow
-      icons.tsx constants.ts data.ts
+      HubWidgets.tsx icons.tsx constants.ts data.ts
 docs/                        # conception produit (FR) — source de vérité ; voir CLAUDE.md
 design_handoff_webuild_tag/  # handoff design hi-fi (gitignored) — réf. d'implémentation UI
 ```
