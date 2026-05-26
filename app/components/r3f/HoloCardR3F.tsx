@@ -44,24 +44,26 @@ const FRAG = /* glsl */ `
     float vd = clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0);
     float fres = pow(1.0 - vd, uFresnel);
 
-    // Balayage holographique sur TOUTE la carte (suit l'angle de vue + pointeur + temps)
-    float sweep = (vUv.x * 0.7 + vUv.y * 0.35) * uBands
-                + (1.0 - vd) * 3.5
-                + uPointer.x * 1.6 - uPointer.y * 0.9
-                + uTime * 0.08;
-    vec3 foil = pow(hue2rgb(fract(sweep)), vec3(0.7)); // sature / illumine
-
-    // Rayures arc-en-ciel marquées + iridescence de fond
+    // Balayage iridescent animé (suit l'angle de vue + pointeur + temps)
+    float sweep = (vUv.x * 0.6 - vUv.y * 0.4) * uBands
+                + (1.0 - vd) * 2.0
+                + uPointer.x * 1.2 - uPointer.y * 0.8
+                + uTime * 0.05;
+    vec3 foil = pow(hue2rgb(fract(sweep)), vec3(0.8));
     float stripe = 0.5 + 0.5 * sin(sweep * 6.2831853);
-    float surface = mix(0.30, 0.85, stripe);
-    float rim = smoothstep(0.0, 0.7, fres);
-    float strength = uFoil * (surface + rim * 0.9);
 
-    // Paillettes scintillantes
-    float n = fract(sin(dot(floor(vUv * 220.0), vec2(12.9898, 78.233)) + uTime * 2.0) * 43758.5453);
-    float spark = step(0.985, n) * (0.5 + fres);
+    // Iridescence sur TOUTE la carte (comme le conic-gradient CSS) + boost aux bords / au tilt
+    float sheen = mix(0.40, 0.82, stripe);
+    float rim = smoothstep(0.05, 0.95, fres);
+    float strength = clamp(uFoil * (sheen + rim * 0.5), 0.0, 1.0);
 
-    vec3 col = content.rgb + foil * strength + foil * 0.15 + vec3(spark);
+    // Mélange type "screen" : le foil remplit les zones sombres, le contenu clair reste lisible
+    vec3 col = content.rgb + (1.0 - content.rgb) * foil * strength;
+
+    // Glints fins (scintillent surtout au tilt)
+    float n = fract(sin(dot(floor(vUv * 260.0), vec2(12.9898, 78.233)) + uTime * 1.5) * 43758.5453);
+    col += vec3(step(0.994, n)) * (0.2 + rim * 0.5);
+
     gl_FragColor = vec4(col, content.a);
   }
 `;
@@ -207,8 +209,8 @@ function CardMesh({ data }: { data: CardData }) {
   const pointer = useThree((s) => s.pointer);
 
   const { foil, fresnel, bands } = useControls("Holo R3F", {
-    foil: { value: 1.3, min: 0, max: 2.5, step: 0.05 },
-    fresnel: { value: 2.2, min: 0.5, max: 6, step: 0.1 },
+    foil: { value: 1.1, min: 0, max: 1.8, step: 0.05 },
+    fresnel: { value: 2.6, min: 0.5, max: 6, step: 0.1 },
     bands: { value: 3, min: 1, max: 8, step: 0.5 },
   });
 
@@ -219,8 +221,8 @@ function CardMesh({ data }: { data: CardData }) {
           uContent: { value: tex },
           uTime: { value: 0 },
           uPointer: { value: new THREE.Vector2(0, 0) },
-          uFoil: { value: 1.3 },
-          uFresnel: { value: 2.2 },
+          uFoil: { value: 1.1 },
+          uFresnel: { value: 2.6 },
           uBands: { value: 3 },
         },
         vertexShader: VERT,

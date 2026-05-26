@@ -6,7 +6,9 @@
       "PowerShell(npm install -D \"@types/three\" 2>&1)",
       "PowerShell(npm install leva r3f-perf 2>&1)",
       "PowerShell(npm run build 2>&1)",
-      "mcp__plugin_playwright_playwright__browser_resize"
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "PowerShell(npm run dev)",
+      "mcp__plugin_playwright_playwright__browser_close"
     ]
   }
 }
