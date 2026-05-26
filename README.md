@@ -26,16 +26,37 @@ npm run build    # build de production
 npm run lint
 ```
 
+## Routes
+
+- `/` — **Hub** (écran d'accueil de l'app, dans un cadre téléphone)
+- `/cards` — **showcase des cartes** (gabarit D × 4 niveaux × 4 états — page de référence dev)
+
+Le routing applicatif réel (onglets BottomNav → écrans Donner / Écosystème / Preuves) viendra avec les autres écrans ; pour l'instant un `DevNav` permet de basculer Hub ↔ Cartes.
+
 ## Structure
 
 ```
-app/                    # Next.js App Router
-  layout.tsx            # polices next/font + tokens
-  page.tsx              # smoke-test (palettes + polices) — à remplacer par le showcase carte
+app/
+  layout.tsx                 # polices next/font + tokens
+  page.tsx                   # route / → Hub
+  cards/page.tsx             # route /cards → showcase cartes
   globals.css
-  styles/tokens.css     # design system (4 niveaux, effets, keyframes)
-docs/                   # conception produit (FR) — source de vérité ; voir CLAUDE.md
-design_handoff_webuild_tag/   # handoff design hi-fi (gitignored) — réf. d'implémentation UI
+  styles/tokens.css          # design system (4 niveaux, effets, keyframes)
+  components/
+    DevNav.tsx               # nav dev Hub ↔ Cartes
+    card/                    # la carte (gabarit D)
+      Card.tsx               # flip + tilt pointeur + glare + états (client)
+      CardFront.tsx CardBack.tsx SiteShot.tsx StatBar.tsx glyphs.tsx
+      usePointerTilt.ts      # tilt 3D réactif (CSS vars, rAF, sans re-render)
+      types.ts demo.ts
+    hub/                     # la coque applicative
+      HubDashboard.tsx       # écran Hub
+      primitives.tsx         # PhoneFrame, StatusBar, BottomNav, CreditsBadge…
+      MiniCard.tsx           # carte scalée + MyHand (éventail) + PlayLink
+      HubWidgets.tsx         # AISuggestionTCG, ActivityRow
+      icons.tsx constants.ts data.ts
+docs/                        # conception produit (FR) — source de vérité ; voir CLAUDE.md
+design_handoff_webuild_tag/  # handoff design hi-fi (gitignored) — réf. d'implémentation UI
 ```
 
 ## Documentation produit

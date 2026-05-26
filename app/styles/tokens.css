@@ -191,9 +191,11 @@
     #ff007f 100%
   );
   filter: blur(8px) saturate(140%);
-  opacity: 0.55;
+  /* Réactif au pointeur : discret au repos, vif au survol (--active piloté par usePointerTilt) */
+  opacity: calc(0.38 + 0.42 * var(--active, 0));
   mix-blend-mode: screen;
   pointer-events: none;
+  transition: opacity 0.25s ease-out;
 }
 .holo-foil::after {
   content: "";

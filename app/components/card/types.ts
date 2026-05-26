@@ -10,6 +10,7 @@ export type CardState = "dispo" | "en-echange" | "acquise" | "verrouillee";
  */
 export interface CardData {
   id: string;
+  level: Level;
   domain: string;
   url: string;
   anchor: string;

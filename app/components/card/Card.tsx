@@ -4,23 +4,38 @@ import { useState, type CSSProperties } from "react";
 import type { CardData, CardState, Level } from "./types";
 import { CardFront } from "./CardFront";
 import { CardBack } from "./CardBack";
+import { usePointerTilt } from "./usePointerTilt";
 
 export const CARD_W = 320;
 export const CARD_H = 540;
 
 interface CardProps {
   data: CardData;
-  level: Level;
+  /** Override du niveau intrinsèque de la carte (utile pour les démos). */
+  level?: Level;
   state?: CardState;
   interactive?: boolean;
 }
 
-/** Carte complète : flip 3D recto/verso + overlay d'état. */
+const FACE_BASE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  backfaceVisibility: "hidden",
+  WebkitBackfaceVisibility: "hidden",
+  transition: "opacity 0s linear 0.35s",
+};
+
+/** Carte complète : tilt 3D au pointeur + flip recto/verso + overlay d'état. */
 export function Card({ data, level, state = "dispo", interactive = true }: CardProps) {
   const [flipped, setFlipped] = useState(false);
+  const tiltRef = usePointerTilt<HTMLDivElement>();
+  const lvl = level ?? data.level;
+  const faceBg = lvl === 4 ? "#0a0a14" : "var(--c-card)";
+
   return (
     <div
-      className={`lvl-${level} no-select`}
+      ref={tiltRef}
+      className={`lvl-${lvl} no-select`}
       style={{
         width: CARD_W,
         height: CARD_H,
@@ -28,50 +43,57 @@ export function Card({ data, level, state = "dispo", interactive = true }: CardP
         cursor: interactive ? "pointer" : "default",
       }}
       onClick={interactive ? () => setFlipped((f) => !f) : undefined}
-      title={interactive ? "Cliquer pour retourner" : undefined}
+      title={interactive ? "Clic : retourner · curseur : incliner" : undefined}
     >
-      {/* Effets d'état hors de la perspective pour ne pas perturber le flip */}
       <div style={{ position: "relative", width: "100%", height: "100%" }}>
-        <div style={{ position: "absolute", inset: 0 }}>
+        {/* Couche tilt — inclinaison 3D + léger lift, pilotée par les vars du hook */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            transformStyle: "preserve-3d",
+            transform:
+              "rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(calc(1 + 0.04 * var(--active, 0)))",
+            transition: "transform 0.22s ease-out",
+          }}
+        >
+          {/* Couche flip recto/verso */}
           <div
             style={{
-              position: "relative",
-              width: "100%",
-              height: "100%",
+              position: "absolute",
+              inset: 0,
               transformStyle: "preserve-3d",
               transition: "transform 0.7s cubic-bezier(.6,.05,.3,1)",
               transform: flipped ? "rotateY(180deg)" : "rotateY(0)",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backfaceVisibility: "hidden",
-                WebkitBackfaceVisibility: "hidden",
-                background: level === 4 ? "#0a0a14" : "var(--c-card)",
-                opacity: flipped ? 0 : 1,
-                transition: "opacity 0s linear 0.35s",
-              }}
-            >
-              <CardFront data={data} level={level} />
+            <div style={{ ...FACE_BASE, background: faceBg, opacity: flipped ? 0 : 1 }}>
+              <CardFront data={data} level={lvl} />
             </div>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backfaceVisibility: "hidden",
-                WebkitBackfaceVisibility: "hidden",
-                background: level === 4 ? "#0a0a14" : "var(--c-card)",
-                transform: "rotateY(180deg)",
-                opacity: flipped ? 1 : 0,
-                transition: "opacity 0s linear 0.35s",
-              }}
-            >
-              <CardBack data={data} level={level} gabarit="D" />
+            <div style={{ ...FACE_BASE, background: faceBg, transform: "rotateY(180deg)", opacity: flipped ? 1 : 0 }}>
+              <CardBack data={data} level={lvl} gabarit="D" />
             </div>
           </div>
+
+          {/* Glare — reflet spéculaire qui suit le pointeur (au-dessus des faces) */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "var(--frame-radius)",
+              background:
+                "radial-gradient(circle at var(--px, 50%) var(--py, 50%), rgba(255,255,255,0.5), rgba(255,255,255,0) 42%)",
+              mixBlendMode: "overlay",
+              opacity: "var(--active, 0)",
+              transition: "opacity 0.22s ease-out",
+              transform: "translateZ(2px)",
+              pointerEvents: "none",
+              zIndex: 6,
+            }}
+          />
         </div>
+
         <StateOverlay state={state} />
       </div>
     </div>
@@ -94,7 +116,7 @@ function StateOverlay({ state }: { state: CardState }) {
     );
   }
   if (state === "en-echange") {
-    const dashed: CSSProperties = {
+    const dashed = {
       position: "absolute",
       inset: -2,
       background: "transparent",
