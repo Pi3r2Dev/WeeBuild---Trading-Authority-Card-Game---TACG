@@ -63,8 +63,8 @@ Or le produit fabrique exactement ça :
 
 ## 6. Questions en cours
 
-- [ ] **Mesure de la saillance / part de citations** : comment l'estimer ? (sondage périodique de modèles, outils tiers GEO émergents, comptage de citations dans AI Overviews/Perplexity ?)
-- [ ] **Attribution** : sonder régulièrement Perplexity / AI Overviews / ChatGPT pour détecter les citations des membres → faisable ? coût ? fiabilité ?
+- [x] **Mesure de la saillance / part de citations** → proxy pgvector (centralité topique + mentions) **+** sondage **Perplexity Sonar** (taux de citation, faisabilité confirmée). *(détail [draft-metrique-autorite.md](draft-metrique-autorite.md))*
+- [ ] **Attribution fine** : coût Sonar, fréquence d'échantillonnage, segments à sonder. *(metrique §8)*
 - [ ] **Pondération SEO vs GEO** dans le score d'autorité d'une carte : 100 % SEO au lancement puis montée du poids GEO ? Deux scores séparés affichés ?
 - [ ] **Détection de mention sans lien** : techniquement plus dur que détecter un `<a href>` (NER + désambiguïsation de marque).
 - [ ] **Timing du pivot** : on construit SEO-first et on bascule, ou on affiche le double dès le départ ?

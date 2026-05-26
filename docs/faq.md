@@ -38,6 +38,12 @@ Connexion avec **Google**, puis tu déclares les **URLs de tes sites**.
 ### Comment ma carte est-elle créée ?
 On **capture et résume automatiquement** ton site, on évalue son **autorité**, et on en génère une **carte** dont le niveau (1 à 4) en découle. Tu ne la saisis pas : elle est **dérivée** de ton site.
 
+### Pourquoi connecter ma Google Search Console ?
+C'est optionnel mais recommandé : ça nous donne la **vraie donnée de Google** sur ton site (impressions, position, requêtes) pour calculer une autorité **juste**, et ça **prouve que le site t'appartient**. Tu peux la connecter en un clic (même compte Google) ou, à défaut, importer une capture d'écran qu'on analyse. Sans elle, on se base sur l'analyse publique de ton site (moins précise).
+
+### Puis-je utiliser ma propre image ?
+Oui. Tu peux **importer ton visuel** (logo, produit, illustration) ; on le **retravaille au style du niveau** de ta carte. Si tu n'importes rien, on en génère une automatiquement à partir de ton site. Dans tous les cas, l'image passe par le **filtre du niveau** pour rester cohérente avec l'univers — ta carte Game Boy *est* en pixels verts, ta carte holo *brille*.
+
 ### C'est quoi les 4 niveaux de rareté ?
 - **Niveau 1 — Game Boy** : sites/liens de départ.
 - **Niveau 2 — Super NES** : autorité moyenne.
@@ -104,8 +110,8 @@ Non — il **évolue**. Les moteurs IA s'appuient encore largement sur l'indexat
 
 Ces points sont **ouverts**. Tant qu'ils ne sont pas tranchés, ils ne font pas autorité et ne doivent pas être affirmés au public.
 
-- 🚧 **Métrique d'autorité (SEO + GEO)** : source et formule qui déterminent niveau, rareté et stats. Doit combiner l'autorité SEO classique (DR/DA/TF ou score maison) **et** une dimension GEO — saillance topique / part de citations dans les réponses IA, encore non standardisée. *(voir [draft-vision-geo.md](draft-vision-geo.md) · pipeline §6)*
-- 🚧 **Calibrage des crédits** : combien par don, coût d'une mise en avant, anti-abus. *(gameplay §6)*
-- 🚧 **Génération de l'image** de carte : IA générative à style imposé vs templates. *(charte §8)*
-- 🚧 **Contrat moral** : fréquence de re-capture, détection de triche, clawback de crédits si retrait. *(gameplay §6 / pipeline §6)*
+- 🚧 **Calibrage de la métrique d'autorité** : l'architecture est actée (Authority Score = SEO hybride dont Search Console + GEO proxy/Sonar ; HP=trust / ATK=reach). Restent les **réglages** : poids SEO/GEO, seuils des niveaux, anti-fraude. *(détail [draft-metrique-autorite.md](draft-metrique-autorite.md))*
+- 🚧 **Calibrage des crédits** : la *forme* est actée (économie à monnaie conservative, gain hybride amorti = BASE·g(AS)·pertinence·qualité·amortissement, dépense = BASE·portée·durée, anti-abus + clawback). Restent les **chiffres** : BASE, seuils, barèmes, plafonds. *(détail [draft-gameplay-technique.md](draft-gameplay-technique.md) §2.7)*
+- 🚧 **Réglages d'image** : le *principe* est acté (import user ou auto + pipeline 2 chemins, filtre déterministe garant de la cohérence) ; restent les recettes de filtres par niveau et les LoRA génératifs. *(charte §8)*
+- 🚧 **Contrat moral** : fréquence de re-capture et détection de triche (cloaking, lien JS, nofollow caché). *(gameplay §6 / pipeline §6)* — le **clawback** de crédits si retrait est, lui, **décidé** *(gameplay §2.7 D)*.
 - 🚧 **Progression / méta-jeu** : collection, montée en puissance, quêtes. *(gameplay §6)*

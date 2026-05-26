@@ -11,6 +11,7 @@ Start by reading, in this order:
 - [readme.txt](readme.txt) — the original concept pitch (visual identity + 3D navigation).
 - [docs/draft-gameplay-technique.md](docs/draft-gameplay-technique.md) — gameplay, product flow, data model, and the running list of resolved/open questions. The source of truth for **what the product is**.
 - [docs/draft-vision-geo.md](docs/draft-vision-geo.md) — the **GEO north star** strategy (SEO→GEO convergence, what it redefines, the honest risks).
+- [docs/draft-metrique-autorite.md](docs/draft-metrique-autorite.md) — **keystone**: the Authority Score (SEO+GEO) that drives level, rarity, stats, matching.
 - [docs/draft-pipeline-ia.md](docs/draft-pipeline-ia.md) — the AI pipeline, grounded in the existing shared infrastructure.
 - [docs/draft-charte-graphique.md](docs/draft-charte-graphique.md) — visual identity / design system.
 
@@ -29,7 +30,9 @@ The three drafts cross-link and each separates **Ce que l'on sait** (decided) fr
 - **It is NOT a buy-links marketplace.** It is editorial link building between site owners.
 - **Compliance axis = "B — éditorial partnerships"** (gameplay §2.5): links must be born from real content. An AI layer proposes (1) which partner cards/links to target, (2) article topics to produce, (3) contextualized anchor texts. Every suggestion is **human-validated** before publishing.
 - **Exchange mechanic = donor / credits** (gameplay §2.6): you earn credits by donating an editorial link, spend them to get promoted to relevant editors. The flow is **one-directional** — donor ≠ direct recipient, no short loops. **Rejected**: 1:1 reciprocal exchange AND orchestrated/sealed chains (A→B→C). Chains may only exist as an *emergent* graph property, never as a proposed/sealed transaction. The neon accent color = the credit currency.
-- **The card (level, rarity, stats, image) is always derived, never hand-entered.** Visual level encodes SEO value.
+- **The card (level, rarity, stats) is always derived, never hand-entered.** Visual level encodes SEO value.
+- **Authority metric = composite Authority Score** (see [docs/draft-metrique-autorite.md](docs/draft-metrique-autorite.md)): `AS = w_seo·S_seo + w_geo·S_geo`, weights drifting SEO→GEO over time. SEO source is **hybrid 3-tier** (on-page via Crawl4AI + **Google Search Console first-party** via OAuth scope / screenshot+gemma4-vision fallback + optional paid backlink API). GEO = pgvector topical-centrality proxy + sampled **Perplexity Sonar** citation-rate probing. Stats: **HP=trust, ATK=reach**. Connecting GSC also **proves site ownership**. The AS is a *game indicator, not a ranking promise*. Weights/thresholds still to calibrate.
+- **Card image = user import (or auto) + 2-path restyle** (charte §8): the user may upload an image (else it's auto-derived from the site capture), then reprocessed either by **deterministic per-level filters** (WebGL, default, free) or a **generative remaster** (ComfyUI on GPU 0, opt-in) — and **always finished with the per-level filter pass**, which is what guarantees brand consistency. Moderation via gemma4-vision; store the generative seed.
 - **Target stack = the shared `augmenter.pro` infrastructure** (sibling folders under `coolify_linux/`), reused rather than rebuilt. See "Target architecture" below.
 
 ## Hard constraints (these shape every implementation choice)

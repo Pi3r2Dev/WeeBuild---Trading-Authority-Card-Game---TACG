@@ -116,7 +116,30 @@ Chaque niveau = ses propres variables CSS / uniforms de shader.
 
 ---
 
-## 8. Questions en cours
+## 8. Génération de l'image de carte — pipeline 2 chemins *(décidé 2026-05-26)*
+
+L'image n'est **pas** une génération IA opaque. Le membre **peut importer son visuel** (logo, produit, illustration) ; à défaut, une image **auto** est dérivée de la capture du site. Cette image passe par l'un de deux chemins, **toujours clôturés par la passe filtre du niveau** — c'est elle qui garantit la cohérence de marque.
+
+- **Chemin A — Filtres déterministes (défaut, par niveau)** : shaders WebGL/CSS qui imposent palette + texture du niveau. Instantané, gratuit, 100 % cohérent. Tourne dans le rendu R3F (cf. stack frontend).
+- **Chemin B — Remaster génératif (opt-in, par niveau)** : img2img via **ComfyUI** (GPU 0, libre) + LoRA/prompt propre au niveau → redessine vraiment dans le style de l'époque. Plus riche, coûte GPU/latence. **Se termine toujours par la passe filtre A.**
+
+> Principe : **le filtre = épine dorsale de cohérence ; le génératif = enrichissement optionnel.** On finit toujours par le filtre → le « style imposé par niveau » est *garanti*, pas espéré.
+
+**Recettes de filtres (premières pistes, à figer) :**
+| Niveau | Filtre |
+|--------|--------|
+| N1 Game Boy | quantize 4 verts (`#0f380f`→`#9bbc0f`) + Bayer dither + scanlines |
+| N2 SNES | quantize ~16 couleurs saturées (+ option Mode 7) |
+| N3 PS2 | color grade délavé + bloom bleuté + léger pixelate |
+| N4 Holo | overlay `@ektogamat/threejs-holographic-material` (reflets / scanlines / foil) |
+
+**Garde-fous** : modération de l'import (gemma4-vision) avant publication ; droits déclarés par le user (CGU) ; stockage du **seed** sur le chemin B (reproductibilité si la carte change de niveau).
+
+> Aligné avec le **rendu tiéré par rareté** : N1-2 = filtre CSS/2D, N3-4 = WebGL + remaster génératif éventuel. Le coût suit la rareté.
+
+---
+
+## 9. Questions en cours
 
 ### Gabarit & cohérence (prioritaire)
 - [ ] **Layout exact de la carte** : emplacement de l'ancre, du score (HP/ATK), de l'image centrale, du nom de domaine, du prix, de la gemme, du picto élément. → bloque le prototype.
@@ -143,12 +166,10 @@ Chaque niveau = ses propres variables CSS / uniforms de shader.
 - [ ] Faisabilité shaders **N4** sur mobile (→ cadré côté technique).
 - [ ] Format de livraison (sprites/atlas, glTF, textures, variables CSS exportées).
 
-### Génération de l'image *(nouveau — la carte est auto-générée)*
-- [ ] **Image IA vs template** : l'image centrale est-elle générée par un modèle (à partir du résumé du site) ou composée d'assets pré-faits ? → impact direct sur la cohérence visuelle.
-- [ ] **Cohérence de style par niveau** : si IA générative, comment garantir qu'une image N1 soit *pixel Game Boy* et une N3 *low-poly PS2* ? (prompts/LoRA/styles imposés par niveau).
-- [ ] **Contrôle qualité** : que faire si l'image générée est hors-charte / inappropriée ? Modération, re-génération, fallback template.
-- [ ] **Coût & latence** de génération à l'échelle (1 image par site, re-génération si l'autorité change).
-- [ ] **Sujet de l'image** : que représente-t-elle (la thématique du site ? un avatar ? l'objet 3D du N3) ?
+### Génération de l'image *(principe acté §8 — restent les réglages)*
+- [ ] **Recettes de filtres** par niveau : valeurs exactes (seuils de quantize, matrice de dither, intensité bloom) à figer.
+- [ ] **LoRA / prompts par niveau** (chemin B) : à sourcer ou entraîner pour le remaster génératif.
+- [ ] **Image auto** (si pas d'import) : que représente-t-elle ? (screenshot du site stylisé ? visuel dérivé du résumé ? objet 3D thématique pour N3 ?)
 
 ### États & animations
 - [ ] États visuels d'une carte : disponible / survolée / sélectionnée / acquise / indisponible.
@@ -157,7 +178,7 @@ Chaque niveau = ses propres variables CSS / uniforms de shader.
 
 ---
 
-## 9. Dépendances avec le gameplay
+## 10. Dépendances avec le gameplay
 
 - La **métrique SEO** qui pilote le niveau (→ gameplay §4-5) conditionne quel style s'affiche.
 - Le mapping **stat → HP/ATK** et **type de lien → gemme** vient du gameplay ; ici on en gère le rendu.

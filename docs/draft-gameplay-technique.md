@@ -39,13 +39,15 @@ La valeur SEO est encodée visuellement (détail des styles → voir charte grap
 - **Spline** comme outil de maquettage rapide de l'interaction 3D avant shaders custom.
 - **CSS 3D + Framer Motion** comme alternative ultra-légère (mobile, gyroscope) — bon pour niveaux 1-2, limité pour le niveau 3 (PS2).
 
+> **Décidé (2026-05-26) — rendu tiéré par rareté** : front **Next.js 15 + React Three Fiber**. **N1-2 en CSS/2D** (léger, mobile) ; **N3-4 en WebGL/R3F** chargé à la demande → le budget perf suit la rareté (la majorité des cartes sont de bas niveau). Bonnes pratiques R3F (vérifiées) : `<Canvas>` via `dynamic(ssr:false)`, `frameloop="demand"`, `InstancedMesh` pour la vue catalogue, DPR adaptatif. **Niveau 4** : lib `@ektogamat/threejs-holographic-material` plutôt qu'un shader GLSL maison.
+
 ### 2.4 Architecture produit & flux utilisateur *(confirmé)*
 
 C'est une **application web**. Le produit n'est pas un achat de liens mais un **échange réciproque de backlinks entre membres**, encadré par un « contrat moral » vérifié automatiquement.
 
 **Flux nominal :**
 1. **Connexion** — l'utilisateur se connecte via **Google (OAuth)**.
-2. **Déclaration de sites** — il fournit les **URLs de ses propres sites**.
+2. **Déclaration de sites** — il fournit les **URLs de ses propres sites**, et peut **connecter Google Search Console** (scope OAuth, déjà sur Google) → donnée d'autorité first-party **+ preuve de propriété du site**. *(cf. [draft-metrique-autorite.md](draft-metrique-autorite.md))*
 3. **Capture & analyse** — la plateforme **capture les infos du site**, en produit un **résumé**, et en **extrait une carte de jeu** : une **image d'une rareté donnée selon l'autorité** du site.
 4. **Échange de liens** — les membres échangent des backlinks entre eux.
 5. **Validation du contrat moral** — la plateforme **capture la page où le membre a publié le lien *ou la mention***, pour prouver que la contribution a bien eu lieu. *(Pivot GEO : on valorise aussi les **mentions de marque / citations**, pas seulement les `<a href>` — cf. [draft-vision-geo.md](draft-vision-geo.md).)*
@@ -94,6 +96,45 @@ Après comparaison **1:1 réciproque / chaîne orchestrée / donateur**, on reti
 
 > Image mentale : un **réseau de citation éditoriale gamifié**, pas une bourse de liens.
 
+### 2.7 Décision — Économie des crédits : modèle **hybride amorti** *(décidé 2026-05-26)*
+
+Principe directeur : **la monnaie est conservative** — un crédit ≈ une *unité de valeur d'autorité* déplacée dans le réseau. On **gagne** en injectant de la valeur (don éditorial), on **dépense** en extrayant de la valeur (mise en avant). Les deux côtés sont chiffrés dans la **même unité** → la file de mise en avant ne peut pas être monopolisée sans contribution équivalente. Tu dois donner pour recevoir.
+
+**A. Crédits gagnés par don** *(modèle hybride amorti — choisi contre « indexé plein sur l'autorité » et « forfait »)*
+
+```
+C_gain = BASE · g(AS_donneur) · pertinence · qualité · amortissement(donneur→cluster)
+```
+- **BASE** — unité de référence (≈ 100, à calibrer).
+- **g(AS) = (AS/100)^0.7** — *sous-linéaire* : un N4 vaut plus qu'un N1, mais le ratio est **compressé** (≈ ×2 entre AS 30 et AS 90, pas ×3) → on garde le réalisme « un lien d'un gros site vaut plus » **sans** rich-get-richer. *(AS = Authority Score, cf. [draft-metrique-autorite.md](draft-metrique-autorite.md))*
+- **pertinence ∈ [0,1]** — similarité pgvector donneur ↔ receveur, avec **seuil dur τ** : sous τ → **0 crédit** (pas de justification éditoriale = pas de récompense). Sert aussi l'**anti-footprint** (décourage le lien aléatoire).
+- **qualité ∈ [0,1]** — placement éditorial : lien *in-content* contextualisé = 1.0, mention de marque ≈ 0.6, lien faible / footer = pénalisé. Évalué à la validation + analyse de capture (gemma4-vision / LLM).
+- **amortissement** — rendements décroissants pour les dons répétés d'un même donneur vers le même receveur / cluster dans une fenêtre glissante → **casse le pompage réciproque** (réintroduit l'anti-réciprocité au niveau économique, pas seulement au matching).
+
+**B. Coût d'une mise en avant** *(dépense)*
+
+```
+C_dépense = BASE · portée · durée
+```
+- **portée** — croît avec la **bande d'autorité des éditeurs ciblés** (être proposé à des éditeurs N4 coûte plus que N1).
+- **durée / slots** — combien de temps, à combien d'éditeurs tu es proposé.
+- **Conservation** : valeur injectée par le don ≈ valeur extraite par la mise en avant → les comptes du réseau restent équilibrés.
+
+**C. Anti-abus** *(sinon le « donateur » n'est qu'un schéma déguisé — même exigence que §2.6)*
+1. **Frappe à la vérification seule** — crédits crédités *uniquement* quand le contrat moral confirme que le lien/mention existe, est in-content et éditorial (jamais à la proposition).
+2. **Seuil de pertinence dur** — don hors-sujet → 0 crédit (cf. A).
+3. **Rendements décroissants** — pomper un même cluster fait s'effondrer les gains.
+4. **Plafonds de frappe par période** — indexés sur ton AS / ton activité réelle → contre les fermes de comptes.
+5. **Score de naturalité** — un don qui dégrade la naturalité du graphe est minoré. *(lien avec [draft-pipeline-ia.md](draft-pipeline-ia.md) §4)*
+
+**D. Clawback & cycle de vie du lien** *(résout aussi « cycle de vie d'un lien », §6)*
+- **Re-capture périodique** (contrat moral) : lien retiré, passé `nofollow` après coup, cloaké, ou page supprimée → **clawback des crédits frappés**. Déjà dépensés → solde négatif + **pénalité de réputation** (impacte AS / plafonds).
+- Le clawback rend le don **durable** : on n'est pas payé pour un lien éphémère.
+
+**E. Amorçage** — un nouveau membre a 0 crédit mais **peut donner immédiatement** (il a ses propres sites) : la boucle *déclare → carte → don → crédits → mise en avant* est auto-amorçante. *(dotation de bienvenue éventuelle → calibrage, §6.)*
+
+> **Ce qui est décidé** : la *forme* de l'économie (monnaie conservative, formule de gain hybride amortie, formule de dépense, anti-abus, clawback). **Ce qui reste** : les *chiffres* (BASE, exposant de g, τ, barèmes, fenêtres, plafonds) — à calibrer sur données réelles, même logique que la métrique. Voir §6.
+
 ---
 
 ## 3. Modèle de données pressenti (à valider)
@@ -115,7 +156,8 @@ Site  (→ génère une Carte)
 ├── metrique_autorite          (DA/DR ? TF/CF ? score maison ? → niveau + stats)
 ├── niveau / rarete            (1–4, dérivé de l'autorité)
 ├── stats                      (HP / ATK dérivés de la donnée SEO)
-└── image_carte                (générée — IA ou template ?)
+├── image_source              (import user | auto depuis capture)
+└── image_carte                (rendu : passe filtre niveau, ± remaster ComfyUI + seed)
 
 Don  (ex-« Échange » — flux non-réciproque, cf. §2.6)
 ├── donneur_site, receveur_site   (donneur ≠ receveur direct, pas de boucle courte)
@@ -182,9 +224,9 @@ void main() {
 - [x] **Qui sont les joueurs ?** → **Propriétaires de sites web**, à la fois offreurs et receveurs. *(cf. §2.4)*
 - [x] **Mécanique d'échange** → **donateur / crédits**, flux non-réciproque, pas de chaîne orchestrée. *(cf. §2.6)*
 - [x] **Économie du jeu** → **crédits** : gagnés en donnant un lien éditorial, dépensés pour être mis en avant. L'accent néon = la monnaie. *(cf. §2.6)*
-- [ ] **Calibrage des crédits** : combien par don (selon l'autorité du donneur ? la pertinence ?), coût d'une mise en avant, anti-abus (don bidon pour farmer).
+- [~] **Calibrage des crédits** → **forme décidée** : modèle hybride amorti (gain = BASE·g(AS)·pertinence·qualité·amortissement ; dépense = BASE·portée·durée ; monnaie conservative). *(cf. §2.7)* · Restent les **chiffres** : valeur de BASE, exposant de g(AS) (0.7 ?), seuil τ, barème qualité, fenêtre + courbe d'amortissement, barème portée/durée, plafonds de frappe par période, dotation de bienvenue ?, expiration/demurrage des crédits ?
 - [ ] **Progression / méta-jeu** : l'utilisateur « monte » en puissance ? Collection / deck des cartes obtenues ? Quêtes (cf. Option B) ?
-- [ ] **Cycle de vie d'un lien** : durée d'engagement, renouvellement, que se passe-t-il (clawback de crédits ?) si un membre retire le lien après coup ?
+- [x] **Cycle de vie d'un lien** → **clawback décidé** : re-capture périodique ; lien retiré / passé nofollow / cloaké / page supprimée → clawback des crédits (solde négatif + pénalité de réputation si déjà dépensés). *(cf. §2.7 D)*
 
 ### Couche IA éditoriale *(axe B)*
 > Pipeline complet (capture→résumé→matching→suggestions) + traitement anti-footprint → [draft-pipeline-ia.md](draft-pipeline-ia.md).
@@ -201,13 +243,13 @@ void main() {
 - [ ] **Que capture-t-on exactement** : screenshot, HTML, position du lien dans la page, attributs `rel` ?
 
 ### Mapping data → stats *(nouveau)*
-- [ ] **HP vs ATK** : quelle donnée alimente quoi ? (ex. Trust Flow → HP, Citation Flow → ATK ? ou DA → une seule stat ?). A-t-on **deux** métriques distinctes pour deux stats ?
+- [x] **HP vs ATK** → **HP = trust/établi** (S_seo), **ATK = reach/rayonnement** (S_geo + trafic). Deux dimensions distinctes. *(cf. [draft-metrique-autorite.md](draft-metrique-autorite.md) §4)*
 - [ ] Les **stats sont-elles purement cosmétiques** ou servent-elles une mécanique (combat, score, comparaison) ?
 - [ ] Cas non couverts du **type de lien** : `sponsored`, `ugc` → 3ᵉ gemme ou regroupés ?
 
 ### Données / SEO
 - [x] **Source des données** → **capture propre des sites déclarés** par le membre (complétée éventuellement par une API tierce). *(cf. §2.4)*
-- [ ] **Quelle métrique d'autorité** pilote niveau + rareté + stats — composante **SEO** (DR Ahrefs, DA Moz, TF/CF Majestic, trafic, ou score maison) **et** composante **GEO** (saillance topique / part de citations IA) ? Pondération des deux. *(voir [draft-vision-geo.md](draft-vision-geo.md))*
+- [x] **Métrique d'autorité** → **Authority Score composite** (S_seo hybride 3 tiers dont Google Search Console first-party, + S_geo proxy pgvector + sondage Sonar). Stats : HP=trust / ATK=reach. *(décidé — détail [draft-metrique-autorite.md](draft-metrique-autorite.md))* · Restent les réglages (poids, seuils, calibration).
 - [ ] **Règle de mapping** métrique → niveau/rareté (seuils ? quartiles ? courbe ?) et métrique → HP/ATK.
 - [ ] **Fraîcheur** : la métrique évolue → une carte peut-elle changer de niveau / stats dans le temps ?
 - [ ] **Taxonomie des niches** → éléments (liste fermée ? voir charte §8). Détectée auto depuis le résumé du site ?

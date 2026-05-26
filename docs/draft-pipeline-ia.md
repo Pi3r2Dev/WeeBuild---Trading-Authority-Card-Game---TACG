@@ -73,7 +73,7 @@ Réutilise le pattern de traitement par tiers existant :
 ### Étape 3 — Score d'autorité → carte
 - **Métrique d'autorité** (⚠️ question ouverte : API tierce DR/DA/TF vs **score maison** calculé depuis la capture — voir §6).
 - Dérivation **niveau/rareté (1–4)** + **stats HP/ATK** (règles de mapping → gameplay §4-5).
-- **Génération de l'image** de carte (⚠️ IA générative à style imposé par niveau, ou template — voir charte §8).
+- **Image de carte** *(décidé)* : **import user** (ou auto depuis la capture) → **modération** (gemma4-vision) → **chemin A** filtres déterministes par niveau (WebGL, défaut) **ou chemin B** remaster génératif (**ComfyUI** GPU 0, orchestré Celery, opt-in) → **passe filtre finale** garante de la cohérence ; **seed** stocké. Détail → charte §8.
 
 ### Étape 4 — Matching de partenaires *(le cœur de l'axe B)*
 Réutilise le pattern RAG (`rag.service.ts`) :
@@ -159,10 +159,10 @@ GrapheLien  (vue dérivée pour l'anti-cycle)
 
 ## 6. Questions en cours
 
-### Métrique d'autorité (bloquant pour l'étape 3)
-- [ ] **Source SEO** : API tierce (Ahrefs/Moz/Majestic, payant) **ou score maison** calculé depuis la capture + signaux publics ? → impacte coût, fiabilité, et la dérivation niveau/stats.
-- [ ] Si score maison : quels signaux (âge domaine, structure, volume de contenu, backlinks observés, trafic estimé) ?
-- [ ] **Composante GEO** : comment mesurer la **saillance topique / part de citations IA** (sondage de modèles, citations AI Overviews/Perplexity) et la **pondérer** avec le SEO ? *(voir [draft-vision-geo.md](draft-vision-geo.md) §6 — problème de mesure ouvert)*
+### Métrique d'autorité *(architecture décidée → [draft-metrique-autorite.md](draft-metrique-autorite.md))*
+- [x] **Source SEO** → hybride 3 tiers : on-page (Crawl4AI) + **Google Search Console first-party** (OAuth, ou screenshots via gemma4-vision) + API tierce ponctuelle.
+- [x] **Composante GEO** → proxy pgvector (centralité topique + mentions) **+** sondage **Perplexity Sonar** échantillonné (taux de citation du domaine).
+- [ ] **Réglages restants** : poids w_seo/w_geo, seuils des bandes de niveau, normalisation, anti-fraude screenshots, coût Sonar. *(metrique §8)*
 
 ### Génération de contenu (étape 5)
 - [ ] **Brief vs article complet** : où s'arrête l'IA ? (article complet = risque contenu de masse de faible qualité).

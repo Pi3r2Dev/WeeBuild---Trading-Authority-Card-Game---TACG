@@ -21,6 +21,9 @@ green — phase de conception ; tous les docs sont cohérents et à jour. Aucun 
   - **Anti-footprint** posé comme *exigence de conception transverse* (diversité ancres/angles, dédup sémantique, anti-cycle, « score de naturalité »).
   - **Étoile polaire = GEO** (apparaître dans les réponses IA), cadré en **convergence SEO→GEO** (pas « SEO mort »). Conséquence : valoriser les **mentions**, pas seulement les liens.
   - **Stack = réutilisation de l'infra partagée `augmenter.pro`** (Crawl4AI, LiteLLM, Celery, pgvector, Better Auth+Google, Langfuse) — confirmée par exploration de `unified-infrastructure` / `app.augmenter.pro`.
+  - **Frontend = Next.js 15 + React Three Fiber, rendu tiéré par rareté** (N1-2 CSS/2D, N3-4 WebGL à la demande) ; niveau 4 holo via `@ektogamat/threejs-holographic-material`. *(gameplay §2.3, grounded via context7)*
+  - **Image de carte = import user (ou auto) + pipeline 2 chemins** (filtres déterministes par niveau / remaster génératif ComfyUI), **toujours clôturé par la passe filtre** garante de la cohérence. *(charte §8)*
+  - **Économie des crédits = modèle hybride amorti** *(décidé, gameplay §2.7)* : monnaie conservative ; gain = `BASE·g(AS)^0.7·pertinence·qualité·amortissement` (seuil de pertinence dur, rendements décroissants anti-pompage) ; dépense = `BASE·portée·durée` ; frappe à la vérification seule ; **clawback** si lien retiré. Chiffres (BASE, τ, barèmes, plafonds) à calibrer.
 - Produit les **briefs de design** (fonctionnel + visuel) → [design-briefs.md](../design-briefs.md).
 - Initialisé [CLAUDE.md](../../CLAUDE.md) comme point d'entrée pour une session vierge.
 
@@ -40,17 +43,18 @@ green — phase de conception ; tous les docs sont cohérents et à jour. Aucun 
 - N/A — phase de conception, aucun code ni test.
 
 ## Next concrete step
-**Trancher la métrique d'autorité (SEO + GEO)** — c'est le `🚧` le plus structurant : niveau de carte, rareté, stats HP/ATK et le filtre de matching en dépendent tous.
-1. **Composante SEO** : API tierce (Ahrefs/Moz/Majestic, payant) **vs** score maison calculé depuis la capture Crawl4AI + signaux publics. Arbitrer coût/fiabilité.
-2. **Composante GEO** : comment estimer la saillance topique / part de citations IA — et comment la **pondérer** avec le SEO (100 % SEO au lancement puis montée GEO ? deux scores ?).
-3. **Règle de mapping** `métrique → niveau/rareté` (seuils/quartiles/courbe) et `métrique → HP/ATK`.
-   → Détails : [draft-vision-geo.md](../draft-vision-geo.md) §6, [draft-pipeline-ia.md](../draft-pipeline-ia.md) §6, [draft-gameplay-technique.md](../draft-gameplay-technique.md) §4.
+**Métrique d'autorité = ARCHITECTURE DÉCIDÉE** → [draft-metrique-autorite.md](../draft-metrique-autorite.md) (Authority Score composite ; SEO hybride 3 tiers dont Google Search Console first-party ; GEO proxy pgvector + sondage Perplexity Sonar ; HP=trust / ATK=reach ; GSC = preuve d'ownership).
+
+Reprendre sur l'un de :
+1. **Calibrer la métrique** : poids w_seo/w_geo, seuils des bandes de niveau, normalisation, anti-fraude screenshots. *(metrique §8)*
+2. **Gabarit unique de carte** : prérequis du prototype visuel, brief prêt → [design-briefs.md](../design-briefs.md).
+3. ~~**Calibrage des crédits**~~ → **forme décidée** (modèle hybride amorti, gameplay §2.7). Restent les *chiffres* (BASE, τ, barèmes, plafonds), calibrables sur données réelles.
 
 ## Open decisions (les `🚧` de la FAQ §5)
-- **Métrique d'autorité (SEO + GEO)** — *prochaine étape ci-dessus*.
-- **Mesure GEO / attribution** : prouver l'apparition dans les réponses LLM (non-déterministe, pas de Search Console du GEO). Le vrai problème dur du pivot.
-- **Calibrage des crédits** : combien par don, coût d'une mise en avant, anti-abus, clawback si lien retiré.
-- **Génération de l'image** de carte : IA générative à style imposé par niveau vs templates.
+- ~~**Métrique d'autorité**~~ → **architecture décidée** ([draft-metrique-autorite.md](../draft-metrique-autorite.md)). Restent les *réglages* (poids, seuils, calibration, anti-fraude).
+- **Mesure GEO / attribution** : approche décidée (proxy pgvector + sondage Sonar, faisabilité confirmée) ; reste le calibrage coût/fréquence du sondage. Toujours le sujet le plus délicat du pivot.
+- ~~**Calibrage des crédits**~~ → **forme décidée** (gameplay §2.7) : modèle hybride amorti + clawback. Restent les chiffres (BASE, τ, barèmes, plafonds, dotation de bienvenue ?, demurrage ?).
+- ~~**Génération de l'image** de carte~~ → **décidé** (import user + pipeline 2 chemins). Restent les *réglages* : recettes de filtres par niveau + LoRA génératifs. *(charte §8)*
 - **Gabarit unique de carte** : prérequis du prototype *visuel* (indépendant de la métrique). Brief prêt dans [design-briefs.md](../design-briefs.md).
 - **Détection de mention sans lien** (NER + désambiguïsation) pour le contrat moral GEO.
 - **Progression / méta-jeu** : collection, montée en puissance, quêtes.
