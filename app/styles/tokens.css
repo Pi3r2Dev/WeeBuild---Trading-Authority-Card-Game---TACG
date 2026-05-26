@@ -1,0 +1,288 @@
+/* ─────────────────────────────────────────────────────────────
+   WeBuild — Trading Authority Game
+   Design tokens : Hub + 4 niveaux de carte
+   Porté depuis design_handoff_webuild_tag/tokens.css.
+   Changement vs handoff : les fonts sont chargées via next/font
+   (cf. app/layout.tsx) et exposées en variables --font-*,
+   donc pas de @import Google Fonts ici.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* Hub (interface plateforme) */
+  --hub-bg-0: #0b0c10;
+  --hub-bg-1: #0d0e15;
+  --hub-bg-2: #15171f;
+  --hub-line: #1f2230;
+  --hub-fg: #ffffff;
+  --hub-fg-soft: #808a9a;
+  --hub-fg-dim: #4a5161;
+  --hub-accent: #8a2be2; /* violet néon — accent principal */
+  --hub-accent-2: #39ff14; /* vert cyber — accent secondaire */
+
+  /* Familles : injectées par next/font (app/layout.tsx) */
+  --font-hub: var(--font-inter), system-ui, sans-serif;
+  --font-pixel-display: var(--font-press-start), monospace;
+  --font-pixel-body: var(--font-vt323), monospace;
+  --font-techno: var(--font-orbitron), sans-serif;
+}
+
+/* ── Niveau 1 — Game Boy ─────────────────────────────────── */
+.lvl-1 {
+  --c-deep: #0f380f;
+  --c-mid: #306230;
+  --c-light: #8bac0f;
+  --c-pale: #9bbc0f;
+  --c-card: #9bbc0f;
+  --c-frame: #0f380f;
+  --c-fg: #0f380f;
+  --c-fg-soft: #306230;
+  --c-element: #0f380f;
+  --c-hp: #0f380f;
+  --c-atk: #0f380f;
+  --font-display: var(--font-pixel-display);
+  --font-body: var(--font-pixel-body);
+  --frame-radius: 0px;
+  --frame-border: 4px solid var(--c-deep);
+}
+
+/* ── Niveau 2 — Super NES ────────────────────────────────── */
+.lvl-2 {
+  --c-deep: #1a1054;
+  --c-mid: #3b2eb8;
+  --c-light: #fbbf24;
+  --c-pale: #fde68a;
+  --c-card: #2536d6;
+  --c-frame: #fbbf24;
+  --c-fg: #fef9c3;
+  --c-fg-soft: #fde68a;
+  --c-element: #f87171;
+  --c-hp: #ef4444;
+  --c-atk: #fbbf24;
+  --font-display: var(--font-pixel-display);
+  --font-body: var(--font-pixel-body);
+  --frame-radius: 6px;
+  --frame-border: 3px solid var(--c-frame);
+}
+
+/* ── Niveau 3 — PlayStation 2 ────────────────────────────── */
+.lvl-3 {
+  --c-deep: #0a1638;
+  --c-mid: #1e3a8a;
+  --c-light: #60a5fa;
+  --c-pale: #93c5fd;
+  --c-card: #112a5e; /* base unie ; le gradient se met sur .lvl-3-bg */
+  --c-frame: #94a3b8;
+  --c-fg: #f1f5f9;
+  --c-fg-soft: #cbd5e1;
+  --c-element: #60a5fa;
+  --c-hp: #ef4444;
+  --c-atk: #fbbf24;
+  --font-display: var(--font-techno);
+  --font-body: var(--font-techno);
+  --frame-radius: 6px;
+  --frame-border: 2px solid #94a3b8;
+}
+
+/* PS2 chrome plate (utilitaire pour bordures/headers métalliques) */
+.ps2-chrome {
+  background: linear-gradient(
+    180deg,
+    #e2e8f0 0%,
+    #94a3b8 45%,
+    #475569 55%,
+    #cbd5e1 100%
+  );
+  color: #0a1638;
+}
+/* PS2 hero plate — bloom subtil sur fond bleu nuit */
+.ps2-bloom {
+  background:
+    radial-gradient(120% 80% at 70% 20%, rgba(96, 165, 250, 0.55) 0%, transparent 60%),
+    linear-gradient(180deg, #1e3a8a 0%, #0a1638 100%);
+}
+/* Lens flare overlay */
+.ps2-flare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(8px 8px at 22% 18%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(60px 30px at 22% 18%, rgba(255, 255, 255, 0.18), transparent 70%),
+    radial-gradient(3px 3px at 30% 28%, rgba(255, 255, 255, 0.6), transparent 70%),
+    radial-gradient(2px 2px at 40% 40%, rgba(255, 255, 255, 0.4), transparent 70%);
+  pointer-events: none;
+  z-index: 4;
+  mix-blend-mode: screen;
+}
+
+/* ── Niveau 4 — Holo / Rare ──────────────────────────────── */
+.lvl-4 {
+  --c-deep: #0a0a14;
+  --c-mid: #1a1a2e;
+  --c-light: #ffffff;
+  --c-pale: #f0abfc;
+  --c-card: #0a0a14;
+  --c-frame: #fbbf24;
+  --c-fg: #ffffff;
+  --c-fg-soft: rgba(255, 255, 255, 0.78);
+  --c-element: #fbbf24;
+  --c-hp: #ff3df0;
+  --c-atk: #00ffff;
+  --font-display: var(--font-techno);
+  --font-body: var(--font-techno);
+  --frame-radius: 10px;
+  --frame-border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+/* ── Effets partagés ─────────────────────────────────────── */
+
+/* Scanlines LCD (N1) */
+.lcd-scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(15, 56, 15, 0.18) 0px,
+    rgba(15, 56, 15, 0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: multiply;
+  z-index: 5;
+}
+
+/* Damier dithering (N1 — pour les zones d'image) */
+.dither-bg {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--c-deep) 1px,
+    transparent 1.2px
+  );
+  background-size: 4px 4px;
+}
+
+/* Mode 7 perspective (N2) */
+.mode7 {
+  transform: perspective(420px) rotateX(38deg);
+  transform-origin: center 80%;
+}
+
+/* Foil holo (N4) */
+.holo-foil {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a0a2e 0%, #0a0a14 50%, #0a1a2e 100%);
+}
+.holo-foil::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  background: conic-gradient(
+    from var(--foil-angle, 0deg) at 50% 50%,
+    #ff007f 0%,
+    #ffae00 14%,
+    #fff700 28%,
+    #00ff8a 42%,
+    #00ffff 56%,
+    #5b00ff 70%,
+    #ff00d4 84%,
+    #ff007f 100%
+  );
+  filter: blur(8px) saturate(140%);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.holo-foil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.06) 0px,
+    rgba(255, 255, 255, 0.06) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Glitch HTML/SEO doré (N4) — overlay décoratif */
+.glitch-strip {
+  position: absolute;
+  font-family: var(--font-pixel-body);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: #fbbf24;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.65);
+  white-space: nowrap;
+  opacity: 0.85;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* Bordure biseautée cartouche SNES */
+.bevel-snes {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+    inset 2px 0 0 rgba(255, 255, 255, 0.18),
+    inset -2px 0 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Pixelation universelle pour images */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ── Utilitaires ─────────────────────────────────────────── */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Animations d'état (overlay) ─────────────────────────── */
+@keyframes haloPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(138, 43, 226, 0.55),
+      0 0 20px rgba(138, 43, 226, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(138, 43, 226, 0.85),
+      0 0 36px rgba(138, 43, 226, 0.65);
+  }
+}
+@keyframes echangeShift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 16px 0;
+  }
+}
+@keyframes drawerUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes btnPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(138, 43, 226, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(138, 43, 226, 0.9);
+  }
+}

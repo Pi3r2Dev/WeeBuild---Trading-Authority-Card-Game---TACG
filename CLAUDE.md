@@ -2,9 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository status: design phase, no code yet
+## Repository status: POC front-end foundation scaffolded (2026-05-26)
 
-This repo currently holds **concept and design documents only** — there is no application code, build system, or tests. Do not invent build/lint/test commands; there are none until implementation starts. The work so far is product/architecture definition captured in `docs/` (all in French, the user-facing language for this project).
+The repo now holds **both the design docs (`docs/`, French) and a Next.js 15 app foundation at the root**. The POC focus is a **visual + functional front-end** validating the card rendering; the **AI pipeline + tracing are explicitly deferred**.
+
+- **Stack**: Next.js 15 (App Router) + React 19 + TypeScript; fonts via `next/font`; design tokens ported to `app/styles/tokens.css` (from `design_handoff_webuild_tag/tokens.css`); `motion` (transitions) + `zustand` (game state). **No Tailwind** — tokens.css + CSS Modules. No tests yet.
+- **Commands**: `npm run dev` (Turbopack), `npm run build`, `npm run lint`. Verified building on Next 15.5.18.
+- **Rendering approach (decided 2026-05-26)**: **CSS-first** — the hi-fi design is fully achievable in CSS/React/SVG (proven by the handoff: foil = `conic-gradient` + `mix-blend-mode`, bloom N3, scanlines N1, flip = `rotateY`). **R3F/Three.js is a contained A/B experiment on the N4 holo card only**, decided on evidence (wow, mobile FPS, bundle, effort), not a foundation bet.
+- **UI source of truth** = `design_handoff_webuild_tag/` (hi-fi handoff: 9 hub screens, gabarit-D card × 4 levels × 4 states, 5 transitions, tokens.css). Gitignored from versioning but present locally; its own README has the full spec.
 
 Start by reading, in this order:
 - [docs/faq.md](docs/faq.md) — **canonical doctrine** (the *why/how/Google* in Q&A form). Source of truth for positioning; also the consistency guardrail the axis-B AI uses when generating content. Decided positions are authoritative; items tagged `🚧` are NOT settled.
@@ -14,6 +19,7 @@ Start by reading, in this order:
 - [docs/draft-metrique-autorite.md](docs/draft-metrique-autorite.md) — **keystone**: the Authority Score (SEO+GEO) that drives level, rarity, stats, matching.
 - [docs/draft-pipeline-ia.md](docs/draft-pipeline-ia.md) — the AI pipeline, grounded in the existing shared infrastructure.
 - [docs/draft-charte-graphique.md](docs/draft-charte-graphique.md) — visual identity / design system.
+- [docs/draft-infra-poc.md](docs/draft-infra-poc.md) — **SSH-verified live infra baseline** (2026-05-26): what the POC reuses as-is vs the real gaps (gemma4-vision backend down, Langfuse/monitoring not deployed, ~50 GB disk to prune). Trust this over `unified-infrastructure/docs/UNIFIED_INFRASTRUCTURE.md`, which has drifted.
 
 The FAQ and the drafts must never contradict each other: when a `🚧` item is decided, update both.
 
