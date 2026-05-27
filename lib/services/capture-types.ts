@@ -1,7 +1,6 @@
 /**
- * Types & helpers partagés par les backends de capture (Firecrawl primaire,
- * Crawl4AI fallback) et l'orchestrateur `capture.ts`. Sans dépendance pour
- * éviter tout cycle d'import.
+ * Types & helpers partagés par le client de capture (Firecrawl) et le point
+ * d'entrée `capture.ts`. Sans dépendance pour éviter tout cycle d'import.
  */
 
 /** Site capturé, normalisé — matière première de la carte et du score d'autorité. */
@@ -16,8 +15,8 @@ export interface CapturedSite {
   externalLinks: number;
   imageCount: number;
   https: boolean;
-  /** Backend ayant réellement produit la capture (observabilité). */
-  via: "firecrawl" | "crawl4ai";
+  /** Backend ayant produit la capture (observabilité). */
+  via: "firecrawl";
 }
 
 /** Erreur de capture (réseau, HTTP, crawl échoué, SSRF) — message FR pour l'UI. */

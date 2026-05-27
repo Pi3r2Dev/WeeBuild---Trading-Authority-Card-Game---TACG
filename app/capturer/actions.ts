@@ -2,7 +2,7 @@
 
 /**
  * Server action — la première tranche verticale RÉELLE (cf. CLAUDE.md « POC »).
- * URL → capture (Crawl4AI) → extraction éditoriale (LiteLLM/fallback) → score
+ * URL → capture (Firecrawl) → extraction éditoriale (LiteLLM/fallback) → score
  * d'autorité provisoire → `CardData` rendue par le composant <Card/> validé.
  *
  * C'est exactement le « jour où l'infra arrive » annoncé dans lib/data : on

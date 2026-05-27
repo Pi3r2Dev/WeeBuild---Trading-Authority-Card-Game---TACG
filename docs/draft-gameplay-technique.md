@@ -258,7 +258,7 @@ void main() {
 
 ### Capture, résumé & génération de carte
 > Pipeline détaillé et ancré dans l'infra existante → [draft-pipeline-ia.md](draft-pipeline-ia.md).
-- [x] **Techno de capture** → **Crawl4AI** self-hosté (déjà intégré au backend, JS render + markdown + circuit breaker). *(pipeline §2, §3.1)*
+- [x] **Techno de capture** → **Firecrawl** v3 self-hosté (JS render + markdown propre), via `lib/services/firecrawl.ts` (garde SSRF, retry/backoff). *(Crawl4AI retiré 2026-05-27 ; pipeline §2, §3.1)*
 - [x] **Résumé** → **LLM via LiteLLM** (`fast4b`/`groq-fast`), pattern Celery tiered existant. *(pipeline §3.2)*
 - [ ] **Image de la carte** : **générée par IA** (style imposé par niveau) ou template ? — reste ouvert (charte §8).
 - [ ] **Quand** la carte est-elle (re)générée : à l'ajout du site, périodiquement, à chaque changement d'autorité ?

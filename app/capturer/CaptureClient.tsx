@@ -7,7 +7,7 @@ import { captureCard, type CaptureResult } from "./actions";
 
 const PIXEL: CSSProperties = { fontFamily: "var(--font-pixel-display)", letterSpacing: 1 };
 
-const EXAMPLES = ["https://lemonde.fr", "https://crawl4ai.com", "https://example.com"];
+const EXAMPLES = ["https://lemonde.fr", "https://firecrawl.dev", "https://example.com"];
 
 export function CaptureClient() {
   const [url, setUrl] = useState("");
@@ -86,7 +86,7 @@ export function CaptureClient() {
         ))}
       </div>
 
-      {pending && <p style={{ color: "var(--hub-fg-soft)" }}>Crawl4AI capture la page, puis on dérive le score…</p>}
+      {pending && <p style={{ color: "var(--hub-fg-soft)" }}>Firecrawl capture la page, puis on dérive le score…</p>}
 
       {!pending && result && !result.ok && (
         <div

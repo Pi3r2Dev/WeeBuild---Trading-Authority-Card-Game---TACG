@@ -75,7 +75,7 @@ Chaque site = une carte. Son **niveau (1 à 4)** est dérivé de son autorité e
 
 ## Du site réel à la carte réelle (pipeline live)
 
-La route `/capturer` est une **tranche verticale fonctionnelle de bout en bout** : on colle une URL → **Crawl4AI** capture la page → **LiteLLM** en extrait le sens (résumé, thématique) → un **score d'autorité** (v1 on-page) en dérive le niveau et les stats → le composant `<Card/>` affiche une **vraie carte**.
+La route `/capturer` est une **tranche verticale fonctionnelle de bout en bout** : on colle une URL → **Firecrawl** capture la page → **LiteLLM** en extrait le sens (résumé, thématique) → un **score d'autorité** (v1 on-page) en dérive le niveau et les stats → le composant `<Card/>` affiche une **vraie carte**.
 
 ![Capturer un site : example.com capturé, score d'autorité 15/100, carte Game Boy générée avec le détail transparent des signaux](docs/assets/capturer-result.webp)
 
@@ -182,7 +182,7 @@ WeBuild est taillé pour ça : le GEO récompense exactement ce qu'on construit 
 | **Animations / état** | **`motion`** (transitions) + **`zustand`** (game state) | — |
 | **Rendu carte** | **CSS-first** (foil `conic-gradient`, scanlines, flip `rotateY`, tilt pointeur) | bundle ~0, GPU léger |
 | **3D / hero** | **React Three Fiber** + drei + **Rapier** (physique) + leva + r3f-perf + html-to-image | **isolé aux R&D routes** via `dynamic(ssr:false)` — hors bundle produit |
-| **Capture web** | `lib/services` — **Firecrawl** (primaire) → **Crawl4AI** (fallback), orchestrés par `captureSite()` | garde **SSRF** (refus IP privées/loopback), retry + backoff |
+| **Capture web** | `lib/services` — **Firecrawl** v3 (moteur unique de crawl, rendu JS), via `captureSite()` | garde **SSRF** (refus IP privées/loopback), retry + backoff |
 | **LLM** | `lib/services/litellm.ts` — passerelle **LiteLLM** (`chat` / `chatJson`) | fallback si clé absente |
 | **Autorité** | `lib/authority/score.ts` — score composite **pur**, v1 on-page, transparent | recalibrage = éditer poids + bandes |
 | **Tests** | **Vitest** — `scrape` (succès/erreurs/retry) + garde SSRF, `fetch`/DNS mockés | `npm test` |
@@ -202,7 +202,7 @@ WeBuild est taillé pour ça : le GEO récompense exactement ce qu'on construit 
 
 ```mermaid
 flowchart LR
-    A[Auth · Google OAuth] --> B[Capture · Crawl4AI / Firecrawl]
+    A[Auth · Google OAuth] --> B[Capture · Firecrawl]
     B --> C[Résumé + extraction · Celery + LiteLLM]
     C --> D[Carte · autorité → niveau / stats / image]
     D --> E[Matching · pgvector + rerank + anti-cycle]
@@ -232,7 +232,7 @@ npm test             # Vitest (aucun appel réseau réel : fetch + DNS mockés)
 npm run build && npm run start
 ```
 
-Pour activer la **capture réelle** sur `/capturer`, copier `.env.local.example` → `.env.local` et renseigner au besoin `FIRECRAWL_API_URL`, `CRAWL4AI_BASE_URL`, `LITELLM_API_KEY`. Sans clé LiteLLM, l'extraction bascule sur un fallback ; sans Firecrawl joignable, la capture passe directement au fallback Crawl4AI public.
+Pour activer la **capture réelle** sur `/capturer`, copier `.env.local.example` → `.env.local` et renseigner `FIRECRAWL_API_URL` et `LITELLM_API_KEY`. Firecrawl est interne (WireGuard) : en dev local, ouvrir un tunnel `ssh -N -L 3002:10.10.0.1:3002 coolify` puis pointer `FIRECRAWL_API_URL=http://localhost:3002`. Sans clé LiteLLM, l'extraction bascule sur un fallback déterministe ; sans Firecrawl joignable, la capture échoue (aucun fallback de crawl).
 
 ### Routes
 
@@ -262,7 +262,7 @@ app/
 ├── (routes)/        # /, /ecosysteme, /donner, /decouvrir, /preuves, /capturer…
 └── styles/tokens.css
 lib/
-├── services/        # capture (Firecrawl/Crawl4AI), garde SSRF, LiteLLM
+├── services/        # capture (Firecrawl), garde SSRF, LiteLLM
 ├── authority/       # score d'autorité (pur) + extraction LLM
 ├── domain/          # entités & mapping carte
 ├── levels/          # niveaux 1–4
@@ -377,7 +377,7 @@ Each site = one card. Its **level (1 to 4)** is derived from its authority and d
 
 ## From real site to real card (live pipeline)
 
-The `/capturer` route is a **working end-to-end vertical slice**: paste a URL → **Crawl4AI** captures the page → **LiteLLM** extracts the meaning (summary, topic) → an **authority score** (v1, on-page) derives the level and stats → the `<Card/>` component renders a **real card**.
+The `/capturer` route is a **working end-to-end vertical slice**: paste a URL → **Firecrawl** captures the page → **LiteLLM** extracts the meaning (summary, topic) → an **authority score** (v1, on-page) derives the level and stats → the `<Card/>` component renders a **real card**.
 
 ![Capturing a site: example.com captured, authority score 15/100, Game Boy card generated with the transparent signal breakdown](docs/assets/capturer-result.webp)
 
@@ -484,7 +484,7 @@ WeBuild is built for that: GEO rewards exactly what we build — **relevant, rep
 | **Animation / state** | **`motion`** (transitions) + **`zustand`** (game state) | — |
 | **Card rendering** | **CSS-first** (foil `conic-gradient`, scanlines, `rotateY` flip, pointer tilt) | ~0 bundle, light GPU |
 | **3D / hero** | **React Three Fiber** + drei + **Rapier** (physics) + leva + r3f-perf + html-to-image | **isolated to R&D routes** via `dynamic(ssr:false)` — out of the product bundle |
-| **Web capture** | `lib/services` — **Firecrawl** (primary) → **Crawl4AI** (fallback), orchestrated by `captureSite()` | **SSRF** guard (rejects private/loopback IPs), retry + backoff |
+| **Web capture** | `lib/services` — **Firecrawl** v3 (sole crawl engine, JS rendering), via `captureSite()` | **SSRF** guard (rejects private/loopback IPs), retry + backoff |
 | **LLM** | `lib/services/litellm.ts` — **LiteLLM** gateway (`chat` / `chatJson`) | fallback if no key |
 | **Authority** | `lib/authority/score.ts` — **pure** composite score, v1 on-page, transparent | recalibrate = edit weights + bands |
 | **Tests** | **Vitest** — `scrape` (success/errors/retry) + SSRF guard, `fetch`/DNS mocked | `npm test` |
@@ -504,7 +504,7 @@ WeBuild is built for that: GEO rewards exactly what we build — **relevant, rep
 
 ```mermaid
 flowchart LR
-    A[Auth · Google OAuth] --> B[Capture · Crawl4AI / Firecrawl]
+    A[Auth · Google OAuth] --> B[Capture · Firecrawl]
     B --> C[Summary + extraction · Celery + LiteLLM]
     C --> D[Card · authority → level / stats / image]
     D --> E[Matching · pgvector + rerank + anti-cycle]
@@ -534,7 +534,7 @@ npm test             # Vitest (no real network calls: fetch + DNS mocked)
 npm run build && npm run start
 ```
 
-To enable **real capture** on `/capturer`, copy `.env.local.example` → `.env.local` and fill in `FIRECRAWL_API_URL`, `CRAWL4AI_BASE_URL`, `LITELLM_API_KEY` as needed. Without a LiteLLM key, extraction falls back gracefully; without a reachable Firecrawl, capture goes straight to the public Crawl4AI fallback.
+To enable **real capture** on `/capturer`, copy `.env.local.example` → `.env.local` and fill in `FIRECRAWL_API_URL` and `LITELLM_API_KEY`. Firecrawl is internal (WireGuard): for local dev, open a tunnel `ssh -N -L 3002:10.10.0.1:3002 coolify` then set `FIRECRAWL_API_URL=http://localhost:3002`. Without a LiteLLM key, extraction falls back gracefully; without a reachable Firecrawl, capture fails (no crawl fallback).
 
 ### Routes
 
@@ -564,7 +564,7 @@ app/
 ├── (routes)/        # /, /ecosysteme, /donner, /decouvrir, /preuves, /capturer…
 └── styles/tokens.css
 lib/
-├── services/        # capture (Firecrawl/Crawl4AI), SSRF guard, LiteLLM
+├── services/        # capture (Firecrawl), SSRF guard, LiteLLM
 ├── authority/       # authority score (pure) + LLM extraction
 ├── domain/          # entities & card mapping
 ├── levels/          # levels 1–4

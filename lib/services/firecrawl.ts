@@ -1,6 +1,6 @@
 /**
  * Client Firecrawl (self-hosted v3) — scraping web → markdown propre + HTML,
- * avec rendu JS (chromium/playwright). Remplace Crawl4AI comme moteur primaire.
+ * avec rendu JS (chromium/playwright). Moteur de crawl unique (Crawl4AI retiré).
  *
  * Faits infra (cf. tâche d'intégration) :
  *   - Endpoint `POST {BASE}/v1/scrape`, santé `GET {BASE}/` → 200.

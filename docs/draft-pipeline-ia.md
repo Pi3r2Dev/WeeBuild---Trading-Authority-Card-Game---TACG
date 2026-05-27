@@ -23,7 +23,7 @@ Le pipeline réutilise l'infra partagée de l'écosystème `augmenter.pro` (dép
 | Besoin | Brique existante | Emplacement / note |
 |--------|------------------|--------------------|
 | Connexion Google | **Better Auth + Google OAuth** | `app.augmenter.pro/backend/src/modules/auth/better-auth.ts` — déjà fonctionnel |
-| Capture / scraping | **Crawl4AI** self-hosté (Chromium headless, markdown, JS render) | `https://crawl4ai.augmenter.pro` + client NestJS `backend/src/common/services/crawl/` (circuit breaker, cache Redis, fallback Firecrawl→cheerio) |
+| Capture / scraping | **Firecrawl** v3 self-hosté (Chromium/Playwright, markdown propre, JS render) | `http://10.10.0.1:3002` via **WireGuard** ; client `lib/services/firecrawl.ts` (`scrape()`/`healthcheck()`, garde **SSRF**, sérialisé + backoff). *(Crawl4AI déprécié/retiré — cf. draft-infra-poc.md §2.)* |
 | Passerelle LLM | **LiteLLM** (routing, cache Redis, budget, Langfuse) | `unified-infrastructure/litellm/litellm-config.yaml` — `http://litellm:4000` |
 | Modèles | `fast4b` (classif/extraction, local ~$0.10/M), `groq-fast` (scoring ~100ms, gratuit), `gemma4-vision` (vision), `groq-qwen3-32b` (**texte FR**), `gte-qwen2-local` (embeddings 1536d) | aliases sémantiques : `default`/`fast`/`reasoning`/`embedding`/`jury-comment` |
 | Files de tâches | **Celery + Redis** (workers Python), pattern tiered triage→tier1→tier2→tier3 | `app.augmenter.pro/worker/tasks/` |
@@ -40,7 +40,7 @@ Le pipeline réutilise l'infra partagée de l'écosystème `augmenter.pro` (dép
 
 ```
 [0] Auth Google ──► [1] Capture site ──► [2] Résumé + extraction ──► [3] Carte (autorité→niveau/stats/image)
-   (Better Auth)      (Crawl4AI)           (Celery tiers + LiteLLM)      (score + génération image)
+   (Better Auth)      (Firecrawl)          (Celery tiers + LiteLLM)      (score + génération image)
                                                    │
                                                    ▼ embedding (gte-qwen2-local, 1536d) → pgvector
                                                    │
@@ -56,9 +56,9 @@ Le pipeline réutilise l'infra partagée de l'écosystème `augmenter.pro` (dép
 - Connexion via **Google OAuth** (Better Auth, déjà en place).
 - Le membre déclare les URLs de ses sites → entité `Site` (Prisma).
 
-### Étape 1 — Capture *(Crawl4AI)*
-- Appel au **CrawlService** existant : extraction `fit_markdown` + `raw_markdown`, JS rendering, citations.
-- Robustesse déjà fournie : circuit breaker, cache Redis (`CrawlCacheService`), fallback Firecrawl → cheerio.
+### Étape 1 — Capture *(Firecrawl)*
+- Appel `POST /v1/scrape` (formats `markdown` + `html`, `onlyMainContent`, `waitFor` pour les SPA) → `lib/services/firecrawl.ts`.
+- Robustesse côté client : garde **SSRF** (refus IP internes), timeout, appels sérialisés + 1 retry/backoff (doux pour la box). *(Crawl4AI et son CrawlService NestJS sont retirés — moteur unique.)*
 - **Deux usages distincts** :
   - *Capture du site du membre* → matière première de la carte.
   - *Capture de la page de publication* (contrat moral) → screenshot + HTML + détection du **lien** (attribut `rel`) **et/ou de la mention de marque** (NER + désambiguïsation). Le GEO valorise la mention citée autant que le lien — cf. [draft-vision-geo.md](draft-vision-geo.md).
@@ -160,7 +160,7 @@ GrapheLien  (vue dérivée pour l'anti-cycle)
 ## 6. Questions en cours
 
 ### Métrique d'autorité *(architecture décidée → [draft-metrique-autorite.md](draft-metrique-autorite.md))*
-- [x] **Source SEO** → hybride 3 tiers : on-page (Crawl4AI) + **Google Search Console first-party** (OAuth, ou screenshots via gemma4-vision) + API tierce ponctuelle.
+- [x] **Source SEO** → hybride 3 tiers : on-page (Firecrawl) + **Google Search Console first-party** (OAuth, ou screenshots via gemma4-vision) + API tierce ponctuelle.
 - [x] **Composante GEO** → proxy pgvector (centralité topique + mentions) **+** sondage **Perplexity Sonar** échantillonné (taux de citation du domaine).
 - [ ] **Réglages restants** : poids w_seo/w_geo, seuils des bandes de niveau, normalisation, anti-fraude screenshots, coût Sonar. *(metrique §8)*
 

@@ -3,7 +3,7 @@ import type { CardData, NavCard, Me, Suggestion, Activity, Partner, Topic, Proof
 /**
  * Données mock, **derrière la frontière** lib/data (D3). Seuls les accesseurs
  * de `lib/data/index.ts` les exposent ; les écrans n'importent jamais ces
- * tableaux directement. Le jour où l'infra arrive (Crawl4AI/LiteLLM/pgvector),
+ * tableaux directement. Le jour où l'infra arrive (Firecrawl/LiteLLM/pgvector),
  * on remplace l'implémentation des accesseurs — pas les écrans.
  */
 

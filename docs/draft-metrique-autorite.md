@@ -26,7 +26,7 @@ AS = w_seo · S_seo  +  w_geo · S_geo
 ### Composante SEO
 | Tier | Source | Coût | Robustesse |
 |------|--------|------|-----------|
-| 1 | **On-page / public** via Crawl4AI : structure, schema.org, sitemap, fraîcheur, HTTPS, âge domaine | gratuit, toujours | moyenne (heuristique) |
+| 1 | **On-page / public** via Firecrawl : structure, schema.org, sitemap, fraîcheur, HTTPS, âge domaine | gratuit, toujours | moyenne (heuristique) |
 | 2 | **Google Search Console first-party** : impressions, clics, CTR, position moyenne, requêtes, pages indexées | gratuit, vérifié | **forte (donnée de Google)** |
 | 3 | **API tierce** (Ahrefs/Moz/Majestic/DataForSEO) : backlinks/DR | payant, **ponctuel** | forte (calibration / premium) |
 

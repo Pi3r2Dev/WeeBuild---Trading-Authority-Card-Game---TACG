@@ -5,15 +5,17 @@ Ils ne sont jamais importés côté client (ils lisent `process.env` et appellen
 
 ## Capture web
 
-Deux backends derrière un point d'entrée unique :
+Moteur unique (Firecrawl) derrière un point d'entrée applicatif :
 
 | Fichier | Rôle |
 |---|---|
-| [firecrawl.ts](firecrawl.ts) | **Moteur primaire** — Firecrawl self-hosted v3 (rendu JS). Client réutilisable `scrape()` / `healthcheck()`. |
-| [crawl4ai.ts](crawl4ai.ts) | **Fallback** — Crawl4AI public (Traefik), utilisé si Firecrawl est injoignable. |
-| [capture.ts](capture.ts) | **Orchestrateur** — `captureSite(url)` : Firecrawl puis fallback Crawl4AI → `CapturedSite` normalisé. |
+| [firecrawl.ts](firecrawl.ts) | **Moteur de crawl** — Firecrawl self-hosted v3 (rendu JS). Client réutilisable `scrape()` / `healthcheck()`. |
+| [capture.ts](capture.ts) | **Point d'entrée** — `captureSite(url)` : Firecrawl → `CapturedSite` normalisé (consommé par l'UI/score). |
 | [ssrf.ts](ssrf.ts) | Garde **SSRF** — résout le DNS de l'URL cible et refuse les IP privées/loopback/link-local. |
 | [capture-types.ts](capture-types.ts) | Types + helpers partagés (`CapturedSite`, `CaptureError`, parsing liens/images du HTML). |
+
+> Crawl4AI (ancien fallback) a été retiré : son domaine public est hors service et son conteneur n'est
+> pas joignable. Firecrawl est désormais le seul moteur de crawl.
 
 ### Usage
 
@@ -28,22 +30,22 @@ const { markdown, html, metadata } = await scrape("https://exemple.fr", {
   timeoutMs: 45000,               // défaut
 });
 
-// Ou le point d'entrée applicatif (Firecrawl → fallback Crawl4AI) :
+// Ou le point d'entrée applicatif :
 import { captureSite } from "@/lib/services/capture";
 const site = await captureSite("https://exemple.fr"); // CapturedSite
 ```
 
 `scrape()` sérialise les appels (1 à la fois) et fait **1 retry avec backoff** sur erreur transitoire
-(réseau / 5xx) — doux pour la box 4 Go. Il jette `FirecrawlError` (HTTP non-2xx, `success:false`,
-markdown vide, timeout) ou `SsrfError` (URL cible interne). La garde SSRF s'applique **avant** tout appel.
+(réseau / 5xx) — doux pour la box 4 Go. Il jette `FirecrawlError` (non configuré, HTTP non-2xx,
+`success:false`, markdown vide, timeout) ou `SsrfError` (URL cible interne). La garde SSRF s'applique
+**avant** tout appel.
 
 ### Variables d'environnement (cf. [`.env.local.example`](../../.env.local.example))
 
 | Variable | Requis | Note |
 |---|---|---|
-| `FIRECRAWL_API_URL` | pour activer Firecrawl | Pas de défaut (jamais de défaut SaaS). Vide → on saute direct au fallback. |
+| `FIRECRAWL_API_URL` | oui | Pas de défaut. Non défini → la capture échoue (aucun fallback). |
 | `FIRECRAWL_API_KEY` | non | Self-hosted sans auth ; en-tête `Authorization` envoyé seulement si défini. |
-| `CRAWL4AI_BASE_URL` | non | Défaut `https://crawl4ai.augmenter.pro` (fallback). |
 
 ### Réseau — accès à Firecrawl
 
@@ -58,8 +60,11 @@ curl -s -m 30 -X POST http://10.10.0.1:3002/v1/scrape \
 ```
 
 - **App Coolify sur ce host** → `FIRECRAWL_API_URL=http://10.10.0.1:3002` (déjà routé).
-- **Dev local / autre serveur** → `10.10.0.1` injoignable. Laisser `FIRECRAWL_API_URL` vide (fallback
-  Crawl4AI), ou demander à l'ops un **peer WireGuard** / une **URL Caddy publique** (avec basic-auth).
+- **Dev local** → `10.10.0.1` injoignable directement : ouvrir un tunnel SSH puis pointer dessus.
+  ```bash
+  ssh -N -L 3002:10.10.0.1:3002 coolify   # laisser tourner
+  # .env.local : FIRECRAWL_API_URL=http://localhost:3002
+  ```
 
 ⚠️ **Hors périmètre du crawl** : données Google My Business / Maps (avis, note, horaires) — non
 crawlables (CAPTCHA/consent Google) → passer par la **Google Places API**.

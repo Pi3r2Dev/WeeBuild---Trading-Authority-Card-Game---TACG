@@ -1,18 +1,15 @@
 /**
- * Orchestrateur de capture — point d'entrée unique de la tranche `/capturer`.
+ * Capture — point d'entrée unique de la tranche `/capturer`.
  *
- * Firecrawl (self-hosted, moteur primaire, rendu JS) → fallback Crawl4AI
- * (public, secours quand Firecrawl est injoignable — typiquement en dev local
- * où le réseau WireGuard interne n'est pas atteignable).
+ * Moteur unique : Firecrawl self-hosted (rendu JS). L'UI/score consomment un
+ * `CapturedSite` normalisé, indépendant du client. Module serveur.
  *
- * L'UI/score consomment un `CapturedSite` normalisé, indépendant du backend.
- * Module serveur.
+ * NB : en dev local, Firecrawl (WireGuard interne) n'est joignable que via un
+ * tunnel SSH — cf. `.env.local` et lib/services/README.md.
  */
 
 import { type CapturedSite, hostnameOf, imageCountFromHtml, linkStatsFromHtml } from "./capture-types";
 import * as firecrawl from "./firecrawl";
-import { captureViaCrawl4ai } from "./crawl4ai";
-import { SsrfError } from "./ssrf";
 
 export { CaptureError } from "./capture-types";
 export type { CapturedSite } from "./capture-types";
@@ -44,19 +41,10 @@ function fromScrape(scraped: firecrawl.ScrapeResult, requestedUrl: string): Capt
 }
 
 /**
- * Capture une URL : Firecrawl d'abord, Crawl4AI en secours.
- * @throws {SsrfError} URL cible interne — refusée, aucun fallback.
- * @throws {CaptureError} si les deux backends échouent.
+ * Capture une URL via Firecrawl.
+ * @throws {SsrfError} URL cible interne — refusée.
+ * @throws {FirecrawlError} service non configuré / injoignable / scrape échoué.
  */
 export async function captureSite(rawUrl: string): Promise<CapturedSite> {
-  if (firecrawl.isConfigured()) {
-    try {
-      return fromScrape(await firecrawl.scrape(rawUrl), rawUrl);
-    } catch (e) {
-      // URL interdite : ne JAMAIS retenter via un autre backend.
-      if (e instanceof SsrfError) throw e;
-      // Firecrawl indispo/erreur → on bascule sur Crawl4AI.
-    }
-  }
-  return captureViaCrawl4ai(rawUrl);
+  return fromScrape(await firecrawl.scrape(rawUrl), rawUrl);
 }
