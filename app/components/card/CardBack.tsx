@@ -1,4 +1,5 @@
 import type { CardData, Level } from "./types";
+import { STATE_LABEL } from "./types";
 import { GemstoneSVG } from "./glyphs";
 
 /** Verso commun — fiche technique « métier » du site/carte. */
@@ -64,7 +65,7 @@ export function CardBack({
           <DataRow k="ANCRE" v={data.anchor ? `"${data.anchor}"` : "—"} level={level} />
           <DataRow k="TYPE LIEN" v={data.linkType.toUpperCase()} level={level} />
           <DataRow k="PROPRIÉTAIRE" v={data.owner} level={level} />
-          <DataRow k="STATUT" v={data.status.toUpperCase()} level={level} />
+          <DataRow k="STATUT" v={STATE_LABEL[data.status].toUpperCase()} level={level} />
         </div>
 
         <div

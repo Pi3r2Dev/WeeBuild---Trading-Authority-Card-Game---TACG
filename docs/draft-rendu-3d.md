@@ -12,6 +12,7 @@
   - **R3F** : iridescence *physiquement* réactive à l'angle de vue 3D réel (le foil suit la normale). Plus « vrai ».
   - **CSS** : gagne sur **bundle (~0)**, **GPU (~0 vs WebGL/frame)**, **effort**. 
   - **→ CSS-first pour les cartes en production. R3F réservé à un moment « hero » 3D** (ex. carte N4 vitrine, château de cartes).
+  - **Variante hero N4 décidée (2026-05-27) : Voie A** — contenu DOM CSS + plan de foil WebGL fresnel collé (cf. [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) §4). Supprime la divergence de contenu de l'ancien `HoloCardR3F` (qui « lavait » le chrome). Composant : [HoloCard3D.tsx](../app/components/r3f/HoloCard3D.tsx).
 - **R3F isolé** aux routes `/rnd` et `/chateau` via `dynamic(() => import(...), { ssr: false })` → `three`/`@react-three/fiber`/`drei`/`rapier`/`leva`/`r3f-perf` **lazy-loadés**, hors du bundle de base des écrans produit.
 
 ---
@@ -112,6 +113,8 @@ Un vrai château de cartes est **quasi-instable** en rigid-body sim : placé en 
 
 ## 9. Ce qui reste / à arbitrer
 
-- [ ] **Texture de carte R3F = vrai gabarit-D** (DOM→texture) si on veut un rendu *pixel-identique* au CSS (actuellement contenu dessiné au canvas, approximation — suffisant pour l'A/B du foil).
+> **Parité CSS ↔ R3F** : le registre des couches, niveaux Z, blends et le plan de synchro sont dans [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md).
+
+- [x] **Parité contenu CSS ↔ R3F** — résolue par la **Voie A** (2026-05-27) : le contenu reste la `<CardFront>` DOM, le R3F n'ajoute qu'un plan de foil fresnel. Plus de redessin canvas divergent. Cf. [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) §4. (Voie B « DOM→texture » reste l'option si le château/instancing impose du tout-texture plus tard.)
 - [ ] **Château en hero d'accueil** : monté sur les vraies cartes du membre, perf mobile à mesurer (nombre de corps), quand le rebâtir, lien vers le Hub.
 - [ ] **Budget mobile** des routes 3D (instancing pour la vue catalogue, DPR adaptatif, `frameloop="demand"` quand statique).

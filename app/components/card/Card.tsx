@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import type { CardData, CardState, Level } from "./types";
+import { LEVELS } from "@/lib/levels";
 import { CardFront } from "./CardFront";
 import { CardBack } from "./CardBack";
 import { usePointerTilt } from "./usePointerTilt";
@@ -30,7 +31,7 @@ export function Card({ data, level, state = "dispo", interactive = true }: CardP
   const [flipped, setFlipped] = useState(false);
   const tiltRef = usePointerTilt<HTMLDivElement>();
   const lvl = level ?? data.level;
-  const faceBg = lvl === 4 ? "#0a0a14" : "var(--c-card)";
+  const faceBg = LEVELS[lvl].faceBg;
 
   return (
     <div

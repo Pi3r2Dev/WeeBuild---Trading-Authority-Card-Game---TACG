@@ -1,7 +1,20 @@
-export type Level = 1 | 2 | 3 | 4;
+// `Level` + métadonnées d'ère/rareté ont une source unique : lib/levels (D5).
+// Ré-export pour ne pas casser les imports existants depuis "./types".
+import type { Level } from "@/lib/levels";
+export type { Level } from "@/lib/levels";
+export { ERA_LABEL } from "@/lib/levels";
+
 export type LinkType = "dofollow" | "nofollow" | "sponsored";
 export type ElementKind = "tech" | "finance" | "sante" | "media";
 export type CardState = "dispo" | "en-echange" | "acquise" | "verrouillee";
+
+/** Libellés FR des états (source unique pour l'affichage). */
+export const STATE_LABEL: Record<CardState, string> = {
+  dispo: "Disponible",
+  "en-echange": "En échange",
+  acquise: "Acquise",
+  verrouillee: "Verrouillée",
+};
 
 /**
  * Données d'une carte = un site déclaré.
@@ -24,15 +37,8 @@ export interface CardData {
   dr: number;
   linkType: LinkType;
   owner: string;
-  status: string;
+  status: CardState;
   price: number;
   edition: string;
   editionTotal: string;
 }
-
-export const ERA_LABEL: Record<Level, string> = {
-  1: "GAMEBOY",
-  2: "SNES",
-  3: "PS2",
-  4: "HOLO",
-};

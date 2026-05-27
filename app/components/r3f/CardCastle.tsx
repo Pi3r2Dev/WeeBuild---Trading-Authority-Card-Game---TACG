@@ -5,13 +5,12 @@ import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider, type RapierRigidBody } from "@react-three/rapier";
 import { ContactShadows } from "@react-three/drei";
 import { Perf } from "r3f-perf";
+import { LEVEL_COLORS } from "@/lib/levels";
 
 // Carte (ratio proche 320×540)
 const TW = 1.05;
 const TH = 1.7;
 const TT = 0.06;
-
-const LEVEL_COLORS = ["#9bbc0f", "#3b5bff", "#7dd3fc", "#d946ef"];
 
 // Tente en triangle : angle marqué pour un vrai /\
 const THETA = 0.4;

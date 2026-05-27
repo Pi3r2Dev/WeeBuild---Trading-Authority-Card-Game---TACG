@@ -8,7 +8,9 @@
       "PowerShell(npm run build 2>&1)",
       "mcp__plugin_playwright_playwright__browser_resize",
       "PowerShell(npm run dev)",
-      "mcp__plugin_playwright_playwright__browser_close"
+      "mcp__plugin_playwright_playwright__browser_close",
+      "PowerShell(npx tsc --noEmit; \"tsc exit code: $LASTEXITCODE\")",
+      "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed pid $p on 3001\" } else { \"nothing on 3001\" })"
     ]
   }
 }

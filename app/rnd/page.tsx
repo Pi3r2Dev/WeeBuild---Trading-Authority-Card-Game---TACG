@@ -6,13 +6,20 @@ import { Card } from "../components/card/Card";
 import { DEMO_CARDS } from "../components/card/demo";
 import { DevNav } from "../components/DevNav";
 
+const loader = (
+  <div style={{ width: 340, height: 560, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--hub-fg-soft)", fontSize: 12, border: "1px dashed var(--hub-line)", borderRadius: 12 }}>
+    Chargement WebGL…
+  </div>
+);
+
 const HoloCardR3F = dynamic(() => import("../components/r3f/HoloCardR3F"), {
   ssr: false,
-  loading: () => (
-    <div style={{ width: 340, height: 560, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--hub-fg-soft)", fontSize: 12, border: "1px dashed var(--hub-line)", borderRadius: 12 }}>
-      Chargement WebGL…
-    </div>
-  ),
+  loading: () => loader,
+});
+
+const HoloCard3D = dynamic(() => import("../components/r3f/HoloCard3D"), {
+  ssr: false,
+  loading: () => loader,
 });
 
 const N4 = DEMO_CARDS[3]; // lemonde.fr — niveau 4 Holo
@@ -41,6 +48,9 @@ export default function RndPage() {
         </Col>
         <Col label="R3F / Three.js" sub="shader Fresnel + tilt 3D réel · HUD FPS + panneau Leva">
           <HoloCardR3F data={N4} />
+        </Col>
+        <Col label="Voie A ⭐" sub="contenu DOM CSS (pixel-parfait) + plan de foil WebGL fresnel, collés">
+          <HoloCard3D data={N4} />
         </Col>
       </div>
 
