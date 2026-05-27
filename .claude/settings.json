@@ -13,7 +13,9 @@
       "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed pid $p on 3001\" } else { \"nothing on 3001\" })",
       "Bash(rm -rf .next)",
       "Bash(npm run *)",
-      "Bash(echo \"restarted pid $!\")"
+      "Bash(echo \"restarted pid $!\")",
+      "PowerShell(\"=== working tree status ===\")",
+      "PowerShell(\"=== files in 89c43b0 \\(Lot 1 + Voie A\\) ===\")"
     ]
   }
 }

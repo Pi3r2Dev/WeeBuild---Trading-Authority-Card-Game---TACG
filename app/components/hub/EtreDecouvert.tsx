@@ -1,9 +1,12 @@
 import { ACCENT_VIOLET } from "./constants";
-import { ME, MY_SITES } from "./data";
+import { getMe, getMyDeck } from "@/lib/data";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MyHand } from "./MiniCard";
 import { icons } from "./icons";
+
+const ME = getMe();
+const MY_SITES = getMyDeck();
 
 const FILTERS = ["Tech", "IA", "SEO", "Dev", "Productivité"];
 

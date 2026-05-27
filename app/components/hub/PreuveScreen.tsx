@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
-import { MY_SITES, NAV_DECK, PROOF_LIST, type Proof, type ProofStatus } from "./data";
+import { getMyDeck, getNavDeck, getProofs } from "@/lib/data";
+import type { Proof, ProofStatus } from "@/lib/domain";
 import { Body, ScreenHeader, SectionLabel, StatusBar, CreditsBadge } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG, PlayLink } from "./MiniCard";
 import { icons } from "./icons";
+
+const MY_SITES = getMyDeck();
+const NAV_DECK = getNavDeck();
+const PROOF_LIST = getProofs();
 
 const STATUS_META: Record<ProofStatus, { color: string; label: string; icon: (s?: number) => React.ReactElement }> = {
   verified: { color: ACCENT_GREEN, label: "Vérifié", icon: icons.check },

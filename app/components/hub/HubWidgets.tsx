@@ -1,5 +1,5 @@
 import type { CardData } from "../card/types";
-import type { Activity, Suggestion } from "./data";
+import type { Activity, Suggestion } from "@/lib/domain";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
 import { CreditsBadge } from "./primitives";
 import { MiniCardTCG, PlayLink } from "./MiniCard";

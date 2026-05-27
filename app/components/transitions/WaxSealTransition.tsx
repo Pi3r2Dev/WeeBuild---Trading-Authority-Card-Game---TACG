@@ -2,14 +2,14 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "../hub/constants";
-import { NAV_DECK } from "../hub/data";
+import { getNavCard } from "@/lib/data";
 import { CreditsBadge, StatusBar } from "../hub/primitives";
 import { MiniCardTCG } from "../hub/MiniCard";
 import { TransitionFrame } from "./TransitionFrame";
 
 type Phase = "ready" | "stamping" | "sealed";
 
-const target = NAV_DECK.find((c) => c.id === "jdg")!;
+const target = getNavCard("jdg")!;
 
 // Calendrier de la séquence (ms, relatifs au début du cycle).
 const STAMP_DELAY = 1800; // ready → stamping

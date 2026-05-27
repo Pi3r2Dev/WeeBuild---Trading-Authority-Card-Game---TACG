@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "../hub/constants";
-import { NAV_DECK } from "../hub/data";
+import { getNavCard } from "@/lib/data";
 import { StatusBar } from "../hub/primitives";
 import { Card } from "../card/Card";
 import { TransitionFrame } from "./TransitionFrame";
 
-const target = NAV_DECK.find((card) => card.id === "jdg")!;
+const target = getNavCard("jdg")!;
 
 // Dimensions de base de la carte (px), avant mise à l'échelle.
 const CARD_W = 320;

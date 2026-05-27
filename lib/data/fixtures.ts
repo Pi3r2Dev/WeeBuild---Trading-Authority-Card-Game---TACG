@@ -1,32 +1,19 @@
-import type { CardData } from "../card/types";
+import type { CardData, NavCard, Me, Suggestion, Activity, Partner, Topic, Proof } from "@/lib/domain";
 
-/** Carte enrichie pour la navigation (champs map/biome pour l'écosystème). */
-export type NavCard = CardData & { biome?: string; mapX?: number; mapY?: number };
+/**
+ * Données mock, **derrière la frontière** lib/data (D3). Seuls les accesseurs
+ * de `lib/data/index.ts` les exposent ; les écrans n'importent jamais ces
+ * tableaux directement. Le jour où l'infra arrive (Crawl4AI/LiteLLM/pgvector),
+ * on remplace l'implémentation des accesseurs — pas les écrans.
+ */
 
-export interface Me {
-  name: string;
-  initials: string;
-  credits: number;
-  level: number;
-  levelProgress: number;
-}
-
-export interface Suggestion {
-  id: string;
-  kind: "donate" | "promote";
-  title: string;
-  target: string;
-  relevance: number;
-  credits: number;
-  note: string;
-}
-
-export interface Activity {
-  kind: "earn" | "spend" | "pending";
-  delta: string;
-  text: string;
-  when: string;
-}
+/** Jeu de démo : une carte représentative par niveau (N1 → N4). */
+export const DEMO_CARDS: CardData[] = [
+  { id: "alex-recettes", level: 1, domain: "recettes-alex.fr", url: "recettes-alex.fr/galettes", anchor: "recette de galette", element: "sante", thematique: "CUISINE", summary: "Carnet de recettes du quotidien, lectorat famille.", hp: 26, atk: 12, tf: 14, cf: 19, dr: 18, linkType: "dofollow", owner: "Alex M.", status: "dispo", price: 1, edition: "241", editionTotal: "300" },
+  { id: "alex-tech", level: 2, domain: "alex-tech.fr", url: "alex-tech.fr/outils-seo-2026", anchor: "meilleurs outils SEO", element: "tech", thematique: "TECH", summary: "Blog dev personnel, niche outils SEO et IA.", hp: 52, atk: 38, tf: 36, cf: 41, dr: 58, linkType: "dofollow", owner: "Alex M.", status: "dispo", price: 4, edition: "073", editionTotal: "300" },
+  { id: "jdg", level: 3, domain: "journal-du-geek.fr", url: "journal-du-geek.fr/test-rtx", anchor: "comparatif cartes graphiques", element: "media", thematique: "PRESSE", summary: "Média tech national, actu hardware et culture geek.", hp: 72, atk: 66, tf: 64, cf: 60, dr: 74, linkType: "nofollow", owner: "Thomas R.", status: "dispo", price: 14, edition: "012", editionTotal: "300" },
+  { id: "lemonde", level: 4, domain: "lemonde.fr", url: "lemonde.fr/economie/seo-ia", anchor: "référencement et IA générative", element: "media", thematique: "PRESSE", summary: "Quotidien de référence. Autorité éditoriale exceptionnelle.", hp: 95, atk: 92, tf: 92, cf: 88, dr: 96, linkType: "dofollow", owner: "Le Monde", status: "verrouillee", price: 47, edition: "001", editionTotal: "300" },
+];
 
 export const ME: Me = {
   name: "Alex M.",
@@ -37,99 +24,15 @@ export const ME: Me = {
 };
 
 export const MY_SITES: CardData[] = [
-  {
-    id: "alex-tech",
-    level: 2,
-    domain: "alex-tech.fr",
-    url: "alex-tech.fr",
-    anchor: "",
-    element: "tech",
-    thematique: "TECH",
-    summary: "Blog dev personnel, niche outils SEO et IA.",
-    hp: 52,
-    atk: 38,
-    tf: 36,
-    cf: 41,
-    dr: 58,
-    linkType: "dofollow",
-    owner: "Alex M.",
-    status: "dispo",
-    price: 4,
-    edition: "073",
-    editionTotal: "300",
-  },
-  {
-    id: "alex-recettes",
-    level: 1,
-    domain: "recettes-alex.fr",
-    url: "recettes-alex.fr",
-    anchor: "",
-    element: "sante",
-    thematique: "CUISINE",
-    summary: "Carnet de recettes du quotidien, lectorat famille.",
-    hp: 26,
-    atk: 12,
-    tf: 14,
-    cf: 19,
-    dr: 18,
-    linkType: "dofollow",
-    owner: "Alex M.",
-    status: "dispo",
-    price: 1,
-    edition: "241",
-    editionTotal: "300",
-  },
-  {
-    id: "alex-bourse",
-    level: 1,
-    domain: "bourse-debutant.fr",
-    url: "bourse-debutant.fr",
-    anchor: "",
-    element: "finance",
-    thematique: "FINANCE",
-    summary: "Pédagogie investissement pour débutants.",
-    hp: 34,
-    atk: 21,
-    tf: 22,
-    cf: 24,
-    dr: 28,
-    linkType: "dofollow",
-    owner: "Alex M.",
-    status: "dispo",
-    price: 2,
-    edition: "094",
-    editionTotal: "300",
-  },
+  { id: "alex-tech", level: 2, domain: "alex-tech.fr", url: "alex-tech.fr", anchor: "", element: "tech", thematique: "TECH", summary: "Blog dev personnel, niche outils SEO et IA.", hp: 52, atk: 38, tf: 36, cf: 41, dr: 58, linkType: "dofollow", owner: "Alex M.", status: "dispo", price: 4, edition: "073", editionTotal: "300" },
+  { id: "alex-recettes", level: 1, domain: "recettes-alex.fr", url: "recettes-alex.fr", anchor: "", element: "sante", thematique: "CUISINE", summary: "Carnet de recettes du quotidien, lectorat famille.", hp: 26, atk: 12, tf: 14, cf: 19, dr: 18, linkType: "dofollow", owner: "Alex M.", status: "dispo", price: 1, edition: "241", editionTotal: "300" },
+  { id: "alex-bourse", level: 1, domain: "bourse-debutant.fr", url: "bourse-debutant.fr", anchor: "", element: "finance", thematique: "FINANCE", summary: "Pédagogie investissement pour débutants.", hp: 34, atk: 21, tf: 22, cf: 24, dr: 28, linkType: "dofollow", owner: "Alex M.", status: "dispo", price: 2, edition: "094", editionTotal: "300" },
 ];
 
 export const AI_SUGGESTIONS: Suggestion[] = [
-  {
-    id: "s1",
-    kind: "donate",
-    title: "Marie L. cherche un article tech",
-    target: "recettes-alex.fr → marie-cuisine.fr",
-    relevance: 0.92,
-    credits: 8,
-    note: "Audience cuisine + curiosité dev. Niche connectable.",
-  },
-  {
-    id: "s2",
-    kind: "donate",
-    title: "Thomas R. souhaite vous citer",
-    target: "alex-tech.fr → journal-du-geek.fr",
-    relevance: 0.88,
-    credits: 12,
-    note: 'Validez le sujet "outils SEO 2026" qu\'il propose.',
-  },
-  {
-    id: "s3",
-    kind: "promote",
-    title: "Soyez cité dans la niche finance",
-    target: "alex-tech.fr → 3 éditeurs ciblés",
-    relevance: 0.74,
-    credits: -12,
-    note: "3 sites pertinents en finance vous découvriraient.",
-  },
+  { id: "s1", kind: "donate", title: "Marie L. cherche un article tech", target: "recettes-alex.fr → marie-cuisine.fr", relevance: 0.92, credits: 8, note: "Audience cuisine + curiosité dev. Niche connectable." },
+  { id: "s2", kind: "donate", title: "Thomas R. souhaite vous citer", target: "alex-tech.fr → journal-du-geek.fr", relevance: 0.88, credits: 12, note: 'Validez le sujet "outils SEO 2026" qu\'il propose.' },
+  { id: "s3", kind: "promote", title: "Soyez cité dans la niche finance", target: "alex-tech.fr → 3 éditeurs ciblés", relevance: 0.74, credits: -12, note: "3 sites pertinents en finance vous découvriraient." },
 ];
 
 export const RECENT_ACTIVITY: Activity[] = [
@@ -156,14 +59,6 @@ function navById(id: string): NavCard {
   return card;
 }
 
-export interface Partner {
-  id: string;
-  card: NavCard;
-  relevance: number;
-  credits: number;
-  reason: string;
-}
-
 /** Partenaires suggérés par l'IA pour le flux « Donner ». */
 export const PARTNERS_SUGGESTED: Partner[] = [
   { id: "jdg", card: navById("jdg"), relevance: 0.94, credits: 12, reason: "Audience tech compatible. Niche outils SEO ouverte." },
@@ -171,30 +66,11 @@ export const PARTNERS_SUGGESTED: Partner[] = [
   { id: "tom", card: navById("tom-tech"), relevance: 0.68, credits: 5, reason: "Hardware reviews. Lecteurs friends-of." },
 ];
 
-export interface Topic {
-  id: string;
-  title: string;
-  angle: string;
-  fit: number;
-  credits: number;
-}
-
 export const AI_TOPICS: Topic[] = [
   { id: "t1", title: "Les 7 outils SEO indispensables en 2026", angle: "top list utile, axe pratique", fit: 0.91, credits: 12 },
   { id: "t2", title: "Pourquoi l'IA générative bouleverse le link-building", angle: "analyse, point de vue", fit: 0.86, credits: 10 },
   { id: "t3", title: "Trust Flow vs DR : que mesure-t-on vraiment ?", angle: "pédagogique, démystification", fit: 0.82, credits: 9 },
 ];
-
-export type ProofStatus = "verified" | "capturing" | "pending" | "broken";
-
-export interface Proof {
-  id: string;
-  target: string;
-  date: string;
-  status: ProofStatus;
-  link: string;
-  credits: number;
-}
 
 /** Sceaux de preuve émis (captures attestant les liens posés). */
 export const PROOF_LIST: Proof[] = [

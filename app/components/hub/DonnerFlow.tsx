@@ -2,11 +2,15 @@
 
 import { useState, type CSSProperties } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
-import { AI_TOPICS, MY_SITES, PARTNERS_SUGGESTED } from "./data";
+import { getTopics, getMyDeck, getPartners } from "@/lib/data";
 import { Body, CreditsBadge, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG, PlayLink } from "./MiniCard";
 import { icons } from "./icons";
+
+const MY_SITES = getMyDeck();
+const PARTNERS_SUGGESTED = getPartners();
+const AI_TOPICS = getTopics();
 
 const TOTAL = 4;
 

@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET, ELEMENT_COLOR } from "./constants";
-import { ME, NAV_DECK } from "./data";
+import { getMe, getNavDeck } from "@/lib/data";
 import { CreditsBadge, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG } from "./MiniCard";
 import { icons } from "./icons";
+
+const ME = getMe();
+const NAV_DECK = getNavDeck();
 
 const LINKS: [string, string][] = [
   ["tom-tech", "jdg"],

@@ -1,9 +1,15 @@
 import { ACCENT_VIOLET } from "./constants";
-import { AI_SUGGESTIONS, ME, MY_SITES, NAV_DECK, RECENT_ACTIVITY } from "./data";
+import { getSuggestions, getMe, getMyDeck, getNavDeck, getRecentActivity } from "@/lib/data";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MyHand } from "./MiniCard";
 import { AISuggestionTCG, ActivityRow } from "./HubWidgets";
+
+const ME = getMe();
+const MY_SITES = getMyDeck();
+const NAV_DECK = getNavDeck();
+const AI_SUGGESTIONS = getSuggestions();
+const RECENT_ACTIVITY = getRecentActivity();
 
 /** Écran d'accueil après login : solde, progression, main, suggestions IA, activité. */
 export function HubDashboard() {

@@ -1,5 +1,5 @@
 import { Card } from "../components/card/Card";
-import { DEMO_CARDS } from "../components/card/demo";
+import { getDemoCards } from "@/lib/data";
 import type { CardState } from "../components/card/types";
 import { DevNav } from "../components/DevNav";
 
@@ -18,6 +18,7 @@ const PIXEL_LABEL = {
 } as const;
 
 export default function CardsShowcase() {
+  const DEMO_CARDS = getDemoCards();
   const sample = DEMO_CARDS[1];
 
   return (
