@@ -10,6 +10,8 @@ Cap nord long terme : le **GEO** *(Generative Engine Optimization)* — être **
 
 `SEO` · `GEO` · `Generative Engine Optimization` · `link building` · `netlinking` · `trading card game` · `gamification` · `Next.js 15` · `React 19` · `TypeScript` · `React Three Fiber` · `WebGL`
 
+**🇫🇷 Français** · [🇬🇧 English](#english)
+
 ![Hub — tableau de bord WeBuild : solde de crédits, main de cartes, suggestions IA](docs/assets/hub.webp)
 
 </div>
@@ -290,5 +292,307 @@ POC front-end **fonctionnel** (UI hi-fi + capture→carte de bout en bout). Poin
 
 *WeBuild — Trading Authority Game.* Construis ton autorité **proprement et durablement**.
 Le SEO comme un jeu ; la visibilité comme une collection ; le GEO comme horizon.
+
+</div>
+
+---
+---
+
+<a id="english"></a>
+
+<div align="center">
+
+# 🇬🇧 English
+
+### SEO link building, turned into a collectible trading card game.
+
+**Declare your websites. The platform captures them, measures their authority, and generates a card whose rarity — Game Boy → Super NES → PlayStation 2 → holographic — reflects their real SEO strength. Then you build editorial links between members.**
+
+Long-term north star: **GEO** *(Generative Engine Optimization)* — being **cited by generative AI** (AI Overviews, Perplexity, ChatGPT), not just ranked on Google.
+
+`SEO` · `GEO` · `Generative Engine Optimization` · `link building` · `backlinks` · `trading card game` · `gamification` · `Next.js 15` · `React 19` · `TypeScript` · `React Three Fiber` · `WebGL`
+
+[🇫🇷 Français](#webuild--trading-authority-game) · **🇬🇧 English**
+
+![WeBuild hub dashboard: credit balance, hand of cards, AI suggestions](docs/assets/hub.webp)
+
+</div>
+
+---
+
+## Contents
+
+- [In one sentence](#in-one-sentence)
+- [Why it's new](#why-its-new)
+- [The card: authority made visible](#the-card-authority-made-visible)
+- [From real site to real card (live pipeline)](#from-real-site-to-real-card-live-pipeline)
+- [The product screens](#the-product-screens)
+- [How it works](#how-it-works)
+- [Google compliance & red lines](#google-compliance--red-lines)
+- [The vision: from SEO to GEO](#the-vision-from-seo-to-geo)
+- [The stack, traced](#the-stack-traced)
+- [Pipeline architecture](#pipeline-architecture)
+- [Quick start](#quick-start)
+- [Repository structure](#repository-structure)
+- [Status & roadmap](#status--roadmap)
+
+---
+
+## In one sentence
+
+**WeBuild — Trading Authority Game** is a web app that turns SEO link building (*backlink building*) into a **collectible trading card game (TCG)**. Members sign in with Google, declare their websites; the platform **captures and summarizes** each site and generates a **card** whose **visual rarity is indexed to the site's real authority**. Members then build **editorial** links with each other — no link buying, no reciprocal swaps, no link farms.
+
+> It's **editorial link building between site owners**, not a link marketplace.
+
+---
+
+## Why it's new
+
+Link building is dry, opaque, and often equated with spam. WeBuild makes it **legible and motivating** by fusing three worlds nobody had brought together:
+
+1. **SEO** — already a strategy game in itself;
+2. **the codes of the TCG** — rarity, collection, cards, stats;
+3. **an aesthetic that travels through gaming history** (Game Boy → SNES → PS2 → holographic).
+
+The key novelty: **visual rarity is derived from the site's real authority** — never hand-entered. The card *is* an instant read of SEO strength. And the game mechanic **aligns the player with best practices** (relevant links born from real content) rather than raw quantity.
+
+---
+
+## The card: authority made visible
+
+Each site = one card. Its **level (1 to 4)** is derived from its authority and drives its entire aesthetic. Four skins, four visual states — built **CSS-first** (foil = `conic-gradient` + `mix-blend-mode`, scanlines, bloom, 3D flip, pointer tilt), for near-zero impact on the product bundle.
+
+![The 4 rarity levels (Game Boy, Super NES, PS2, Holo) and the 4 states (available, in exchange, acquired, locked)](docs/assets/cards.webp)
+
+| Level | Skin | Means | Signature effects |
+|---|---|---|---|
+| **1** | 🟩 Game Boy | starter site/link | LCD scanlines, 4 olive greens |
+| **2** | 🟦 Super NES | average authority | cartridge bevel, Mode 7 perspective |
+| **3** | 🔷 PlayStation 2 | strong authority | radial bloom, lens flare, 3D orb |
+| **4** | 🌈 Holographic rare | exceptional authority (major media) | iridescent foil, golden glitch, particles |
+
+> **HP = trust, ATK = reach.** Stats, too, are derived from the site's signals.
+
+---
+
+## From real site to real card (live pipeline)
+
+The `/capturer` route is a **working end-to-end vertical slice**: paste a URL → **Crawl4AI** captures the page → **LiteLLM** extracts the meaning (summary, topic) → an **authority score** (v1, on-page) derives the level and stats → the `<Card/>` component renders a **real card**.
+
+![Capturing a site: example.com captured, authority score 15/100, Game Boy card generated with the transparent signal breakdown](docs/assets/capturer-result.webp)
+
+The score is **transparent and indicative**: every signal (content depth, internal linking, metadata, outbound citations, structure, media, HTTPS) is exposed as-is. A banner states it without ambiguity:
+
+> ⚠️ *Indicative score — on-page signals only (v1). No Search Console, backlinks, or GEO yet. **A game indicator, not a ranking promise.***
+
+---
+
+## The product screens
+
+Mobile-first interface (390×844), retro-gaming universe, neon-purple accent = the action; cyber-green = credits and validation.
+
+### 🗺️ Ecosystem — the world map of allies
+
+Allied sites laid out in **thematic biomes** (Tech, Press, Finance, Cooking, Encyclopedia), RPG-style. Tapping a node opens a target card and its "Donate from your hand" CTA.
+
+![Ecosystem: stylized map with thematic biomes, site nodes and the selected target's drawer](docs/assets/ecosysteme.webp)
+
+### ↗️ Donate a link — a 4-step AI flow
+
+The AI assists at every step, **the human always validates**. Left to right: pick a card from your hand (AI Fit + estimated gain) → pick a territory → **the AI proposes the article** (topic + paragraph with the editable anchor highlighted) → publish and trigger the proof capture.
+
+| 1 · Pick your card | 3 · The AI proposes the article |
+|---|---|
+| ![Donate step 1: choosing the card to play, AI recommendation and credit gain](docs/assets/donner.webp) | ![Donate step 3: AI-generated article with highlighted, editable anchor and a "no automatic publishing" disclaimer](docs/assets/donner-3.webp) |
+
+> *"The AI suggests, you validate. No automatic publishing."* — the rule is in the UI.
+
+### ◆ Get discovered — "raise the banner"
+
+You **spend credits** so the AI proposes one of your cards to aligned editors. Budget slider, AI estimates (targeted editors, suggestions, lead time), niche filters — and the red line spelled out in plain sight.
+
+![Get discovered: selecting a card to raise, credit budget slider, AI estimates and a "no citation guarantee" banner](docs/assets/decouvrir.webp)
+
+> *"No citation guarantee. You pay for editorial discovery, not for a backlink."*
+
+### ⌖ Proof seals — the moral contract
+
+When a link is published, the platform **captures the page** to prove it really exists (screenshot + link detection). This is what **credits the donation** and keeps the network's trust. The detail view shows the capture with the detected anchor highlighted and the verification timeline.
+
+![Proof seal detail: capture of the target page, highlighted detected anchor, "LINK DETECTED" badge and verification history](docs/assets/preuve-detail.webp)
+
+### ✨ Choreographed transitions & 3D hero
+
+5 key transitions (card flight, wax seal, credit rain, onboarding…) built with `motion`, plus **WebGL hero moments** reserved for R&D routes: a house of cards with **real-time physics** (Rapier) and 3D holographic cards with a **Fresnel foil** — isolated from the product bundle via `dynamic(ssr:false)`.
+
+| Choreographed transitions | 3D holographic cards (R3F) |
+|---|---|
+| ![Choreographed transitions: card flight and wax seal](docs/assets/transitions.webp) | ![A/B of 3D holographic cards: baked texture + native foil vs live DOM](docs/assets/chateau-cartes.webp) |
+
+---
+
+## How it works
+
+```
+Google sign-in → Declare your URLs → Automatic capture + summary
+   → Card (authority → level / stats / image) → Editorial matching (AI)
+      → Link donation (AI proposes, human validates) → Proof seal → Credits
+```
+
+- **Donor mechanic (no bartering).** You **donate** a relevant editorial link to another member → you **earn credits**. You **spend** credits to be promoted to editors likely to cite you. The flow is **one-directional**: the one you donate to is not the one who cites you.
+- **Credits** (symbol `◆`) are the game currency. They **decouple donating from receiving** — that's what keeps the network natural, with no forced reciprocity.
+- **The card image** = user upload (or auto-derived from the site), reprocessed by a **deterministic per-level filter** (free) or a **generative remaster** (opt-in) — always finished by the level filter, the guarantor of universe consistency.
+- **Connecting your Google Search Console** (optional, recommended) provides Google's real data for a fairer authority score **and proves site ownership**.
+
+---
+
+## Google compliance & red lines
+
+The product is designed to **align with what Google rewards** — editorial, relevant links born from real content — and to **avoid the patterns it penalizes**. Five red lines, never crossed:
+
+1. **No link-juice promises** — never "guaranteed dofollow", never "DA boost".
+2. **No 1:1 reciprocal swaps or sealed A→B→C chains** — these are precisely the schemes Google tracks (reciprocal links, *link wheels*). The donor model avoids them **by construction**.
+3. **The AI suggests, the human ALWAYS validates** — no automatic publishing.
+4. **Rarity / level are derived**, never hand-entered.
+5. **Proof = the capture** — no honor-system declarations.
+
+> **Anti-footprint** is a design requirement, not an option: anchor diversity, semantic dedup, graph anti-cycle, a "naturalness score". Industrializing suggestions without it would recreate the exact network footprint Google detects.
+
+---
+
+## The vision: from SEO to GEO
+
+Search is changing: more and more answers come from **generative AI** that **cites sources** rather than showing ten blue links. Being visible tomorrow means being **cited by these engines** — that's **GEO** *(Generative Engine Optimization)*.
+
+WeBuild is built for that: GEO rewards exactly what we build — **relevant, repeated mentions** of a brand, in **quality editorial content**, on **coherent topics**. Where classic SEO chased the dofollow link, GEO values the **mention and the citation**, which makes the editorial approach *naturally aligned*.
+
+> **SEO isn't dying, it's converging.** We talk about **SEO → GEO convergence**: we widen the visibility surface, we don't bet on one disappearing for the other. The hard problems remain the **authority metric** and **attribution** (proving LLM citations).
+
+---
+
+## The stack, traced
+
+> **Status: front-end POC** (Next.js 15 foundation). The hi-fi UI and card rendering are the priority; the full AI pipeline + tracing are **wired in progressively** on the shared `augmenter.pro` infra.
+
+### ✅ Implemented in this repository
+
+| Layer | Choice | Detail |
+|---|---|---|
+| **Framework** | **Next.js 15** (App Router) + **React 19** + **TypeScript** | Turbopack build, `reactStrictMode` |
+| **Styling** | **tokens.css + CSS Modules** (no Tailwind) | design tokens ported from the hi-fi handoff |
+| **Fonts** | `next/font` — Inter, Orbitron, Press Start 2P, VT323 | self-hosted, `display: swap` |
+| **Animation / state** | **`motion`** (transitions) + **`zustand`** (game state) | — |
+| **Card rendering** | **CSS-first** (foil `conic-gradient`, scanlines, `rotateY` flip, pointer tilt) | ~0 bundle, light GPU |
+| **3D / hero** | **React Three Fiber** + drei + **Rapier** (physics) + leva + r3f-perf + html-to-image | **isolated to R&D routes** via `dynamic(ssr:false)` — out of the product bundle |
+| **Web capture** | `lib/services` — **Firecrawl** (primary) → **Crawl4AI** (fallback), orchestrated by `captureSite()` | **SSRF** guard (rejects private/loopback IPs), retry + backoff |
+| **LLM** | `lib/services/litellm.ts` — **LiteLLM** gateway (`chat` / `chatJson`) | fallback if no key |
+| **Authority** | `lib/authority/score.ts` — **pure** composite score, v1 on-page, transparent | recalibrate = edit weights + bands |
+| **Tests** | **Vitest** — `scrape` (success/errors/retry) + SSRF guard, `fetch`/DNS mocked | `npm test` |
+
+### 🎯 Target (reuses the `augmenter.pro` infra, deployed via Coolify)
+
+- **Auth**: Better Auth + Google OAuth
+- **Async**: Celery + Redis (tiered workers: triage → tier 1/2/3)
+- **Datastore**: PostgreSQL 16 + **pgvector** (1536d) via Prisma; semantic matching = embed → pgvector search → cross-encoder rerank
+- **LiteLLM models** (semantic aliases): `fast4b` (extraction), `groq-fast` (scoring), `gemma4-vision` (multimodal), `groq-qwen3-32b` (FR generation), `gte-qwen2-local` (embeddings)
+- **Generative image**: ComfyUI (opt-in remaster); moderation via `gemma4-vision`
+- **Observability**: Langfuse (LLM traces), Flower (Celery), Bull Board (BullMQ)
+
+---
+
+## Pipeline architecture
+
+```mermaid
+flowchart LR
+    A[Auth · Google OAuth] --> B[Capture · Crawl4AI / Firecrawl]
+    B --> C[Summary + extraction · Celery + LiteLLM]
+    C --> D[Card · authority → level / stats / image]
+    D --> E[Matching · pgvector + rerank + anti-cycle]
+    E --> F[Editorial suggestions · FR generation]
+    F --> G[Human-validated donation]
+    G --> H[Proof seal · capture + link detection]
+    H --> I[Credits ◆]
+    I -.spend.-> E
+```
+
+---
+
+## Quick start
+
+```bash
+# 1. Install
+npm install
+
+# 2. Run dev (Turbopack)
+npm run dev          # http://localhost:3000
+
+# 3. Lint / test
+npm run lint
+npm test             # Vitest (no real network calls: fetch + DNS mocked)
+
+# 4. Production build
+npm run build && npm run start
+```
+
+To enable **real capture** on `/capturer`, copy `.env.local.example` → `.env.local` and fill in `FIRECRAWL_API_URL`, `CRAWL4AI_BASE_URL`, `LITELLM_API_KEY` as needed. Without a LiteLLM key, extraction falls back gracefully; without a reachable Firecrawl, capture goes straight to the public Crawl4AI fallback.
+
+### Routes
+
+| Route | Screen |
+|---|---|
+| `/` | Hub — dashboard (balance, hand, AI suggestions, activity) |
+| `/ecosysteme` | World map of allied sites (biomes) |
+| `/donner` | Donate a link — 4-step AI flow |
+| `/decouvrir` | Get discovered — raise the banner |
+| `/preuves` | Proof seals (list + detail) |
+| `/capturer` | **Real vertical slice**: URL → card |
+| `/cards` | Card template showcase (4 levels × 4 states) |
+| `/transitions` | Choreographed transitions (auto-loop + Replay) |
+| `/rnd`, `/chateau`, `/chateau-cartes` | 3D R&D (R3F / Rapier / shaders) — out of the product bundle |
+
+---
+
+## Repository structure
+
+```
+app/
+├── components/
+│   ├── card/        # CSS-first card template (Card, Front/Back, SiteShot, tilt)
+│   ├── hub/         # platform screens (Hub, Ecosystem, Donate, Discover, Proofs)
+│   ├── r3f/         # isolated 3D: physics castle, holo foil, DOM→texture bake
+│   └── transitions/ # choreographed transitions
+├── (routes)/        # /, /ecosysteme, /donner, /decouvrir, /preuves, /capturer…
+└── styles/tokens.css
+lib/
+├── services/        # capture (Firecrawl/Crawl4AI), SSRF guard, LiteLLM
+├── authority/       # authority score (pure) + LLM extraction
+├── domain/          # entities & card mapping
+├── levels/          # levels 1–4
+└── data/            # demo fixtures
+docs/                # product doctrine (FR) — source of truth
+└── assets/          # screenshots used in this README
+```
+
+📚 **Product doctrine** (French, source of truth):
+[FAQ](docs/faq.md) · [gameplay & technical](docs/draft-gameplay-technique.md) · [GEO vision](docs/draft-vision-geo.md) · [authority metric](docs/draft-metrique-autorite.md) · [AI pipeline](docs/draft-pipeline-ia.md) · [design system](docs/draft-charte-graphique.md) · [3D / R3F notes](docs/draft-rendu-3d.md)
+
+---
+
+## Status & roadmap
+
+A **working** front-end POC (hi-fi UI + end-to-end capture→card). Still **open** items (not "truth" until decided):
+
+- 🚧 **Authority metric calibration** — SEO/GEO weights, level thresholds, anti-fraud (architecture locked: Authority Score = hybrid SEO incl. Search Console + GEO proxy/Sonar).
+- 🚧 **Credits calibration** — the form is locked (conservative currency, amortized gain, clawback); the numbers remain (BASE, thresholds, caps).
+- 🚧 **Image settings** — per-level filter recipes + generative LoRAs.
+- 🚧 **Moral contract** — re-capture frequency, cheating detection (cloaking, JS links, hidden nofollow).
+- 🚧 **Progression / meta-game** — collection, power growth, quests.
+
+---
+
+<div align="center">
+
+*WeBuild — Trading Authority Game.* Build your authority **cleanly and durably**.
+SEO as a game; visibility as a collection; GEO as the horizon.
 
 </div>
