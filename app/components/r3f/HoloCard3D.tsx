@@ -6,6 +6,7 @@ import { useControls } from "leva";
 import * as THREE from "three";
 import { CardFront } from "../card/CardFront";
 import type { CardData } from "../card/types";
+import { FOIL_DEFAULTS, createFoilMaterial } from "./foilShader";
 
 /**
  * Voie A (cf. docs/draft-cartes-couches-effets.md §4) :
@@ -27,65 +28,6 @@ const MAX_TILT = 14; // deg, = usePointerTilt max
 /** fov vertical tel que la projection Three == la perspective CSS (1400px) sur une carte de 540px. */
 const FOV = (2 * Math.atan(CARD_H / 2 / PERSP) * 180) / Math.PI;
 
-const FOIL_DEFAULTS = { foil: 0.9, fresnel: 2.4, bands: 3 };
-
-const VERT = /* glsl */ `
-  varying vec2 vUv;
-  varying vec3 vN;
-  varying vec3 vV;
-  void main() {
-    vUv = uv;
-    vec4 wp = modelMatrix * vec4(position, 1.0);
-    vN = normalize(mat3(modelMatrix) * normal);
-    vV = normalize(cameraPosition - wp.xyz);
-    gl_Position = projectionMatrix * viewMatrix * wp;
-  }
-`;
-
-const FRAG = /* glsl */ `
-  uniform float uTime;
-  uniform vec2 uPointer;
-  uniform float uFoil;
-  uniform float uFresnel;
-  uniform float uBands;
-  varying vec2 vUv;
-  varying vec3 vN;
-  varying vec3 vV;
-
-  vec3 hue2rgb(float h) {
-    vec3 c = abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0;
-    return clamp(c, 0.0, 1.0);
-  }
-
-  void main() {
-    // Angle de vue RÉEL : la normale tourne avec le tilt 3D du plan.
-    float vd = clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0);
-    float fres = pow(1.0 - vd, uFresnel);
-
-    float sweep = (vUv.x * 0.6 - vUv.y * 0.4) * uBands
-                + (1.0 - vd) * 2.0
-                + uPointer.x * 1.2 - uPointer.y * 0.8
-                + uTime * 0.05;
-    vec3 foil = pow(hue2rgb(fract(sweep)), vec3(0.8));
-    float stripe = 0.5 + 0.5 * sin(sweep * 6.2831853);
-
-    // Base faible (face-on discret → le conic CSS sous-jacent domine au repos),
-    // l'iridescence monte avec l'angle de vue (rim) = ce que le CSS ne sait qu'approximer.
-    float sheen = mix(0.02, 0.18, stripe);
-    float rim = smoothstep(0.0, 1.0, fres);
-    float strength = clamp(uFoil * (sheen + rim * 0.85), 0.0, 1.0);
-
-    vec3 col = foil * strength;
-
-    // Glints fins (scintillent surtout au tilt)
-    float n = fract(sin(dot(floor(vUv * 260.0), vec2(12.9898, 78.233)) + uTime * 1.5) * 43758.5453);
-    col += vec3(step(0.993, n)) * (0.12 + rim * 0.5);
-
-    // Sortie destinée a un blend CSS screen : le noir n'ajoute rien, le foil eclaircit.
-    gl_FragColor = vec4(col, 1.0);
-  }
-`;
-
 interface Tilt {
   tRx: number;
   tRy: number;
@@ -104,23 +46,7 @@ function FoilMesh({ tilt, wrap }: { tilt: React.MutableRefObject<Tilt>; wrap: Re
     bands: { value: FOIL_DEFAULTS.bands, min: 1, max: 8, step: 0.5 },
   });
 
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: { value: 0 },
-          uPointer: { value: new THREE.Vector2() },
-          uFoil: { value: FOIL_DEFAULTS.foil },
-          uFresnel: { value: FOIL_DEFAULTS.fresnel },
-          uBands: { value: FOIL_DEFAULTS.bands },
-        },
-        vertexShader: VERT,
-        fragmentShader: FRAG,
-        transparent: true,
-        depthWrite: false,
-      }),
-    []
-  );
+  const material = useMemo(() => createFoilMaterial(), []);
 
   useEffect(() => () => material.dispose(), [material]);
 

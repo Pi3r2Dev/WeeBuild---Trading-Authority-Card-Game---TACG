@@ -107,14 +107,49 @@ Un vrai château de cartes est **quasi-instable** en rigid-body sim : placé en 
 - **tilt sans re-render** : écrire des **CSS variables / uniforms** en `requestAnimationFrame` plutôt que du `useState` (perf). Respecter `prefers-reduced-motion`.
 - **Ne pas enchaîner `next build` (webpack) puis `next dev --turbopack`** sur le même `.next` → erreur `Cannot find module '.../[turbopack]_runtime.js'` (artefacts mixés). **Nettoyer `.next`** avant de relancer le dev.
 - **Process dev « zombie »** : couper la tâche ne tue pas toujours le `node` enfant → il garde le port 3000, le nouveau dev passe sur **3001** (on croit voir l'ancien build). Tuer par port avant de relancer.
-- **Captures headless (SwiftShader) peu fiables** pour les scènes WebGL (surtout ombres + timing) → **valider dans un vrai navigateur**. Le `GPU 0.000ms` du HUD perf = timer GPU non supporté en headless, **pas** « rien dessiné ».
+- **Captures headless (SwiftShader) peu fiables** pour les scènes WebGL (surtout ombres + timing) → **valider dans un vrai navigateur**. Le `GPU 0.000ms` du HUD perf = timer GPU non supporté en headless, **pas** « rien dessiné » — pour trancher, **compter les draw calls** (`gl.drawElements`/`gl.info.render.calls`), pas le timer.
+- **Rapier (`<Physics>`) + StrictMode dev → écran noir au premier chargement dur** (résolu 2026-05-27, [CardCastle.tsx](../app/components/r3f/CardCastle.tsx)). En dev, `reactStrictMode: true` monte le `<Canvas>` deux fois ; le WASM de Rapier **suspend** le 1er mount, ce qui désordonne le cycle de vie et fait que R3F appelle `forceContextLoss()` **après** que le 2ᵉ root a créé son contexte → `THREE.WebGLRenderer: Context Lost.` sur le canvas vivant → noir. Naviguer ailleurs puis revenir (remount client propre) « répare ». **Fix** : isoler la suspense dans sa propre frontière `<Suspense fallback={null}>` autour de `<Physics>` (le root WebGL se monte alors avant que Rapier ne se résolve). Symptôme **dev-only** (StrictMode ne double-monte pas en prod), mais le fix est inoffensif en prod. Les routes R3F **sans** Rapier (`/rnd`) n'étaient pas touchées.
+- **DOM→texture (`html-to-image`)** : la lib **inline les styles du nœud capturé** dans le SVG généré → si l'offset hors-écran (`position:fixed; left:-99999px`) est posé **sur ce nœud**, la carte part hors-cadre → **capture vide**. Mettre l'offset sur un **conteneur externe**, capturer le nœud interne « propre ». Avant capture : `await document.fonts.ready` (sinon police de fallback) ; `getFontEmbedCSS(node)` **une seule fois** réutilisé pour N captures ; `pixelRatio` ≥ 2–3 pour que le **petit texte (6–9px) soit net** ; texture `colorSpace = SRGBColorSpace` + `anisotropy` élevé (net aux angles rasants).
+- **drei `<Html transform>`** : le `scale` n'est **pas intuitif** (magnification par la perspective CSS3D — mesuré : `scale 0.45` → carte de **1537px** de haut). **Mesurer** plutôt que deviner ; attention `getBoundingClientRect()` **ignore les transforms 3D** (renvoie la boîte de layout) → mesurer l'élément réellement transformé (`matrix3d`). Overlay DOM **clippé aux bords du canvas** et **non éclairé** par la scène WebGL ; `touch-action: none` requis.
 
 ---
 
-## 9. Ce qui reste / à arbitrer
+## 9. Interaction château — tap = pousser, glisser = attraper (souris + tactile)
+
+Un **seul code** via les **Pointer Events** (souris/tactile/stylet unifiés) : on ne raisonne pas « mobile vs desktop » mais **gestes**. Implémenté dans [CardCastle.tsx](../app/components/r3f/CardCastle.tsx) (`Grabbable`), tout le « feel » en constantes en tête de fichier.
+
+- **Désambiguïsation tap / drag** au **seuil de déplacement** (~8px) : sous le seuil au `pointerup` = **tap** → impulsion (pousser) ; au-delà = **drag** → on attrape. *(Conséquence : le push passe du `pointerdown` au `pointerup`.)*
+- **Attraper = kinématique** : la carte saisie passe `type="kinematicPosition"` et suit le pointeur projeté sur un **plan face-caméra** à la profondeur de saisie (`raycaster.ray.intersectPlane`). Les autres passent `dynamic` (retirer une carte porteuse effondre le reste).
+- **Zone focus au centre** : plus le pointeur approche du centre écran (`|ndc|` faible), plus la carte **avance vers la caméra et se redresse de face** (lecture pleine) ; hors-centre elle revient à sa pose de base + légère inclinaison (`smoothstep` + `lerp` + `faceCamera`).
+- **Relâché** : repasse `dynamic`, **pas de lancer** → elle **tombe** avec un léger couple aléatoire.
+- **Pièges** : `gl.domElement.setPointerCapture()` (entouré d'un `try/catch`) sinon un drag rapide sort du mesh et `pointermove` cesse de tomber ; écouter `pointermove/up/cancel` sur `gl.domElement` ; `touch-action: none` (sinon scroll/zoom de page sur mobile) ; **un corps kinématique ignore les collisions** → **clamper le Y cible** (`GROUND_MIN_Y`) pour ne pas passer sous le sol.
+
+---
+
+## 10. Habillage des cartes du château — DOM→texture (= « Voie B »), A/B tranché
+
+Pour des cartes **physiques qui culbutent**, impossible de poser du DOM dessus → il faut une **texture** : c'est la **Voie B** de [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) §4. Banc d'essai dédié : route **`/chateau-cartes`** ([page](../app/chateau-cartes/page.tsx)), carte unique comparée côte à côte.
+
+- **A/B testé** (2 manières de faire la Voie B) :
+  - **Bake** — `CardFront` rendue hors-écran → `html-to-image` `toCanvas` → `CanvasTexture` sur la face, + **foil fresnel natif** (plan additif). [CardBakeTexture.tsx](../app/components/r3f/CardBakeTexture.tsx).
+  - **DOM vivant** — `<Html transform>` de drei (carte DOM attachée à la matrice 3D). [CardDomLive.tsx](../app/components/r3f/CardDomLive.tsx).
+- **Verdict : bake** pour les cartes du château → vraie **matière 3D** (éclairable, ombrable, **culbute**, foil **réactif à l'angle réel**, ~0 GPU après bake, compatible instancing). Le **DOM vivant** est pixel-parfait mais reste un **overlay plat** (non éclairé, occlusion approximative, clippe, N sous-arbres live) → réservé à une carte **posée/plate** (futur écran de détail).
+- **Câblé** dans [CardCastle.tsx](../app/components/r3f/CardCastle.tsx) :
+  - **Recto + verso bakés** par carte (`CardFront` + `CardBack`) → 4 cartes = **8 textures** réutilisées sur les 15 emplacements ; mémoire maîtrisée (`BAKE_PIXEL_RATIO = 2`, ~2,3 Mo/texture).
+  - **Mapping correct** via **`faceAxis()`** : recto sur la face **perpendiculaire au plus petit côté** (`axis*2`, tente = axe X, pont = axe Y), **verso** sur la face opposée (`axis*2+1`) — sinon l'art atterrit sur la tranche.
+  - **Faces texturées en `meshStandardMaterial` + `emissiveMap`** (la même texture en `map` *et* `emissiveMap`, `emissiveIntensity ≈ 0.5`) : elles **captent l'ambiance** (lumières violette/verte) tout en **restant lisibles** (le plancher émissif évite que l'art soit terni dans l'ombre). *(Le `meshBasicMaterial` du banc `/chateau-cartes` reste plus vibrant mais ignore la lumière — choix assumé : intégration > vibrance dans la scène éclairée.)*
+  - **Foil = `AdditiveBlending`** (équivalent 3D du blend CSS `screen`) sur le N4 ; son **éclat vient du mouvement** (la normale tourne quand la carte culbute) → pas besoin d'animer `uTime`.
+  - Shader factorisé dans [foilShader.ts](../app/components/r3f/foilShader.ts) (**partagé** avec la Voie A `/rnd`).
+- **Reste** : brancher les **vraies cartes du membre** (`getMyDeck`), atlas / bake-à-la-demande au scale-up (mémoire).
+
+---
+
+## 11. Ce qui reste / à arbitrer
 
 > **Parité CSS ↔ R3F** : le registre des couches, niveaux Z, blends et le plan de synchro sont dans [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md).
 
-- [x] **Parité contenu CSS ↔ R3F** — résolue par la **Voie A** (2026-05-27) : le contenu reste la `<CardFront>` DOM, le R3F n'ajoute qu'un plan de foil fresnel. Plus de redessin canvas divergent. Cf. [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) §4. (Voie B « DOM→texture » reste l'option si le château/instancing impose du tout-texture plus tard.)
-- [ ] **Château en hero d'accueil** : monté sur les vraies cartes du membre, perf mobile à mesurer (nombre de corps), quand le rebâtir, lien vers le Hub.
-- [ ] **Budget mobile** des routes 3D (instancing pour la vue catalogue, DPR adaptatif, `frameloop="demand"` quand statique).
+- [x] **Parité contenu CSS ↔ R3F** — résolue par la **Voie A** (2026-05-27) : le contenu reste la `<CardFront>` DOM, le R3F n'ajoute qu'un plan de foil fresnel. Plus de redessin canvas divergent. Cf. [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) §4.
+- [x] **Interaction château tap/glisser** — faite (§9) : tap = pousser, glisser = attraper (kinématique + focus centre), relâché = tombe.
+- [x] **DOM→texture pour le château** — tranché (§10) : **bake** (vs DOM vivant drei), câblé dans [CardCastle.tsx](../app/components/r3f/CardCastle.tsx).
+- [~] **Château en hero d'accueil** : cartes texturées **recto + verso**, éclairées (standard+emissive), câblées (§10) ; reste les **vraies cartes du membre** (`getMyDeck`), la **perf mobile** (nombre de corps), quand le rebâtir, le lien vers le Hub.
+- [ ] **Budget mobile** des routes 3D (instancing pour la vue catalogue, DPR adaptatif, `frameloop="demand"` quand statique ; budget mémoire des textures bakées).

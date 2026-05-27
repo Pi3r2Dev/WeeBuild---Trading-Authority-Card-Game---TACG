@@ -40,6 +40,9 @@ export function DevNav() {
       <Link href="/chateau" style={LINK}>
         Château
       </Link>
+      <Link href="/chateau-cartes" style={LINK}>
+        Cartes 3D
+      </Link>
     </nav>
   );
 }

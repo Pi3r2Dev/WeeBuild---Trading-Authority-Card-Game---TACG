@@ -1,7 +1,7 @@
 # Draft — Couches & effets des cartes (parité CSS ↔ R3F)
 
 > **Statut : SPEC DE COMPOSITING** (2026-05-27). Registre canonique des couches, niveaux Z, blend modes, opacités et animations de la carte — pour **synchroniser** la version R3F sur la version CSS validée.
-> Voir aussi : [draft-rendu-3d.md](draft-rendu-3d.md) §7/§9 · [draft-charte-graphique.md](draft-charte-graphique.md) §8 · composants : [Card.tsx](../app/components/card/Card.tsx) · [CardFront.tsx](../app/components/card/CardFront.tsx) · [SiteShot.tsx](../app/components/card/SiteShot.tsx) · [HoloCardR3F.tsx](../app/components/r3f/HoloCardR3F.tsx) · tokens : [tokens.css](../app/styles/tokens.css)
+> Voir aussi : [draft-rendu-3d.md](draft-rendu-3d.md) §7 · §10 (château DOM→texture) · §11 · [draft-charte-graphique.md](draft-charte-graphique.md) §8 · composants : [Card.tsx](../app/components/card/Card.tsx) · [CardFront.tsx](../app/components/card/CardFront.tsx) · [SiteShot.tsx](../app/components/card/SiteShot.tsx) · [HoloCardR3F.tsx](../app/components/r3f/HoloCardR3F.tsx) · tokens : [tokens.css](../app/styles/tokens.css)
 
 ---
 
@@ -96,17 +96,18 @@ Le `<Canvas>` ne dessine **plus de contenu**. La vraie `<CardFront>` (DOM, pixel
 - ⚠️ Synchroniser l'angle DOM ↔ plan WebGL ; compositer le blend (canvas en `mix-blend` au-dessus, ou foil derrière un DOM à fonds transparents).
 - Cadre avec le souhait exprimé : « la CSS est parfaite, je veux juste du vrai 3D ».
 
-### Voie B — **DOM → texture** (le point ouvert de [draft-rendu-3d.md](draft-rendu-3d.md) §9)
-On capture `<CardFront>` en image (html-to-image / `foreignObject`) → `uContent`, puis foil **masqué** par-dessus (luminance/zone). Rendu « tout-WebGL » pixel-fidèle.
-- ✅ Tout dans le plan (utile pour le château / instancing).
-- ⚠️ `mix-blend-mode` mal capturé, polices/CORS, coût de capture, re-render à chaque changement de données.
+### Voie B — **DOM → texture** *(retenue + faite pour le **château**, cf. [draft-rendu-3d.md](draft-rendu-3d.md) §10)*
+On capture `<CardFront>` en image (`html-to-image` `toCanvas` → `CanvasTexture`), puis le foil devient un **plan fresnel natif** (additif) par-dessus. Rendu « tout-WebGL » → vraie matière 3D.
+- ✅ Tout dans le plan : **obligatoire pour les cartes physiques du château** (elles culbutent → pas de DOM possible), éclairable/ombrable, foil réactif à l'angle réel, instancing-friendly.
+- ⚠️ Fidélité de rasterisation (polices via `getFontEmbedCSS`, blend modes aplatis), coût de bake, mémoire (1 texture/carte distincte), re-render si les données changent.
+- **DÉCIDÉ (2026-05-27)** : pour le château, A/B « bake vs DOM vivant (`<Html transform>` drei) » → **bake gagne**. Le DOM vivant reste un overlay plat (non éclairé, occlusion approximative) → réservé à une carte **posée/plate**. Détails + pièges : [draft-rendu-3d.md](draft-rendu-3d.md) §10 ; câblé dans [CardCastle.tsx](../app/components/r3f/CardCastle.tsx).
 
 ### Voie C — garder le redessin Canvas, mais **conforme + masqué**
 On refait `useContentTexture` couche-pour-couche selon §1 (mêmes polices, SiteShot, tokens) **et** on ajoute un **canal de masque foil** (2ᵉ texture ou alpha) : foil autorisé uniquement sur les zones sombres + portrait, comme les z0/z2 CSS.
 - ✅ Pas de dépendance capture.
 - ⚠️ Double maintenance du layout (toute évolution design à refaire deux fois) — c'est précisément ce qui a créé l'écart.
 
-**Recommandation : Voie A.** Elle supprime la divergence à la racine (une source de contenu) tout en gardant le seul vrai atout du R3F (fresnel sur la normale 3D). Voie B si le château/instancing impose du tout-texture plus tard.
+**Recommandation : Voie A** pour la **carte hero `/rnd`** (supprime la divergence à la racine — une source de contenu — en gardant le vrai atout R3F : fresnel sur la normale 3D). **Voie B faite pour le château** (cartes physiques → tout-texture obligatoire) : **bake** retenu vs DOM vivant, cf. [draft-rendu-3d.md](draft-rendu-3d.md) §10.
 
 > **DÉCIDÉ (2026-05-27) : Voie A retenue.** Prototype [HoloCard3D.tsx](../app/components/r3f/HoloCard3D.tsx) validé au navigateur sur `/rnd` (3ᵉ colonne « Voie A ⭐ ») : contenu DOM pixel-identique à la carte CSS, plan de foil WebGL collé à la carte sous tilt (calage `perspective(1400) ↔ fov`), texte lisible (blend `screen`), repos sobre → iridescence montant à l'inclinaison. `/rnd` conserve le comparatif A/B/C comme trace R&D ; [HoloCardR3F.tsx](../app/components/r3f/HoloCardR3F.tsx) (variante « lave le chrome ») n'est plus la cible et sera supprimable quand `/rnd` cessera de la montrer.
 
@@ -132,9 +133,10 @@ On refait `useContentTexture` couche-pour-couche selon §1 (mêmes polices, Site
 - [x] Trancher la voie (A / B / C) — **Voie A retenue (2026-05-27)**, cf. §4.
 - [x] Aligner le tilt sur **14°** — fait dans [HoloCard3D.tsx](../app/components/r3f/HoloCard3D.tsx) (`MAX_TILT = 14`).
 - [x] Voie A : plan de foil fresnel + synchro d'angle avec `<CardFront>` — fait (un seul rAF lisse `--rx/--ry/--active`, pilote DOM + mesh).
-- [ ] Ajouter le **flip recto/verso** à la Voie A (proto = recto seul).
+- [x] **Voie B (DOM→texture) tranchée pour le château** — **bake** (vs DOM vivant drei), câblée dans [CardCastle.tsx](../app/components/r3f/CardCastle.tsx). Cf. [draft-rendu-3d.md](draft-rendu-3d.md) §10.
+- [ ] Ajouter le **flip recto/verso** à la Voie A `/rnd` (proto = recto seul). *(Côté château : verso `CardBack` baké + posé sur la face arrière — fait, cf. [draft-rendu-3d.md](draft-rendu-3d.md) §10.)*
 - [ ] Retirer `leva` du chemin prod (le garder sur `/rnd`).
 - [ ] Si B/C : implémenter le **masque foil** (zones sombres + portrait) pour cesser de laver le chrome/texte.
 - [ ] Retirer le letterbox du conteneur R3F (340×560 → ratio 0.593).
 - [ ] Retirer `leva` / `r3f-perf` du chemin prod (garder en `/rnd` seulement).
-- [ ] Mettre à jour [draft-rendu-3d.md](draft-rendu-3d.md) §9 quand la voie est tranchée.
+- [x] Mettre à jour [draft-rendu-3d.md](draft-rendu-3d.md) — Voie A en §1/§4, château DOM→texture en §10, reste en §11.
