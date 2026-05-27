@@ -10,7 +10,7 @@ Cap nord long terme : le **GEO** *(Generative Engine Optimization)* — être **
 
 `SEO` · `GEO` · `Generative Engine Optimization` · `link building` · `netlinking` · `trading card game` · `gamification` · `Next.js 15` · `React 19` · `TypeScript` · `React Three Fiber` · `WebGL`
 
-![Hub — tableau de bord WeBuild : solde de crédits, main de cartes, suggestions IA](docs/assets/hub.png)
+![Hub — tableau de bord WeBuild : solde de crédits, main de cartes, suggestions IA](docs/assets/hub.webp)
 
 </div>
 
@@ -58,7 +58,7 @@ La nouveauté clé : **la rareté visuelle est dérivée de l'autorité réelle*
 
 Chaque site = une carte. Son **niveau (1 à 4)** est dérivé de son autorité et pilote toute son esthétique. Quatre habillages, quatre états visuels — portés en **CSS-first** (foil = `conic-gradient` + `mix-blend-mode`, scanlines, bloom, flip 3D, tilt au pointeur), pour un impact quasi nul sur le bundle produit.
 
-![Les 4 niveaux de rareté (Game Boy, Super NES, PS2, Holo) et les 4 états (disponible, en échange, acquise, verrouillée)](docs/assets/cards.png)
+![Les 4 niveaux de rareté (Game Boy, Super NES, PS2, Holo) et les 4 états (disponible, en échange, acquise, verrouillée)](docs/assets/cards.webp)
 
 | Niveau | Habillage | Signifie | Effets signature |
 |---|---|---|---|
@@ -75,7 +75,7 @@ Chaque site = une carte. Son **niveau (1 à 4)** est dérivé de son autorité e
 
 La route `/capturer` est une **tranche verticale fonctionnelle de bout en bout** : on colle une URL → **Crawl4AI** capture la page → **LiteLLM** en extrait le sens (résumé, thématique) → un **score d'autorité** (v1 on-page) en dérive le niveau et les stats → le composant `<Card/>` affiche une **vraie carte**.
 
-![Capturer un site : example.com capturé, score d'autorité 15/100, carte Game Boy générée avec le détail transparent des signaux](docs/assets/capturer-result.png)
+![Capturer un site : example.com capturé, score d'autorité 15/100, carte Game Boy générée avec le détail transparent des signaux](docs/assets/capturer-result.webp)
 
 Le score est **transparent et indicatif** : chaque signal (profondeur de contenu, maillage interne, métadonnées, citations sortantes, structure, média, HTTPS) est exposé tel quel. Un bandeau le rappelle sans ambiguïté :
 
@@ -91,7 +91,7 @@ Interface mobile-first (390×844), univers rétro-gaming, accent violet néon = 
 
 Les sites alliés disposés en **biomes thématiques** (Tech, Presse, Finance, Cuisine, Encyclo) façon RPG. Taper un nœud ouvre une carte cible et son CTA « Donner depuis votre main ».
 
-![Écosystème : carte stylisée avec biomes thématiques, nœuds-sites et drawer de la cible sélectionnée](docs/assets/ecosysteme.png)
+![Écosystème : carte stylisée avec biomes thématiques, nœuds-sites et drawer de la cible sélectionnée](docs/assets/ecosysteme.webp)
 
 ### ↗️ Donner un lien — un flux IA en 4 étapes
 
@@ -99,7 +99,7 @@ L'IA assiste à chaque étape, **l'humain valide toujours**. De gauche à droite
 
 | 1 · Choisir sa carte | 3 · L'IA propose l'article |
 |---|---|
-| ![Donner étape 1 : choix de la carte à jouer, recommandation IA et gain en crédits](docs/assets/donner.png) | ![Donner étape 3 : article généré par l'IA avec ancre surlignée, éditable, disclaimer aucune publication automatique](docs/assets/donner-3.png) |
+| ![Donner étape 1 : choix de la carte à jouer, recommandation IA et gain en crédits](docs/assets/donner.webp) | ![Donner étape 3 : article généré par l'IA avec ancre surlignée, éditable, disclaimer aucune publication automatique](docs/assets/donner-3.webp) |
 
 > *« L'IA suggère, vous validez. Aucune publication automatique. »* — la règle est dans l'UI.
 
@@ -107,7 +107,7 @@ L'IA assiste à chaque étape, **l'humain valide toujours**. De gauche à droite
 
 On **dépense des crédits** pour que l'IA propose une de ses cartes à des éditeurs alignés. Slider de budget, estimations IA (éditeurs ciblés, suggestions, délai), filtres de niche — et le rappel de la ligne rouge en clair.
 
-![Être découvert : sélection de carte à brandir, slider de budget en crédits, estimations IA et bandeau aucune garantie de citation](docs/assets/decouvrir.png)
+![Être découvert : sélection de carte à brandir, slider de budget en crédits, estimations IA et bandeau aucune garantie de citation](docs/assets/decouvrir.webp)
 
 > *« Aucune garantie de citation. Vous payez pour la découverte éditoriale, pas pour un backlink. »*
 
@@ -115,7 +115,7 @@ On **dépense des crédits** pour que l'IA propose une de ses cartes à des édi
 
 Quand un lien est publié, la plateforme **capture la page** pour prouver qu'il existe réellement (capture + détection du lien). C'est ce qui **crédite le don** et entretient la confiance du réseau. Le détail montre la capture avec l'ancre détectée surlignée et la timeline de vérification.
 
-![Détail d'un sceau de preuve : capture de la page cible, ancre détectée surlignée, badge LIEN DÉTECTÉ et historique des vérifications](docs/assets/preuve-detail.png)
+![Détail d'un sceau de preuve : capture de la page cible, ancre détectée surlignée, badge LIEN DÉTECTÉ et historique des vérifications](docs/assets/preuve-detail.webp)
 
 ### ✨ Transitions chorégraphiées & hero 3D
 
@@ -123,7 +123,7 @@ Quand un lien est publié, la plateforme **capture la page** pour prouver qu'il 
 
 | Transitions chorégraphiées | Cartes 3D holographiques (R3F) |
 |---|---|
-| ![Transitions chorégraphiées : vol de carte et sceau de cire](docs/assets/transitions.png) | ![A/B de cartes 3D holographiques : texture bakée + foil natif vs DOM vivant](docs/assets/chateau-cartes.png) |
+| ![Transitions chorégraphiées : vol de carte et sceau de cire](docs/assets/transitions.webp) | ![A/B de cartes 3D holographiques : texture bakée + foil natif vs DOM vivant](docs/assets/chateau-cartes.webp) |
 
 ---
 
@@ -266,7 +266,7 @@ lib/
 ├── levels/          # niveaux 1–4
 └── data/            # fixtures de démo
 docs/                # doctrine produit (FR) — source de vérité
-└── screenshots/     # captures utilisées dans ce README
+└── assets/         # captures utilisées dans ce README
 ```
 
 📚 **Doctrine produit** (français, source de vérité) :
