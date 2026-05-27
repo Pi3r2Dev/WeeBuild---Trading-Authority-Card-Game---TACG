@@ -10,7 +10,10 @@
       "PowerShell(npm run dev)",
       "mcp__plugin_playwright_playwright__browser_close",
       "PowerShell(npx tsc --noEmit; \"tsc exit code: $LASTEXITCODE\")",
-      "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed pid $p on 3001\" } else { \"nothing on 3001\" })"
+      "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed pid $p on 3001\" } else { \"nothing on 3001\" })",
+      "Bash(rm -rf .next)",
+      "Bash(npm run *)",
+      "Bash(echo \"restarted pid $!\")"
     ]
   }
 }
