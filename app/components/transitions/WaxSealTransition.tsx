@@ -2,14 +2,17 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "../hub/constants";
-import { getNavCard } from "@/lib/data";
+// R&D transition (cf. plan 4b, Q1) : reste sur fixtures. Import direct des
+// fixtures (composant "use client" → ne peut pas importer l'accesseur lib/data
+// devenu couplé à Prisma).
+import { NAV_DECK } from "@/lib/data/fixtures";
 import { CreditsBadge, StatusBar } from "../hub/primitives";
 import { MiniCardTCG } from "../hub/MiniCard";
 import { TransitionFrame } from "./TransitionFrame";
 
 type Phase = "ready" | "stamping" | "sealed";
 
-const target = getNavCard("jdg")!;
+const target = NAV_DECK.find((c) => c.id === "jdg")!;
 
 // Calendrier de la séquence (ms, relatifs au début du cycle).
 const STAMP_DELAY = 1800; // ready → stamping

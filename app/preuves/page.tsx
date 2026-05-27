@@ -1,10 +1,10 @@
-import { PreuveScreen } from "../components/hub/PreuveScreen";
+import { PreuveScreenLoader } from "../components/hub/PreuveScreenLoader";
 import { PhoneShell } from "../components/hub/PhoneShell";
 
 export default function PreuvesPage() {
   return (
     <PhoneShell>
-      <PreuveScreen />
+      <PreuveScreenLoader />
     </PhoneShell>
   );
 }

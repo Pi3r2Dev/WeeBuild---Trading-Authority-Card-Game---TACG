@@ -2,16 +2,11 @@
 
 import { useState } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
-import { getMyDeck, getNavDeck, getProofs } from "@/lib/data";
-import type { Proof, ProofStatus } from "@/lib/domain";
+import type { CardData, NavCard, Proof, ProofStatus } from "@/lib/domain";
 import { Body, ScreenHeader, SectionLabel, StatusBar, CreditsBadge } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG, PlayLink } from "./MiniCard";
 import { icons } from "./icons";
-
-const MY_SITES = getMyDeck();
-const NAV_DECK = getNavDeck();
-const PROOF_LIST = getProofs();
 
 const STATUS_META: Record<ProofStatus, { color: string; label: string; icon: (s?: number) => React.ReactElement }> = {
   verified: { color: ACCENT_GREEN, label: "Vérifié", icon: icons.check },
@@ -20,20 +15,30 @@ const STATUS_META: Record<ProofStatus, { color: string; label: string; icon: (s?
   broken: { color: "#ef4444", label: "Lien rompu", icon: icons.camera },
 };
 
-export function PreuveScreen() {
+/** Sceaux de preuve — composant CLIENT (détail/liste), données en props. */
+export function PreuveScreen({ mySites, navDeck, proofs }: { mySites: CardData[]; navDeck: NavCard[]; proofs: Proof[] }) {
+  const MY_SITES = mySites;
+  const NAV_DECK = navDeck;
+  const PROOF_LIST = proofs;
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = detailId ? PROOF_LIST.find((p) => p.id === detailId) : null;
 
   return (
     <>
       <StatusBar />
-      <Body>{detail ? <Detail proof={detail} onBack={() => setDetailId(null)} /> : <List onOpen={setDetailId} />}</Body>
+      <Body>
+        {detail ? (
+          <Detail proof={detail} onBack={() => setDetailId(null)} MY_SITES={MY_SITES} NAV_DECK={NAV_DECK} />
+        ) : (
+          <List onOpen={setDetailId} NAV_DECK={NAV_DECK} PROOF_LIST={PROOF_LIST} />
+        )}
+      </Body>
       <BottomNav />
     </>
   );
 }
 
-function List({ onOpen }: { onOpen: (id: string) => void }) {
+function List({ onOpen, NAV_DECK, PROOF_LIST }: { onOpen: (id: string) => void; NAV_DECK: NavCard[]; PROOF_LIST: Proof[] }) {
   const verified = PROOF_LIST.filter((p) => p.status === "verified").length;
   return (
     <>
@@ -88,7 +93,7 @@ function List({ onOpen }: { onOpen: (id: string) => void }) {
   );
 }
 
-function Detail({ proof, onBack }: { proof: Proof; onBack: () => void }) {
+function Detail({ proof, onBack, MY_SITES, NAV_DECK }: { proof: Proof; onBack: () => void; MY_SITES: CardData[]; NAV_DECK: NavCard[] }) {
   const myCard = MY_SITES[0];
   const targetCard = NAV_DECK.find((c) => c.id === proof.target);
   if (!targetCard) return null;

@@ -3,7 +3,9 @@
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { Card } from "../components/card/Card";
-import { getDemoCards } from "@/lib/data";
+// R&D (cf. plan 4b) : reste sur fixtures. Import direct (page "use client" → ne
+// peut pas importer l'accesseur async couplé à Prisma).
+import { DEMO_CARDS } from "@/lib/data/fixtures";
 import { DevNav } from "../components/DevNav";
 
 const loader = (
@@ -22,7 +24,7 @@ const HoloCard3D = dynamic(() => import("../components/r3f/HoloCard3D"), {
   loading: () => loader,
 });
 
-const N4 = getDemoCards()[3]; // lemonde.fr — niveau 4 Holo
+const N4 = DEMO_CARDS[3]; // lemonde.fr — niveau 4 Holo
 
 const ROWS: { critere: string; css: string; r3f: string; verdict: string }[] = [
   { critere: "Iridescence", css: "conic-gradient pilotée au pointeur (pseudo)", r3f: "Fresnel sur la normale 3D réelle — le foil suit l'angle de vue", verdict: "R3F + réaliste" },

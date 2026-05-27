@@ -17,8 +17,8 @@ const PIXEL_LABEL = {
   color: "var(--hub-fg-soft)",
 } as const;
 
-export default function CardsShowcase() {
-  const DEMO_CARDS = getDemoCards();
+export default async function CardsShowcase() {
+  const DEMO_CARDS = await getDemoCards();
   const sample = DEMO_CARDS[1];
 
   return (

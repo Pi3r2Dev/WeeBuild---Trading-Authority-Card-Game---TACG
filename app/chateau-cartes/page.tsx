@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
-import { getDemoCards } from "@/lib/data";
+// R&D (cf. plan 4b) : reste sur fixtures. Import direct (page "use client" → ne
+// peut pas importer l'accesseur async couplé à Prisma).
+import { DEMO_CARDS } from "@/lib/data/fixtures";
 import { DevNav } from "../components/DevNav";
 
 const loader = (
@@ -14,7 +16,7 @@ const loader = (
 const CardBakeTexture = dynamic(() => import("../components/r3f/CardBakeTexture"), { ssr: false, loading: () => loader });
 const CardDomLive = dynamic(() => import("../components/r3f/CardDomLive"), { ssr: false, loading: () => loader });
 
-const N4 = getDemoCards()[3]; // lemonde.fr — niveau 4 Holo
+const N4 = DEMO_CARDS[3]; // lemonde.fr — niveau 4 Holo
 
 export default function ChateauCartesPage() {
   return (

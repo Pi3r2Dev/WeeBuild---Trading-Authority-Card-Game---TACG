@@ -2,19 +2,19 @@
 
 import { useState, type CSSProperties } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
-import { getTopics, getMyDeck, getPartners } from "@/lib/data";
+import type { CardData, Partner, Topic } from "@/lib/domain";
 import { Body, CreditsBadge, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG, PlayLink } from "./MiniCard";
 import { icons } from "./icons";
 
-const MY_SITES = getMyDeck();
-const PARTNERS_SUGGESTED = getPartners();
-const AI_TOPICS = getTopics();
-
 const TOTAL = 4;
 
-export function DonnerFlow() {
+/** Flux « Donner » — composant CLIENT (stepper), données en props. */
+export function DonnerFlow({ mySites, partners, topics }: { mySites: CardData[]; partners: Partner[]; topics: Topic[] }) {
+  const MY_SITES = mySites;
+  const PARTNERS_SUGGESTED = partners;
+  const AI_TOPICS = topics;
   const [step, setStep] = useState(1);
   const next = () => setStep((s) => (s >= TOTAL ? 1 : s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
@@ -24,10 +24,10 @@ export function DonnerFlow() {
       <StatusBar />
       <Body>
         <StepHeader step={step} title={STEP_META[step].title} subtitle={STEP_META[step].subtitle} onBack={step > 1 ? prev : undefined} />
-        {step === 1 && <Step1 />}
-        {step === 2 && <Step2 />}
-        {step === 3 && <Step3 />}
-        {step === 4 && <Step4 />}
+        {step === 1 && <Step1 MY_SITES={MY_SITES} />}
+        {step === 2 && <Step2 MY_SITES={MY_SITES} PARTNERS_SUGGESTED={PARTNERS_SUGGESTED} />}
+        {step === 3 && <Step3 MY_SITES={MY_SITES} PARTNERS_SUGGESTED={PARTNERS_SUGGESTED} AI_TOPICS={AI_TOPICS} />}
+        {step === 4 && <Step4 MY_SITES={MY_SITES} />}
         <StepCTA
           primary={STEP_META[step].cta}
           onClick={next}
@@ -48,7 +48,7 @@ const STEP_META: Record<number, { title: string; subtitle: string; cta: string }
 };
 
 // ── Étape 1 — choisir une carte de sa main ──
-function Step1() {
+function Step1({ MY_SITES }: { MY_SITES: CardData[] }) {
   const fits = [0.82, 0.61, 0.74];
   const expected = [12, 5, 8];
   return (
@@ -93,7 +93,7 @@ function Step1() {
 }
 
 // ── Étape 2 — choisir un territoire ──
-function Step2() {
+function Step2({ MY_SITES, PARTNERS_SUGGESTED }: { MY_SITES: CardData[]; PARTNERS_SUGGESTED: Partner[] }) {
   const myCard = MY_SITES[0];
   return (
     <>
@@ -154,7 +154,7 @@ function Step2() {
 }
 
 // ── Étape 3 — l’IA propose l’article + ancre ──
-function Step3() {
+function Step3({ MY_SITES, PARTNERS_SUGGESTED, AI_TOPICS }: { MY_SITES: CardData[]; PARTNERS_SUGGESTED: Partner[]; AI_TOPICS: Topic[] }) {
   const myCard = MY_SITES[0];
   const target = PARTNERS_SUGGESTED[0].card;
   const topic = AI_TOPICS[0];
@@ -231,7 +231,7 @@ function Step3() {
 }
 
 // ── Étape 4 — jouer la carte + capture ──
-function Step4() {
+function Step4({ MY_SITES }: { MY_SITES: CardData[] }) {
   const myCard = MY_SITES[0];
   return (
     <>

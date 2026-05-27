@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET, ELEMENT_COLOR } from "./constants";
-import { getMe, getNavDeck } from "@/lib/data";
+import type { Me, NavCard } from "@/lib/domain";
 import { CreditsBadge, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG } from "./MiniCard";
 import { icons } from "./icons";
-
-const ME = getMe();
-const NAV_DECK = getNavDeck();
 
 const LINKS: [string, string][] = [
   ["tom-tech", "jdg"],
@@ -23,8 +20,9 @@ const LINKS: [string, string][] = [
   ["presse-citron", "wikipedia"],
 ];
 
-export function EcosystemeMap() {
-  const [selectedId, setSelectedId] = useState(NAV_DECK[3].id);
+/** Carte écosystème — composant CLIENT (état de sélection), données en props. */
+export function EcosystemeMap({ me: ME, navDeck: NAV_DECK }: { me: Me; navDeck: NavCard[] }) {
+  const [selectedId, setSelectedId] = useState((NAV_DECK[3] ?? NAV_DECK[0])?.id ?? "");
   const selected = NAV_DECK.find((c) => c.id === selectedId);
   const nodeById = Object.fromEntries(NAV_DECK.map((c) => [c.id, c] as const));
 

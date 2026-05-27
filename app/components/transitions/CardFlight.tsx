@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "../hub/constants";
-import { getNavCard } from "@/lib/data";
+// R&D transition (cf. plan 4b, Q1) : reste sur fixtures. Import direct (composant
+// "use client" → pas d'accesseur lib/data couplé à Prisma).
+import { NAV_DECK } from "@/lib/data/fixtures";
 import { StatusBar } from "../hub/primitives";
 import { Card } from "../card/Card";
 import { TransitionFrame } from "./TransitionFrame";
 
-const target = getNavCard("jdg")!;
+const target = NAV_DECK.find((c) => c.id === "jdg")!;
 
 // Dimensions de base de la carte (px), avant mise à l'échelle.
 const CARD_W = 320;

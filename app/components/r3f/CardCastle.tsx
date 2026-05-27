@@ -8,7 +8,10 @@ import { Perf } from "r3f-perf";
 import { getFontEmbedCSS, toCanvas } from "html-to-image";
 import * as THREE from "three";
 import { LEVEL_COLORS } from "@/lib/levels";
-import { getDemoCards } from "@/lib/data";
+// R&D (cf. plan 4b, reco R&D) : reste sur fixtures. On importe DIRECTEMENT les
+// fixtures et non l'accesseur lib/data — devenu async + couplé à Prisma (lib/db),
+// donc non importable dans un module client (this file = "use client").
+import { DEMO_CARDS } from "@/lib/data/fixtures";
 import { CardFront } from "../card/CardFront";
 import { CardBack } from "../card/CardBack";
 import type { CardData, Level } from "../card/types";
@@ -47,7 +50,7 @@ const BAKE_PIXEL_RATIO = 2;
 // Plancher émissif des faces texturées : garde l'art lisible même éclairé/dans l'ombre (le `map` capte l'ambiance).
 const CARD_EMISSIVE = 0.5;
 /** Deck réutilisé sur les emplacements (une carte par niveau → 4 cartes bakées, partagées). */
-const DECK: CardData[] = getDemoCards();
+const DECK: CardData[] = DEMO_CARDS;
 
 /** Textures bakées d'une carte : recto (CardFront) + verso (CardBack). */
 type CardTex = { front: THREE.CanvasTexture; back: THREE.CanvasTexture };

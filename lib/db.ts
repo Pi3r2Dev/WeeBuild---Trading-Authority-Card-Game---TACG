@@ -21,6 +21,15 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
+  // Garde explicite : pas de fallback silencieux sur les fixtures si la config
+  // DB manque. C'est ICI que la garde vit (pas dans les accesseurs lib/data),
+  // sinon une erreur de config serait masquée par les mocks (cf. plan 4b).
+  if (!process.env.DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL absent — la couche données exige Postgres (cf. .env.local + tunnel SSH localhost:5433). " +
+        "Pas de fallback fixtures en P1.",
+    );
+  }
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   return new PrismaClient({ adapter });
 }

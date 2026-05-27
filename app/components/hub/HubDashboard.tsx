@@ -1,18 +1,22 @@
 import { ACCENT_VIOLET } from "./constants";
 import { getSuggestions, getMe, getMyDeck, getNavDeck, getRecentActivity } from "@/lib/data";
+import { DEMO_USER_ID } from "@/lib/data/demo-user";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MyHand } from "./MiniCard";
 import { AISuggestionTCG, ActivityRow } from "./HubWidgets";
 
-const ME = getMe();
-const MY_SITES = getMyDeck();
-const NAV_DECK = getNavDeck();
-const AI_SUGGESTIONS = getSuggestions();
-const RECENT_ACTIVITY = getRecentActivity();
-
 /** Écran d'accueil après login : solde, progression, main, suggestions IA, activité. */
-export function HubDashboard() {
+export async function HubDashboard() {
+  // TODO(4a): remplacer DEMO_USER_ID par (await requireSession()).user.id
+  const [ME, MY_SITES, NAV_DECK] = await Promise.all([
+    getMe(DEMO_USER_ID),
+    getMyDeck(DEMO_USER_ID),
+    getNavDeck(),
+  ]);
+  const AI_SUGGESTIONS = getSuggestions(); // P3 — fixtures, sync
+  const RECENT_ACTIVITY = getRecentActivity(); // P3 — fixtures, sync
+
   return (
     <>
       <StatusBar />
