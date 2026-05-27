@@ -1,0 +1,220 @@
+// Schéma Prisma — socle de persistance P1 (WeBuild — Trading Authority Game).
+//
+// Périmètre P1 STRICT : modèles Better Auth (User/Session/Account/Verification)
+// + domaine produit (Site / Card / AuthoritySnapshot). Les modèles de la boucle
+// de jeu P3 (EditorialLink, CreditLedgerEntry, Promotion…) viendront en P3 et
+// seront 100 % additifs grâce aux amendements rétro-imposés intégrés ici
+// (cf. docs/plans/p3-game-loop-data-model.md §7 → P1-C1..C4, P1-I2, P1-I3).
+//
+// ⚠ Prisma 7 : provider `prisma-client` (Rust-free, requiert un driver adapter
+// au runtime, cf. lib/db.ts). pgvector préexiste dans webuild_db et le rôle
+// applicatif n'est PAS superuser → l'extension `vector` est seulement DÉCLARÉE
+// ici (postgresqlExtensions) mais le CREATE EXTENSION est retiré de la migration
+// (cf. note dans la migration init-p1).
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../lib/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  // ⚠ Prisma 7 : `url` n'est plus accepté dans le datasource → la connexion
+  // vit dans prisma.config.ts (Migrate) et dans l'adapter (runtime, lib/db.ts).
+  // `vector` (pgvector 0.8.2) et `uuid-ossp` préexistent dans webuild_db.
+  // Déclarés pour que Prisma connaisse les types ; le CREATE EXTENSION est
+  // retiré de la migration car le rôle `webuild` n'est pas superuser.
+  extensions = [vector, uuidOssp(map: "uuid-ossp")]
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Modèles Better Auth (schéma standard ; l'auth elle-même est configurée en 4a)
+// ────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+  sites    Site[]
+  cards    Card[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  // Scopes OAuth concédés (dont `webmasters.readonly` GSC, demandé dès P1).
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Domaine produit
+// ────────────────────────────────────────────────────────────────────────────
+
+/// Cycle de vie d'un site capturé. PENDING avant la 1re capture réussie.
+enum SiteStatus {
+  PENDING
+  CAPTURING
+  READY
+  FAILED
+}
+
+/// Un site déclaré par un membre. Matière première de la carte + du score.
+/// `markdown` est stocké (@db.Text) pour recalculer le score en P2 sans re-crawl.
+model Site {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url         String
+  domain      String
+  status      SiteStatus @default(PENDING)
+
+  // Contenu capturé (Firecrawl) — source du score d'autorité.
+  title         String?
+  description   String?
+  markdown      String? @db.Text
+  internalLinks Int?
+  externalLinks Int?
+  imageCount    Int?
+  https         Boolean?
+
+  // Clés de classification (P1-C1/C2) — alimentées par extractEditorial.
+  // `element`    : tech | finance | media | sante | cuisine | encyclopedie
+  // `thematique` : TECH | FINANCE | PRESSE | CUISINE | ENCYCLOPEDIE …
+  // Indexées : clés du matching P3 + clusterKey d'amortissement.
+  element    String?
+  thematique String?
+
+  // Embedding topical (P1-C3) — NULL en P1, alimenté en P3 (matching pgvector).
+  // 1536d (modèle gte-qwen2-local). Type non géré nativement → Unsupported.
+  embedding Unsupported("vector(1536)")?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  card      Card?
+  snapshots AuthoritySnapshot[]
+
+  @@unique([userId, domain])
+  @@index([userId])
+  @@index([element])
+  @@index([thematique])
+  @@index([status])
+  @@map("site")
+}
+
+/// La carte TCG dérivée d'un site (1-1). Stocke TOUS les champs TCG (même en
+/// placeholder) → on ne carve pas Card/CardView prématurément (cf. blueprint P1
+/// et lib/domain/card.ts). `userId` dénormalisé (P1-I2) pour éviter un N+1 sur
+/// le deck (findMany where userId sans jointure obligatoire).
+model Card {
+  id     String @id @default(uuid())
+  siteId String @unique
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Dérivés du score (snapshot courant aplati pour lecture rapide).
+  level Int // 1..4 (Level)
+  hp    Int
+  atk   Int
+  tf    Int
+  cf    Int
+  dr    Int
+
+  // Champs éditoriaux / présentation.
+  anchor     String  @default("")
+  element    String // tech | finance | media | sante | cuisine | encyclopedie
+  thematique String
+  summary    String  @db.Text
+
+  // Couche TCG (placeholders "—"/0 acceptés en P1).
+  linkType     String @default("dofollow") // dofollow | nofollow | sponsored
+  status       String @default("dispo") // CardState : dispo | en-echange | acquise | verrouillee
+  price        Int    @default(0)
+  edition      String @default("—")
+  editionTotal String @default("—")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([level])
+  @@map("card")
+}
+
+/// Historique insert-only du score d'autorité (jamais d'UPDATE/DELETE).
+/// `metricVersion` ("v1-onpage" → "v2-gsc") trace la recalibration P2.
+/// `signalsJson` stocke le détail des signaux + element/thematique (P1-I3)
+/// pour éviter de reparser le markdown en P3.
+model AuthoritySnapshot {
+  id     String @id @default(uuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  score Int
+  level Int
+  hp    Int
+  atk   Int
+  tf    Int
+  cf    Int
+  dr    Int
+
+  // Détail brut des AuthoritySignal[] + element/thematique extraits (P1-I3).
+  signalsJson   Json
+  metricVersion String @default("v1-onpage")
+
+  createdAt DateTime @default(now())
+
+  @@index([siteId, createdAt(sort: Desc)])
+  @@map("authority_snapshot")
+}

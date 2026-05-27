@@ -77,7 +77,7 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 | 1 | P0 | Committer D1+D3 (suggestion, exécution user) | user (jamais auto-commit) | pending | — |
 | 2 | P1 | Blueprint archi socle prod (auth+schéma Prisma+persistance+deploy) | `feature-dev:code-architect` | **done** | [p1-prod-foundation-blueprint.md](../plans/p1-prod-foundation-blueprint.md) |
 | 3 | P1 | Impl auth Better Auth + Google (pattern app.augmenter.pro) — étape 4a, après migration | `feature-dev:feature-dev` | pending | — |
-| 4 | P1 | Schéma Prisma + pgvector + migration (étape 3, gate) | `feature-dev:feature-dev` | pending | — |
+| 4 | P1 | Schéma Prisma + pgvector + migration (étape 3, gate) | `general-purpose` | **done** | [prisma-schema-init handoff](2026-05-27-prisma-schema-init.md) |
 | 4b | P1 | **Repointage `lib/data` DB + persist capture** — micro-plan refactor produit | `feature-dev:code-architect` puis impl | **plan done** | [p1-4b-data-layer-refactor.md](../plans/p1-4b-data-layer-refactor.md) |
 | ADR | P1 | Formaliser décisions Q1 (Postgres) + Q2 (OAuth) | `/adr` (rédigé par orchestrateur) | **done** | [ADR-001](../decisions/001-postgres-base-dediee-instance-partagee.md), [ADR-002](../decisions/002-client-google-oauth-dedie.md) |
 | 5 | P1 | Déploiement Coolify (env, virtual key LiteLLM, build) | `general-purpose` + user | pending | — |
@@ -99,12 +99,15 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 - **Recon Postgres (sous-tâche #R, 2026-05-27)** : instance `shared_postgres-…` PG 16.13 Up 9j healthy ; pgvector 0.8.2 dispo (0.8.1 dans `augmenter`) ; 11 bases, pas de collision `webuild_db` ; 33/100 connexions ; PgBouncer dispo. **Disque `/` à 95 % (12 Go libres)** — prune Docker requis. Serveur modeste (Celeron 2c, ~2,3 Gi RAM libre) → instance séparée = gaspillage. **Note sécurité** : `POSTGRES_PASSWORD` en clair dans l'env du conteneur partagé.
 - **Design P3 → feedback critique sur P1 (sous-tâche #8)** : concevoir la boucle de jeu maintenant a révélé que le schéma **P1 doit anticiper** `Site.element` + `Site.thematique` + index (clés du matching/amortissement, déjà dans les fixtures) sinon migration P3 douloureuse. Répercuté dans [p1-prod-foundation-blueprint.md](../plans/p1-prod-foundation-blueprint.md) §Schéma. Avec ces 3 ajouts, **migration P3 = 100 % additive**. La sous-tâche #7 (matching) hérite des requêtes anti-cycle SQL récursif déjà esquissées dans [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md) §5.
 
+- **⚠ Divergence Prisma 7 (sous-tâche #4, à propager à 4a/4b)** : le projet utilise **Prisma 7**, pas 6 (le blueprint visait 6). Conséquences : provider `prisma-client` (Rust-free) → client généré dans **`lib/generated/prisma`** ; **driver adapter `@prisma/adapter-pg` obligatoire** (`new PrismaClient()` nu lève une erreur) → instancié dans [lib/db.ts](../../lib/db.ts) ; `url` interdit dans le datasource → vit dans **`prisma.config.ts`** (charge `.env.local` via dotenv). **Better Auth (4a) doit pointer sur `lib/generated/prisma` + l'adapter pg**, pas sur `@prisma/client` nu. Piège extension géré : `CREATE EXTENSION` commentés dans la migration (rôle non-superuser, extensions préexistantes) ; migration appliquée via `migrate diff`+`migrate deploy` (pas `migrate dev` — shadow DB interdite au rôle `webuild`).
+- État : 7 tables créées sur `webuild_db`, `migrate status` clean, `tsc --noEmit` vert, roundtrip runtime OK. **Tunnel SSH 5433 resté actif** (à fermer si besoin).
+
 ## Action items user (hors délégation — infra/GCP, jamais auto-exécutés)
-1. **Élaguer le disque** Coolify avant tout chargement d'embeddings : `ssh coolify "docker image prune -f && docker builder prune -f"` (≈50 Go récupérables).
-2. **Créer la base** (rôle `augmenter` = superuser) : `CREATE DATABASE webuild_db;` puis, connecté à `webuild_db`, `CREATE EXTENSION vector;`. Optionnel propre : rôle applicatif dédié non-superuser.
-3. **Entrée PgBouncer** pour `webuild_db` (cohérent avec le pooling existant).
-4. **Créer le client GCP OAuth dédié** WeBuild : redirect URI `…/api/auth/callback/google` + scope `webmasters.readonly` ; récupérer `GOOGLE_CLIENT_ID/SECRET`.
-5. **Committer D1+D3** (P0) avant de démarrer l'impl.
+1. **Élaguer le disque** Coolify avant tout chargement d'embeddings : `ssh coolify "docker image prune -f && docker builder prune -f"` (≈50 Go récupérables). — ⏳ à faire (pas bloquant pour la migration de schéma, requis avant volume d'embeddings).
+2. ✅ **FAIT (2026-05-27)** : `webuild_db` créée sur `shared_postgres-okokkgg8o0sgcssw48so88s0` + `CREATE EXTENSION vector` (pgvector 0.8.2). **Rôle dédié `webuild`** (non-superuser) créé, owner base + schéma `public` (smoke-test `CREATE TABLE …vector(1536)` OK). Connexion : dev via tunnel `ssh -N -L 5433:127.0.0.1:5432 coolify` → `localhost:5433` ; prod via alias `shared_postgres:5432` (réseau `coolify`). Mot de passe `webuild` stocké hors-repo par le user (visible dans les logs de session #poc-to-production-roadmap, à roter si besoin). PgBouncer dispo en `:6432`. → **gate migration Prisma levé côté infra** ; reste à écrire `prisma/schema.prisma` (impl).
+3. **Entrée PgBouncer** pour `webuild_db` (cohérent avec le pooling existant). — ⏳
+4. **Créer le client GCP OAuth dédié** WeBuild : redirect URI `…/api/auth/callback/google` + scope `webmasters.readonly` ; récupérer `GOOGLE_CLIENT_ID/SECRET`. — ⏳
+5. **Committer D1+D3** (P0) avant de démarrer l'impl. — ⏳
 
 ## How to resume
 1. Lire ce doc + [CLAUDE.md](../../CLAUDE.md) (« Decisions already locked » + « Target architecture »).

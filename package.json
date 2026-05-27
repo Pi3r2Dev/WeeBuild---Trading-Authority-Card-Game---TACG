@@ -10,7 +10,12 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@react-three/rapier": "^2.2.0",
@@ -18,10 +23,12 @@
     "leva": "^0.10.1",
     "motion": "^12.40.0",
     "next": "^15",
+    "prisma": "^7.8.0",
     "r3f-perf": "^7.2.3",
     "react": "^19",
     "react-dom": "^19",
     "three": "^0.184.0",
+    "tsx": "^4.22.3",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

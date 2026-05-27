@@ -15,7 +15,9 @@
       "Bash(npm run *)",
       "Bash(echo \"restarted pid $!\")",
       "PowerShell(\"=== working tree status ===\")",
-      "PowerShell(\"=== files in 89c43b0 \\(Lot 1 + Voie A\\) ===\")"
+      "PowerShell(\"=== files in 89c43b0 \\(Lot 1 + Voie A\\) ===\")",
+      "Bash(ssh -N -L 5433:127.0.0.1:5432 coolify)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -Last 10; \"EXIT:$LASTEXITCODE\")"
     ]
   }
 }
