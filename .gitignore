@@ -1,5 +1,5 @@
 # Fichiers de référence du handoff design (hors versionnement)
-design_handoff_webuild_tag/*.*
+design_handoff_webuild_tag/
 
 # ─── Next.js / Node ──────────────────────────────────────────
 # dependencies
@@ -28,6 +28,7 @@ design_handoff_webuild_tag/*.*
 
 # playwright (artefacts de vérification visuelle)
 .playwright-mcp/
+docs/screenshots/
 
 # debug
 npm-debug.log*

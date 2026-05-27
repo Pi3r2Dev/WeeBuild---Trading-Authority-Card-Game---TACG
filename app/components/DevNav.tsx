@@ -31,6 +31,9 @@ export function DevNav() {
       <Link href="/cards" style={LINK}>
         Cartes
       </Link>
+      <Link href="/capturer" style={{ ...LINK, color: "var(--hub-accent-2)" }}>
+        Capturer
+      </Link>
       <Link href="/transitions" style={LINK}>
         Transitions
       </Link>
