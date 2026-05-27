@@ -225,7 +225,7 @@ peu ou pas de texte. Ratio 16:9.
 
 > Format : **[bloc de style] + [scène ci-dessous]**. Itérer dans Gemini ; fournir une **carte réelle de `docs/assets/` en image de référence** pour verrouiller le style (édition image-to-image).
 
-- **Hero concours (P1/P4)** — `Deux cartes à collectionner face à face sur fond noir : à gauche une carte Game Boy verte, terne ; à droite une carte holographique éclatante au foil arc-en-ciel, halo violet. Entre elles, un éclair néon. Ambiance tournoi.`
+- **Hero concours — SEO → GEO (P1/P4)** — `Deux moitiés reliées par une flèche néon violette : à gauche « SEO » (page Google, dix liens bleus fades, terne), à droite « GEO » (réponse d'IA lumineuse qui cite des sources) ; ruban vert cyber ◆ « LE CONCOURS » en bas.` *(prompts B + D paste-ready en §12.5)*
 - **« Crawlable vs Citable » (P1/P3)** — `Split-screen deux colonnes. Gauche : un petit robot d'indexation gris qui scanne une page web fade (étiquette ◇ crawlable). Droite : une carte lumineuse citée par des bulles d'IA rayonnantes (étiquette ◆ citable). Séparateur éclair néon. Minimaliste, lisible.`
 - **Démo capture (P5)** — `Une barre d'URL qui se métamorphose en carte de jeu via un flux de particules vert cyber, fond sombre. Conceptuel, stylisé (PAS une capture d'écran réaliste).` *(Pour la vraie preuve : utiliser `docs/assets/capturer-result.webp`.)*
 - **Stat GEO (P1)** — `Graphique rétro-gaming « arcade » : une courbe « recherche classique » qui descend, une courbe « réponses IA » qui monte et la dépasse, néon violet/vert sur fond noir, gros pixels, esprit borne d'arcade.`
@@ -241,35 +241,36 @@ peu ou pas de texte. Ratio 16:9.
 ### 12.4 Workflow
 `Choisir pilier/niveau → bloc de style + scène → générer (Gemini, + image de réf.) → overlay texte si besoin → attacher au tweet + alt-text → logger le prompt dans le tracker §9 (colonne Notes).`
 
-### 12.5 Prompt Hero du concours (prêt à coller dans Gemini)
+### 12.5 Prompts Hero du concours (validés — prêts à coller dans Gemini)
 
-> Pour le post **002** (tweet d'ouverture du thread). Image **sans texte** (le tweet porte les mots) · ratio **16:9**. Une variante **4:5** est utile pour occuper plus d'écran mobile.
+> Pour le post **002**. Deux directions validées, axées **SEO → GEO + concours**, ratio **16:9**.
+> ⚠️ Texte généré par l'IA = fragile : garder les mots courts, vérifier l'orthographe, ou poser le texte en **overlay** (Press Start 2P) après coup. Itérer 2–3 fois.
 
+**B — Le basculement SEO → GEO (Hero principal)**
 ```
-Univers visuel « WeBuild — Trading Authority Game » : esthétique rétro-gaming premium qui
-traverse l'histoire du jeu vidéo (Game Boy → Super NES → PlayStation 2 → carte holographique).
-Fond très sombre quasi noir (#0B0C10), surfaces anthracite (#15171F), fines bordures néon
-(#1F2230), légère grille en perspective. Accents néon : violet électrique (#8A2BE2) et vert
-cyber (#39FF14, symbole losange ◆). Ambiance carte à collectionner (TCG), lueurs néon,
-scanlines, reflets holographiques. Rendu net, contrasté, cinématique, esprit affiche de
-tournoi e-sport. Format paysage 16:9. AUCUN texte dans l'image.
-
-Scène : deux cartes à collectionner se font face au centre, légèrement inclinées, séparées
-par un éclair d'énergie néon vertical.
-— À GAUCHE : une carte « Game Boy » verte (palette #0F380F / #306230 / #9BBC0F), terne et
-  pixelisée, scanlines LCD, balayée par le faisceau d'un petit robot d'indexation gris —
-  l'idée de « crawlable » : lisible, mais sans éclat.
-— À DROITE : une carte HOLOGRAPHIQUE rare qui rayonne, foil iridescent (dégradé conique
-  #FF007F → or #FBBF24 → #00FFFF → #5B00FF), halo violet #8A2BE2, fines particules dorées,
-  entourée de petites bulles lumineuses d'IA qui la « citent » — l'idée de « citable » : la
-  source que tout le monde reprend.
-Un discret losange ◆ vert cyber (#39FF14) en bas au centre. Lumière cinématique, fort
-contraste, légère profondeur de champ.
+Affiche 16:9, fond noir (#0B0C10), composition en deux moitiés reliées par une grande flèche
+néon violette (#8A2BE2) qui va de gauche à droite.
+À GAUCHE, sous le mot « SEO » : une page de résultats Google stylisée, dix liens bleus fades,
+une petite loupe — terne.
+À DROITE, sous le mot « GEO » : une réponse d'IA lumineuse qui cite des sources (bulles de
+citation rayonnantes) — éclatante, vert cyber et violet.
+En bas, un ruban vert cyber (#39FF14) avec un losange ◆ : « LE CONCOURS ».
+Lisible, épuré, rétro-gaming premium, néon, peu de texte. Ratio 16:9.
 ```
+**Alt-text B** : « SEO à gauche (dix liens bleus fades) → flèche néon violette → GEO à droite (réponse d'IA lumineuse qui cite des sources) ; ruban vert cyber ◆ “LE CONCOURS” en bas. »
 
-**Alt-text (à coller sur X)** : « Affiche WeBuild : à gauche, une carte Game Boy verte et terne scannée par un robot d'indexation (crawlable) ; à droite, une carte holographique rayonnante citée par des IA (citable) ; les deux séparées par un éclair néon. »
+**D — La recherche qui devient citation (alternative / pédagogie)**
+```
+Affiche 16:9 épurée, fond noir (#0B0C10). Au centre, une barre de recherche stylisée qui se
+transforme, vers la droite, en une réponse d'IA avec des sources citées qui rayonnent (fils de
+lumière violette #8A2BE2 reliant les citations). Au-dessus, deux mots-repères nets : « SEO »
+(à gauche, sobre) et « GEO » (à droite, lumineux). Un trophée-losange ◆ vert cyber (#39FF14)
+en bas, et un petit ruban « OUVERT À TOUS ». Minimaliste, lisible, néon, rétro-gaming léger.
+Ratio 16:9.
+```
+**Alt-text D** : « Une barre de recherche se transforme en réponse d'IA citant des sources reliées par des fils de lumière violette ; repères “SEO” (sobre) et “GEO” (lumineux) ; trophée-losange ◆ vert et ruban “OUVERT À TOUS”. »
 
-**Astuces** : fournir `docs/assets/cards.webp` en **image de référence** à Gemini pour caler le style des cartes ; itérer 2–3 fois. Option : ajouter le mot d'ordre « crawlable / citable » en **overlay** (Press Start 2P) après génération, plutôt que de le faire écrire par le modèle.
+**Astuces** : caler la palette avec `docs/assets/hub.webp` en image de référence ; si le texte sort mal, générer **sans** texte puis ajouter « SEO / GEO / LE CONCOURS » en **overlay** (Press Start 2P). Variante **4:5** pour plus d'écran mobile.
 
 ---
 
