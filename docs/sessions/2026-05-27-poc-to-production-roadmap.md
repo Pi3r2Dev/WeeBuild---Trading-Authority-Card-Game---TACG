@@ -73,20 +73,38 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 *Ordre à confirmer par le user avant délégation. Routes recommandées pré-remplies.*
 | # | Phase | Tâche | Route recommandée | Status | Result doc |
 |---|-------|-------|-------------------|--------|------------|
+| R | P1 | **Recon SSH** : état instance PG16 partagée pour trancher Q1 | `general-purpose` (SSH read-only) | **done** | findings ci-dessous |
 | 1 | P0 | Committer D1+D3 (suggestion, exécution user) | user (jamais auto-commit) | pending | — |
-| 2 | P1 | Blueprint archi socle prod (auth+schéma Prisma+persistance+deploy) | `feature-dev:code-architect` | pending | — |
-| 3 | P1 | Impl auth Better Auth + Google (pattern app.augmenter.pro) | `feature-dev:feature-dev` | pending | — |
-| 4 | P1 | Schéma Prisma + pgvector + migration + repointage `lib/data` sur DB | `feature-dev:feature-dev` | pending | — |
+| 2 | P1 | Blueprint archi socle prod (auth+schéma Prisma+persistance+deploy) | `feature-dev:code-architect` | **done** | [p1-prod-foundation-blueprint.md](../plans/p1-prod-foundation-blueprint.md) |
+| 3 | P1 | Impl auth Better Auth + Google (pattern app.augmenter.pro) — étape 4a, après migration | `feature-dev:feature-dev` | pending | — |
+| 4 | P1 | Schéma Prisma + pgvector + migration (étape 3, gate) | `feature-dev:feature-dev` | pending | — |
+| 4b | P1 | **Repointage `lib/data` DB + persist capture** — micro-plan refactor produit | `feature-dev:code-architect` puis impl | **plan done** | [p1-4b-data-layer-refactor.md](../plans/p1-4b-data-layer-refactor.md) |
+| ADR | P1 | Formaliser décisions Q1 (Postgres) + Q2 (OAuth) | `/adr` (rédigé par orchestrateur) | **done** | [ADR-001](../decisions/001-postgres-base-dediee-instance-partagee.md), [ADR-002](../decisions/002-client-google-oauth-dedie.md) |
 | 5 | P1 | Déploiement Coolify (env, virtual key LiteLLM, build) | `general-purpose` + user | pending | — |
 | 6 | P2 | GSC OAuth + calibrage `WEIGHTS`/`BANDS` sur données réelles | `Plan` puis impl | pending | — |
 | 7 | P3 | Matching pgvector + rerank + filtres anti-cycle | `feature-dev:code-architect` | pending | — |
-| 8 | P3 | Crédits + flux donateur + suggestions éditoriales (anti-footprint) | `feature-dev:code-architect` | pending | — |
+| 8 | P3 | **Modèle de données boucle de jeu** (crédits + donateur + lien + besoins matching), forward-compatible avec schéma P1 | `feature-dev:code-architect` | **plan done** | [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md) |
 | 9 | P4 | Async Celery + Langfuse + GEO Sonar + score naturalité | `Plan` | pending | — |
 
 ## Open decisions
-- **Ordre de démarrage** : P1 (tranche verticale) recommandé car gate de tout + débloque les données métrique. À confirmer user.
-- **Granularité P1** : auth et schéma Prisma en parallèle (2 sous-sessions) ou séquentiel ? Dépend du blueprint (#2).
-- **Carve `Card` vs `CardView`** (hérité voie-a) : tranchable une fois le schéma `AuthoritySnapshot` posé en P1.
+- **Ordre de démarrage** : ✅ tranché — P1 d'abord, blueprint produit (sous-tâche #2 done).
+- **Granularité P1** : ✅ tranché (Q4) — migration Prisma (étape 3) = gate commun, puis **4a auth ∥ 4b persistance** parallélisables.
+- **Q1 — Postgres** : ✅ tranché par recon SSH — **base dédiée `webuild_db` sur l'instance partagée `shared_postgres`** (PG 16.13, pgvector 0.8.2 dispo, pattern 1-DB-par-projet déjà établi, ~67 slots libres). **Réserve dure** : disque host à **95 % (12 Go libres)** → élaguer Docker (~50 Go récupérables, cf. draft-infra-poc §6) AVANT de charger les embeddings.
+- **Q2 — OAuth client GCP** : ✅ tranché — **nouveau client GCP dédié** à WeBuild (redirect URI `…/api/auth/callback/google` + scope `webmasters.readonly`). À créer côté GCP avant étape 4a.
+- **Carve `Card` vs `CardView`** (hérité voie-a) : blueprint tranche « stocker tous les champs TCG en placeholder, ne pas carver » — cohérent avec la décision différée.
+
+## Findings d'orchestration (synthèse sous-tâche #2)
+- Blueprint complet persisté → [p1-prod-foundation-blueprint.md](../plans/p1-prod-foundation-blueprint.md).
+- **Correction majeure du blueprint (Q3, vérifiée par grep)** : le repointage `lib/data`→DB n'est pas un changement de signature trivial. 5 composants `"use client"` + 2 server components appellent les accesseurs **au niveau module** ; passer en `async`/DB casse les deux. Sub-task **4b reclassée en vrai refactor** (lift fetch en Server Components, props-down). À déléguer à un `code-architect` pour le micro-plan de migration avant impl.
+- **Recon Postgres (sous-tâche #R, 2026-05-27)** : instance `shared_postgres-…` PG 16.13 Up 9j healthy ; pgvector 0.8.2 dispo (0.8.1 dans `augmenter`) ; 11 bases, pas de collision `webuild_db` ; 33/100 connexions ; PgBouncer dispo. **Disque `/` à 95 % (12 Go libres)** — prune Docker requis. Serveur modeste (Celeron 2c, ~2,3 Gi RAM libre) → instance séparée = gaspillage. **Note sécurité** : `POSTGRES_PASSWORD` en clair dans l'env du conteneur partagé.
+- **Design P3 → feedback critique sur P1 (sous-tâche #8)** : concevoir la boucle de jeu maintenant a révélé que le schéma **P1 doit anticiper** `Site.element` + `Site.thematique` + index (clés du matching/amortissement, déjà dans les fixtures) sinon migration P3 douloureuse. Répercuté dans [p1-prod-foundation-blueprint.md](../plans/p1-prod-foundation-blueprint.md) §Schéma. Avec ces 3 ajouts, **migration P3 = 100 % additive**. La sous-tâche #7 (matching) hérite des requêtes anti-cycle SQL récursif déjà esquissées dans [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md) §5.
+
+## Action items user (hors délégation — infra/GCP, jamais auto-exécutés)
+1. **Élaguer le disque** Coolify avant tout chargement d'embeddings : `ssh coolify "docker image prune -f && docker builder prune -f"` (≈50 Go récupérables).
+2. **Créer la base** (rôle `augmenter` = superuser) : `CREATE DATABASE webuild_db;` puis, connecté à `webuild_db`, `CREATE EXTENSION vector;`. Optionnel propre : rôle applicatif dédié non-superuser.
+3. **Entrée PgBouncer** pour `webuild_db` (cohérent avec le pooling existant).
+4. **Créer le client GCP OAuth dédié** WeBuild : redirect URI `…/api/auth/callback/google` + scope `webmasters.readonly` ; récupérer `GOOGLE_CLIENT_ID/SECRET`.
+5. **Committer D1+D3** (P0) avant de démarrer l'impl.
 
 ## How to resume
 1. Lire ce doc + [CLAUDE.md](../../CLAUDE.md) (« Decisions already locked » + « Target architecture »).
