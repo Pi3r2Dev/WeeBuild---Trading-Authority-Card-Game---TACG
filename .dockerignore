@@ -1,0 +1,44 @@
+# Contexte de build Docker minimal pour WeBuild.
+# Objectif : contexte léger (build sur hôte Celeron/RAM serrée) + zéro secret
+# dans l'image. On EXCLUT tout ce qui n'est pas requis pour `npm ci` →
+# `prisma generate` → `next build` → standalone.
+#
+# ⚠ NE PAS exclure : prisma/, lib/, app/, public/, next.config.ts, package*.json,
+#   prisma.config.ts, tsconfig.json, eslint.config.mjs, next-env.d.ts.
+
+# ─── Dépendances & artefacts régénérés au build ───────────────────────────
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# ─── Git / outillage ──────────────────────────────────────────────────────
+.git
+.gitignore
+.claude
+.playwright-mcp
+
+# ─── Secrets & env (fournis par Coolify à l'exécution — JAMAIS dans l'image) ─
+.env
+.env.*
+!.env.local.example
+
+# ─── Docs / design / assets lourds non requis au build ────────────────────
+docs
+design_handoff_webuild_tag
+README.md
+readme.txt
+CLAUDE.md
+*.md
+pyramid.png
+
+# ─── Le Dockerfile lui-même ────────────────────────────────────────────────
+Dockerfile
+.dockerignore
+
+# ─── Divers ────────────────────────────────────────────────────────────────
+.DS_Store
+*.pem
+npm-debug.log*

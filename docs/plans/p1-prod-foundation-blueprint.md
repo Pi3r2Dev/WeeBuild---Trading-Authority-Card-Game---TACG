@@ -64,7 +64,7 @@ Server Component deck → getMyDeck() → prisma.card.findMany({where:{userId},i
 6. **Déploiement Coolify** : env, `prisma migrate deploy` en pre-build, connectivité WireGuard→Firecrawl, premier login prod.
 
 ## Env (dev + Coolify)
-`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `GOOGLE_CLIENT_ID/SECRET`, `DATABASE_URL`, + infra existante (`FIRECRAWL_URL`, `LITELLM_BASE_URL`, `LITELLM_API_KEY=sk-webuild`). GCP : redirect URI `…/api/auth/callback/google` + scope `webmasters.readonly` déclaré.
+`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `GOOGLE_CLIENT_ID/SECRET`, `DATABASE_URL`, + infra existante (`FIRECRAWL_API_URL`, `LITELLM_BASE_URL`, `LITELLM_API_KEY`). ⚠ noms réels lus par le code (cf. [p1-coolify-deploy-plan.md](p1-coolify-deploy-plan.md)) : `FIRECRAWL_API_URL` (pas `FIRECRAWL_URL`), `LITELLM_BASE_URL`. GCP : redirect URI `…/api/auth/callback/google` + scope `webmasters.readonly` déclaré.
 
 ## Questions ouvertes (pour l'orchestrateur / user)
 - **Q1 — Postgres partagé vs dédié** : (a) base dédiée `webuild_db` sur l'instance PG16 partagée d'augmenter.pro (extension `vector` déjà présente, zéro coût, risque contention I/O) **recommandé** ; (b) instance séparée (isolation, +1 service Coolify). → **décision user avant étape 3**.
