@@ -56,11 +56,11 @@ Premier déploiement Coolify (~6 min build) : goulots identifiés dans les logs 
 | `COPY --from=deps node_modules` ×2 | ~110 s chacune | Suppression stage `deps` ; `builder` fait `npm ci` in-place |
 | `npm prune --omit=dev` sur 605 pkgs | ~45 s | `proddeps` = `npm ci --omit=dev` direct (~213 pkgs) |
 | `COPY proddeps → runner` | ~83 s | Moins de pkgs prod (R3F hors runtime) → copie plus légère |
-| Warnings peer `r3f-perf` → vieux `drei@9` | bruit npm | `overrides` dans `package.json` |
+| Warnings peer `r3f-perf` → vieux `drei@9` | bruit npm (devDeps only) | Cosmétique — absent du stage `proddeps --omit=dev` |
 
 **Changements livrés :**
 - `Dockerfile` : 3 stages effectifs (`builder` ∥ `proddeps` → `runner`), `.npmrc` copié au build.
-- `package.json` : stack R3F (`three`, `@react-three/*`, `html-to-image`) → `devDependencies` (bundlé au build Next, absent du `node_modules` runtime prod). `overrides` pour `r3f-perf`.
+- `package.json` : stack R3F (`three`, `@react-three/*`, `html-to-image`) → `devDependencies` (bundlé au build Next, absent du `node_modules` runtime prod).
 - `.npmrc` : `prefer-offline`, `audit=false`, `fund=false`, `progress=false`.
 - `.dockerignore` : exclusion `e2e/`, tests `*.test.ts`, configs Playwright/Vitest.
 
