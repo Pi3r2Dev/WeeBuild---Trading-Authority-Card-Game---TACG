@@ -260,7 +260,7 @@ function PublishPhase({
         style={inputBase}
       />
       <p style={{ margin: "6px 0 0", fontSize: 10, color: "var(--hub-fg-soft)", lineHeight: 1.4 }}>
-        Une fois l’article publié sur ton site, colle ici l’URL. La vérification automatique du lien (et la frappe des crédits) arrive ensuite.
+        Une fois l’article publié sur ton site, colle ici l’URL. Tu pourras ensuite lancer la vérification du lien dans <strong>Sceaux de preuve</strong> pour débloquer tes crédits.
       </p>
 
       <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
@@ -287,7 +287,7 @@ function AssistantNote({
 }) {
   let body: string;
   if (phase === "published") {
-    body = "Beau jeu. Ton lien est posé — je le vérifierai automatiquement bientôt, puis tes crédits tomberont.";
+    body = "Beau jeu, ton lien est enregistré. File dans « Sceaux de preuve » pour lancer la vérification et débloquer tes crédits.";
   } else if (phase === "publish") {
     body = "Lien validé ! Publie maintenant ton article et colle l’URL ci-dessous. Pas de panique : rien n’est automatique, tu restes l’éditeur.";
   } else if (verdict && !verdict.ok) {

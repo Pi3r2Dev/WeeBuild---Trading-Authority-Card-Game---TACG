@@ -536,15 +536,22 @@ model EditorialLink {
   verifiedAt  DateTime?
   brokenAt    DateTime?
 
+  /// Filigrane du dernier suivi GSC d'interactions (sweep worker/cron). NULL =
+  /// jamais suivi → priorité haute dans la file. cf. lib/links/gsc-tracking.ts.
+  lastGscTrackedAt DateTime?
+
   updatedAt DateTime @updatedAt
 
   proof         LinkProof?
   ledgerEntries CreditLedgerEntry[]
+  gscTracking   LinkGscSnapshot[]
 
   @@index([donorSiteId, beneficiarySiteId])
   @@index([donorUserId])
   @@index([beneficiaryUserId])
   @@index([status])
+  // Sweep du job de suivi GSC : liens dus (status + filigrane) en FIFO.
+  @@index([status, lastGscTrackedAt])
   @@map("editorial_link")
 }
 
@@ -570,6 +577,52 @@ model LinkProof {
   createdAt     DateTime @default(now())
 
   @@map("link_proof")
+}
+
+/// Côté suivi d'un lien éditorial dans GSC :
+/// `DONOR` = page hôte (`publishedUrl`, propriété GSC du donneur) — exposition
+/// de la page qui porte le lien ; `BENEFICIARY` = page liée (`targetUrl`,
+/// propriété du bénéficiaire) — la page qui reçoit le lien monte-t-elle ?
+/// NB : GSC mesure la perf de recherche d'une page, jamais les clics sortants.
+enum LinkTrackSide {
+  DONOR
+  BENEFICIARY
+}
+
+/// Historique insert-only des interactions GSC d'un lien éditorial (miroir de
+/// GscSnapshot, jamais d'UPDATE/DELETE). Une rangée = perf Search Analytics
+/// d'UNE page (filtrée `page = pageUrl`) sur une fenêtre, pour UN côté du lien.
+/// Alimenté par le sweep worker/cron (lib/links/gsc-tracking.ts) ; le filigrane
+/// EditorialLink.lastGscTrackedAt pilote la file. `gscProperty` = forme exacte
+/// de la propriété retenue ; `rawJson` conserve la row brute pour audit/recalcul.
+model LinkGscSnapshot {
+  id              String        @id @default(uuid())
+  editorialLinkId String
+  editorialLink   EditorialLink @relation(fields: [editorialLinkId], references: [id], onDelete: Cascade)
+
+  side     LinkTrackSide
+  /// URL exacte interrogée (publishedUrl côté donneur, targetUrl côté bénéficiaire).
+  pageUrl  String
+  /// Propriété GSC couvrant la page (préfixe URL ou `sc-domain:`).
+  gscProperty String
+
+  // Fenêtre couverte (date-only côté GSC, décalée du lag de consolidation).
+  startDate DateTime
+  endDate   DateTime
+
+  // Agrégats de la page sur la fenêtre (row totaux filtrée par page).
+  clicks      Int
+  impressions Int
+  ctr         Float
+  position    Float
+
+  // Payload brut (row Search Analytics) → recalcul/audit sans re-fetch.
+  rawJson Json
+
+  fetchedAt DateTime @default(now())
+
+  @@index([editorialLinkId, side, fetchedAt(sort: Desc)])
+  @@map("link_gsc_snapshot")
 }
 
 /// Dépense de crédits pour de la VISIBILITÉ dans le matching (ciblage par

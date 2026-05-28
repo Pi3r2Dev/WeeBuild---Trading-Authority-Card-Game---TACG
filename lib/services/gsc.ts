@@ -85,6 +85,18 @@ interface SearchAnalyticsResponse {
   error?: { code?: number; message?: string; status?: string };
 }
 
+/** Filtre de dimension Search Analytics (ex. restreindre à une page précise). */
+export interface SearchAnalyticsDimensionFilter {
+  dimension: "page" | "query" | "country" | "device" | "searchAppearance";
+  operator?: "equals" | "contains" | "notContains" | "includingRegex" | "excludingRegex";
+  expression: string;
+}
+
+interface SearchAnalyticsDimensionFilterGroup {
+  groupType?: "and";
+  filters: SearchAnalyticsDimensionFilter[];
+}
+
 interface SearchAnalyticsQueryBody {
   startDate: string;
   endDate: string;
@@ -92,6 +104,7 @@ interface SearchAnalyticsQueryBody {
   dimensions?: string[];
   rowLimit?: number;
   startRow?: number;
+  dimensionFilterGroups?: SearchAnalyticsDimensionFilterGroup[];
 }
 
 interface SiteEntry {
@@ -332,6 +345,33 @@ export function resolveGscPropertyCandidates(verifiedSites: string[], siteUrl: s
 }
 
 /**
+ * Choisit, parmi des propriétés vérifiées, celle qui couvre une page donnée.
+ *
+ * **Pur** (testable). Préfère une propriété domaine (`sc-domain:`) — elle couvre
+ * sous-domaines + variantes www, donc plus robuste qu'un préfixe URL étroit pour
+ * filtrer une page précise. `null` si aucune ne couvre la page.
+ */
+export function pickPropertyCoveringUrl(verifiedSites: string[], pageUrl: string): string | null {
+  const covering = verifiedSites.filter((p) => propertyCoversUrl(p, pageUrl));
+  if (covering.length === 0) return null;
+  return covering.find((p) => p.startsWith("sc-domain:")) ?? covering[0];
+}
+
+/**
+ * Résout la propriété GSC du compte qui couvre `pageUrl` (GET /sites + filtre).
+ *
+ * Repli sur les heuristiques {@link siteUrlCandidates} si GET /sites ne renvoie
+ * aucune propriété couvrante (liste éventuellement incomplète). `null` si rien.
+ */
+export async function resolvePropertyCoveringUrl(
+  accessToken: string,
+  pageUrl: string,
+): Promise<string | null> {
+  const verified = await listVerifiedSites(accessToken);
+  return pickPropertyCoveringUrl(verified, pageUrl) ?? pickPropertyCoveringUrl(siteUrlCandidates(pageUrl), pageUrl);
+}
+
+/**
  * Choisit la propriété GSC la plus représentative parmi celles qui ont répondu.
  *
  * Critère : max impressions (couverture), puis max clics en cas d'égalité.
@@ -548,6 +588,47 @@ export async function fetchSearchAnalytics(
   endDate: string,
 ): Promise<GscAggregate> {
   return fetchExtendedPropertyMetrics(accessToken, siteUrl, startDate, endDate);
+}
+
+/** Perf de recherche d'UNE page sur une fenêtre (totaux filtrés `page = pageUrl`). */
+export interface PageMetrics {
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  startDate: string;
+  endDate: string;
+  raw: { totalsRow: SearchAnalyticsRow | null };
+}
+
+/**
+ * Interroge la perf GSC d'une page précise (filtre `page equals pageUrl`,
+ * **sans dimension** → 1 row de totaux pour la page).
+ *
+ * Sert au suivi des interactions d'un lien : exposition de la page hôte
+ * (`publishedUrl`) côté donneur, ou de la page liée (`targetUrl`) côté
+ * bénéficiaire. ⚠️ GSC ne mesure PAS les clics sortants sur l'ancre — seulement
+ * la perf de recherche Google → page.
+ *
+ * @throws {GscError} propriété non vérifiée (403/404) ou erreur API.
+ */
+export async function fetchPageMetrics(
+  accessToken: string,
+  siteUrl: string,
+  pageUrl: string,
+  startDate: string,
+  endDate: string,
+): Promise<PageMetrics> {
+  const json = await postSearchAnalyticsQuery(accessToken, siteUrl, {
+    startDate,
+    endDate,
+    dimensionFilterGroups: [
+      { filters: [{ dimension: "page", operator: "equals", expression: pageUrl }] },
+    ],
+  });
+  const totalsRow = json.rows?.[0];
+  const metrics = metricsFromTotalsRow(totalsRow);
+  return { ...metrics, startDate, endDate, raw: { totalsRow: totalsRow ?? null } };
 }
 
 /**

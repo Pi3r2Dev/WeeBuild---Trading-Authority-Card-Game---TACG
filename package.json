@@ -16,6 +16,7 @@
     "smoketest": "playwright test e2e/smoke e2e/guest",
     "smoketest:report": "playwright show-report",
     "worker:gsc-import": "tsx scripts/gsc-import-worker.ts",
+    "worker:link-tracking": "tsx scripts/link-tracking-worker.ts",
     "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit"
   },
   "prisma": {

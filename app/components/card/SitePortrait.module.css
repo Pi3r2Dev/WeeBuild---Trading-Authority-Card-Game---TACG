@@ -1,10 +1,14 @@
-/* Portrait personnalisé — filtres CSS par niveau (MVP A/B). */
+/* Portrait personnalisé — traitement rétro par niveau (P2-9).
+   Réutilise les palettes/effets de tokens.css via les vars --c-* héritées
+   du conteneur .lvl-N (CardFront en prod, PortraitFrame sur /ab/portrait). */
 
 .portrait {
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  /* Confine les mix-blend-mode au portrait (sinon ils bavent sur la carte). */
+  isolation: isolate;
   background: var(--c-deep, #0f380f);
 }
 
@@ -18,8 +22,13 @@
   display: block;
 }
 
+.hero {
+  z-index: 0;
+}
+
 .screen {
-  opacity: 0.28;
+  z-index: 1;
+  opacity: 0.26;
   mix-blend-mode: soft-light;
 }
 
@@ -33,7 +42,7 @@
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.55);
   padding: 2px;
-  z-index: 2;
+  z-index: 4;
 }
 
 .initials {
@@ -49,69 +58,166 @@
   opacity: 0.85;
 }
 
+/* ── Overlays (z entre screen et logo) ───────────────────── */
+
+/* Damier dithering (N1) — points sombres = vert profond de la palette */
+.dither {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, var(--c-deep, #0f380f) 1px, transparent 1.3px);
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+  z-index: 3;
+}
+
 .scanlines {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.12) 0,
-    rgba(0, 0, 0, 0.12) 1px,
+    rgba(0, 0, 0, 0.14) 0,
+    rgba(0, 0, 0, 0.14) 1px,
     transparent 1px,
     transparent 3px
   );
-  z-index: 3;
+  mix-blend-mode: multiply;
+  z-index: 5;
 }
 
+/* Lens flare PS2 (N3) — calqué sur .ps2-flare de tokens.css */
+.flare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background:
+    radial-gradient(10px 10px at 24% 18%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(72px 36px at 24% 18%, rgba(147, 197, 253, 0.22), transparent 70%),
+    radial-gradient(3px 3px at 32% 30%, rgba(255, 255, 255, 0.7), transparent 70%),
+    radial-gradient(2px 2px at 42% 42%, rgba(255, 255, 255, 0.5), transparent 70%);
+  mix-blend-mode: screen;
+}
+
+/* Foil holographique (N4) — conic réactif + shimmer diagonal */
 .holoOverlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: conic-gradient(
-    from 120deg at 50% 50%,
-    rgba(255, 0, 127, 0.25),
-    rgba(127, 0, 255, 0.2),
-    rgba(0, 255, 255, 0.25),
-    rgba(255, 0, 127, 0.25)
-  );
-  mix-blend-mode: color-dodge;
-  opacity: 0.45;
   z-index: 3;
 }
-
-/* N1 Game Boy */
-.lvl1 .hero {
-  filter: grayscale(1) contrast(1.35) brightness(0.95);
-  image-rendering: pixelated;
-}
-
-.lvl1 .logo {
-  filter: grayscale(1) contrast(1.2);
-  image-rendering: pixelated;
-}
-
-/* N2 SNES */
-.lvl2 .hero {
-  filter: saturate(1.45) contrast(1.08);
-  image-rendering: pixelated;
-}
-
-/* N3 PS2 */
-.lvl3 .hero {
-  filter: saturate(0.75) contrast(1.05) brightness(1.05);
-}
-
-.lvl3 .screen {
-  opacity: 0.35;
-  filter: blur(0.3px);
-}
-
-/* N4 Holo */
-.lvl4 .hero {
-  filter: saturate(1.2) contrast(1.05);
-}
-
-.lvl4 .screen {
-  opacity: 0.2;
+.holoOverlay::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background: conic-gradient(
+    from 130deg at 50% 50%,
+    #ff007f 0%,
+    #ffae00 16%,
+    #fff700 30%,
+    #00ff8a 44%,
+    #00ffff 58%,
+    #5b00ff 72%,
+    #ff00d4 86%,
+    #ff007f 100%
+  );
+  filter: blur(7px) saturate(150%);
+  opacity: 0.5;
   mix-blend-mode: screen;
+}
+.holoOverlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.07) 0px,
+    rgba(255, 255, 255, 0.07) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* ── N1 Game Boy — duotone 4 verts (multiply sur fond pâle) ── */
+.lvl1 {
+  background: var(--c-pale, #9bbc0f);
+}
+.lvl1 .hero {
+  filter: grayscale(1) contrast(1.55) brightness(1.16);
+  mix-blend-mode: multiply;
+  image-rendering: pixelated;
+}
+.lvl1 .screen {
+  opacity: 0.16;
+  filter: grayscale(1) contrast(1.3);
+  mix-blend-mode: multiply;
+}
+.lvl1 .logo {
+  filter: grayscale(1) contrast(1.25);
+  image-rendering: pixelated;
+  background: var(--c-deep, #0f380f);
+}
+.lvl1 .initials {
+  color: var(--c-deep, #0f380f);
+  font-family: var(--font-pixel-display, monospace);
+}
+
+/* ── N2 SNES — saturé 16 couleurs + Mode-7 léger + biseau cartouche ── */
+.lvl2 {
+  background: var(--c-deep, #1a1054);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.5),
+    inset 2px 0 0 rgba(255, 255, 255, 0.12),
+    inset -2px 0 0 rgba(0, 0, 0, 0.32);
+}
+.lvl2 .hero {
+  filter: saturate(1.6) contrast(1.12) brightness(1.03);
+  image-rendering: pixelated;
+  transform: perspective(520px) rotateX(9deg) scale(1.22);
+  transform-origin: center 72%;
+}
+.lvl2 .screen {
+  opacity: 0.3;
+  mix-blend-mode: soft-light;
+}
+
+/* ── N3 PS2 — bloom bleu nuit + hero délavé + lens flare ── */
+.lvl3 {
+  background:
+    radial-gradient(120% 80% at 70% 20%, rgba(96, 165, 250, 0.5) 0%, transparent 60%),
+    linear-gradient(180deg, #1e3a8a 0%, #0a1638 100%);
+}
+.lvl3 .hero {
+  filter: saturate(0.8) contrast(1.05) brightness(1.08)
+    drop-shadow(0 0 10px rgba(96, 165, 250, 0.4));
+  opacity: 0.96;
+}
+.lvl3 .screen {
+  opacity: 0.34;
+  filter: blur(0.4px) saturate(0.85);
+  mix-blend-mode: screen;
+}
+.lvl3 .logo {
+  background: linear-gradient(180deg, rgba(226, 232, 240, 0.9), rgba(71, 85, 105, 0.85));
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+/* ── N4 Holo — pleine couleur + foil + shimmer ── */
+.lvl4 {
+  background: #0a0a14;
+}
+.lvl4 .hero {
+  filter: saturate(1.28) contrast(1.06);
+}
+.lvl4 .screen {
+  opacity: 0.18;
+  mix-blend-mode: screen;
+}
+.lvl4 .logo {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }

@@ -48,7 +48,13 @@ export function SitePortrait({ level, assets, domain }: SitePortraitProps) {
         <img className={styles.logo} src={assets.logoUrl} alt="" draggable={false} />
       ) : null}
 
-      {level === 1 && <div className={styles.scanlines} aria-hidden />}
+      {level === 1 && (
+        <>
+          <div className={styles.dither} aria-hidden />
+          <div className={styles.scanlines} aria-hidden />
+        </>
+      )}
+      {level === 3 && <div className={styles.flare} aria-hidden />}
       {level === 4 && <div className={styles.holoOverlay} aria-hidden />}
     </div>
   );

@@ -1,14 +1,11 @@
-import { getMyDeck, getNavDeck, getProofs } from "@/lib/data";
+import { getNavDeck } from "@/lib/data";
+import { getProofViews } from "@/lib/links/read";
 import { requireSession } from "@/lib/auth-session";
 import { PreuveScreen } from "./PreuveScreen";
 
-/** Loader SERVER pour PreuveScreen. */
+/** Loader SERVER pour PreuveScreen — liens publiés du donneur + leurs preuves (B4). */
 export async function PreuveScreenLoader() {
   const userId = (await requireSession()).user.id;
-  const [mySites, navDeck, proofs] = await Promise.all([
-    getMyDeck(userId),
-    getNavDeck(),
-    getProofs(),
-  ]);
-  return <PreuveScreen mySites={mySites} navDeck={navDeck} proofs={proofs} />;
+  const [navDeck, proofs] = await Promise.all([getNavDeck(), getProofViews(userId)]);
+  return <PreuveScreen navDeck={navDeck} proofs={proofs} />;
 }

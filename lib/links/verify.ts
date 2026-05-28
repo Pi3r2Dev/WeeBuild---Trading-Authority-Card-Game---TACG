@@ -13,6 +13,7 @@
  */
 
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { scrape } from "@/lib/services/firecrawl";
 import { estimateLinkCredits } from "@/lib/credits/estimate";
 import { brandTokensFromDomain } from "./anchor-policy";
@@ -41,7 +42,7 @@ async function recordProof(
     mentionDetected: boolean;
     rel: string | null;
     positionInPage: number | null;
-    captureJson: Record<string, unknown>;
+    captureJson: Prisma.InputJsonValue;
   },
 ): Promise<void> {
   const now = new Date();
@@ -82,7 +83,7 @@ export async function verifyLink(input: { userId: string; linkId: string }): Pro
 
   // Scrape HORS transaction (appel réseau lent).
   let html: string;
-  let captureJson: Record<string, unknown>;
+  let captureJson: Prisma.InputJsonValue;
   try {
     const res = await scrape(link.publishedUrl, { onlyMainContent: false });
     html = res.html || res.markdown;

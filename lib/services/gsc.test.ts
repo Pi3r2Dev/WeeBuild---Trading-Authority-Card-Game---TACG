@@ -6,6 +6,7 @@ import {
   DEFAULT_WINDOW_DAYS,
   GSC_DATA_LAG_DAYS,
   pickBestGscProperty,
+  pickPropertyCoveringUrl,
   propertyCoversUrl,
   resolveGscPropertyCandidates,
   metricsFromTotalsRow,
@@ -121,6 +122,29 @@ describe("pickBestGscProperty", () => {
 
   it("renvoie null si aucune tentative", () => {
     expect(pickBestGscProperty([])).toBeNull();
+  });
+});
+
+describe("pickPropertyCoveringUrl", () => {
+  it("préfère une propriété domaine (sc-domain) qui couvre la page", () => {
+    const p = pickPropertyCoveringUrl(
+      ["https://www.exemple.com/", "sc-domain:exemple.com"],
+      "https://blog.exemple.com/post",
+    );
+    expect(p).toBe("sc-domain:exemple.com");
+  });
+
+  it("retombe sur le premier préfixe couvrant si aucun sc-domain", () => {
+    const p = pickPropertyCoveringUrl(
+      ["https://autre.com/", "https://exemple.com/blog/"],
+      "https://exemple.com/blog/post",
+    );
+    expect(p).toBe("https://exemple.com/blog/");
+  });
+
+  it("renvoie null si aucune propriété ne couvre la page", () => {
+    expect(pickPropertyCoveringUrl(["sc-domain:autre.com"], "https://exemple.com/x")).toBeNull();
+    expect(pickPropertyCoveringUrl([], "https://exemple.com/x")).toBeNull();
   });
 });
 

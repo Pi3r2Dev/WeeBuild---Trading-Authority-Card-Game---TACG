@@ -10,7 +10,14 @@
 
 import { db } from "@/lib/db";
 import { estimateLinkCredits } from "@/lib/credits/estimate";
-import type { EditorialLinkView, LinkStatus, SuggestionReviewView, ValidationQueueItem } from "./types";
+import type {
+  EditorialLinkView,
+  LinkStatus,
+  ProofRecordStatus,
+  ProofView,
+  SuggestionReviewView,
+  ValidationQueueItem,
+} from "./types";
 import { brandTokensFromDomain, type AnchorType } from "./anchor-policy";
 
 const PLACEHOLDER_PREFIX = "[À GÉNÉRER]";
@@ -158,5 +165,74 @@ export async function getSuggestionForReview(
 export async function getValidationQueueCount(userId: string): Promise<number> {
   return db.editorialSuggestion.count({
     where: { sourceSite: { userId }, status: "GENERATED" },
+  });
+}
+
+/** Statuts de lien visibles sur l'écran preuves (publiés et au-delà). */
+const PROOF_VISIBLE_STATUSES = ["PUBLISHED", "PROOF_PENDING", "VERIFIED", "BROKEN"] as const;
+
+/**
+ * Liens du DONNEUR éligibles aux sceaux de preuve (B4) + leur dernière capture.
+ * Sert l'écran /preuves : vérifiables (PUBLISHED) → vérifiés / rompus.
+ */
+export async function getProofViews(userId: string): Promise<ProofView[]> {
+  const rows = await db.editorialLink.findMany({
+    where: { donorUserId: userId, status: { in: [...PROOF_VISIBLE_STATUSES] } },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      anchorText: true,
+      anchorType: true,
+      targetUrl: true,
+      publishedUrl: true,
+      status: true,
+      verifiedAt: true,
+      creditsComputed: true,
+      beneficiarySite: {
+        select: { domain: true, card: { select: { id: true, level: true, user: { select: { name: true } } } } },
+      },
+      suggestion: { select: { relevanceScore: true, naturalScore: true } },
+      proof: {
+        select: {
+          status: true,
+          linkDetected: true,
+          mentionDetected: true,
+          rel: true,
+          positionInPage: true,
+          lastCheckedAt: true,
+          checkCount: true,
+        },
+      },
+    },
+  });
+
+  return rows.map((r) => {
+    const level = r.beneficiarySite.card?.level ?? 1;
+    const credits = r.creditsComputed ?? creditsFor(r.suggestion?.relevanceScore ?? 0.5, level, r.suggestion?.naturalScore ?? null);
+    return {
+      linkId: r.id,
+      beneficiaryCardId: r.beneficiarySite.card?.id ?? null,
+      targetDomain: r.beneficiarySite.domain,
+      targetOwner: r.beneficiarySite.card?.user?.name ?? r.beneficiarySite.domain,
+      targetLevel: level,
+      anchorText: r.anchorText,
+      anchorType: r.anchorType as AnchorType,
+      targetUrl: r.targetUrl,
+      publishedUrl: r.publishedUrl,
+      status: r.status as LinkStatus,
+      credits,
+      verifiedAt: r.verifiedAt?.toISOString() ?? null,
+      proof: r.proof
+        ? {
+            status: r.proof.status as ProofRecordStatus,
+            linkDetected: r.proof.linkDetected,
+            mentionDetected: r.proof.mentionDetected,
+            rel: r.proof.rel,
+            positionInPage: r.proof.positionInPage,
+            lastCheckedAt: r.proof.lastCheckedAt.toISOString(),
+            checkCount: r.proof.checkCount,
+          }
+        : null,
+    };
   });
 }

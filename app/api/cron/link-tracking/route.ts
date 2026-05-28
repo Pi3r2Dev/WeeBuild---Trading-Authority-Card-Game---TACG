@@ -1,16 +1,17 @@
 /**
- * Cron HTTP — traitement de la file d'import GSC batch.
+ * Cron HTTP — sweep du suivi GSC des liens éditoriaux (secours on-demand).
  *
- * Sécurisé par `CRON_SECRET` (header `Authorization: Bearer …`).
- * Planifier côté Coolify (ex. toutes les 2 min) ou cron host.
+ * Sécurisé par `CRON_SECRET` (Bearer, comparé en temps constant). Le trigger
+ * recommandé en prod reste le worker conteneur planifié (`npm run
+ * worker:link-tracking`) — aucun endpoint exposé.
  *
- * POST /api/cron/gsc-import
- * Body optionnel : `{ "limit": 3 }`
+ * POST /api/cron/link-tracking
+ * Body optionnel : `{ "limit": 10 }`
  */
 
 import { NextResponse } from "next/server";
-import { processGscImportQueue } from "@/lib/gsc/batch-import";
 import { authorizeCron } from "@/lib/cron/authorize";
+import { processLinkTrackingQueue } from "@/lib/links/gsc-tracking";
 
 export async function POST(request: Request): Promise<NextResponse> {
   if (!authorizeCron(request)) {
@@ -25,11 +26,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     /* body vide OK */
   }
 
-  const result = await processGscImportQueue(limit);
+  const result = await processLinkTrackingQueue(limit);
 
   return NextResponse.json({
     ok: true,
     processed: result.processed,
-    batchIds: result.batchIds,
+    snapshotsCreated: result.snapshotsCreated,
+    failed: result.failed,
+    linkIds: result.linkIds,
   });
 }

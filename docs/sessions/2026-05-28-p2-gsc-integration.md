@@ -36,6 +36,13 @@ tags: [p2, gsc, authority-score, search-console]
   - `queryCount` — déjà persisté, exposé au score v2.
   Les signaux on-page v1 (liens externes, maillage…) restent **homepage Firecrawl** ; l'UI contextualise (« homepage seule ; site : N pages indexées GSC »). Score v2 : 6 signaux `gsc_*` (impressions, clics, position, pages indexées, URLs avec trafic, requêtes). Module : [lib/services/gsc-sitemaps.ts](../../lib/services/gsc-sitemaps.ts).
   **UI (2026-05-28)** : [AuthoritySignalsPanel.tsx](../../app/components/authority/AuthoritySignalsPanel.tsx) — sections « On-page · page capturée » vs « Search Console · site entier », sous-totaux par section, puces couverture GSC, détail sur ligne dédiée (longs textes lisibles).
+- **Suivi GSC des liens éditoriaux (2026-05-28)** : sweep périodique qui relève la perf de recherche des pages d'un `EditorialLink` vivant (`PUBLISHED`/`VERIFIED`) :
+  - **DONOR** = `publishedUrl` (page hôte, propriété GSC du donneur) ; **BENEFICIARY** = `targetUrl` (page liée, propriété du bénéficiaire). ⚠️ GSC mesure la perf Google→page, **jamais** les clics sortants sur l'ancre (pour ça → endpoint de redirection, autre chantier).
+  - Historique insert-only `LinkGscSnapshot` (miroir `GscSnapshot`) ; filigrane `EditorialLink.lastGscTrackedAt` pilote la file (nul/périmé = dû). Idempotent, repreneable, skip gracieux si un côté n'a pas connecté GSC.
+  - API : `fetchPageMetrics` (filtre `page = pageUrl`, totaux sans dimension) + `resolvePropertyCoveringUrl`/`pickPropertyCoveringUrl` (préfère `sc-domain:`) dans [lib/services/gsc.ts](../../lib/services/gsc.ts) ; orchestration [lib/links/gsc-tracking.ts](../../lib/links/gsc-tracking.ts).
+  - **Trigger** : `npm run worker:link-tracking` (worker conteneur planifié — **reco primaire**, aucun endpoint exposé) ou `POST /api/cron/link-tracking` (secours, `CRON_SECRET`). Knobs `WEBUILD_LINK_TRACK_INTERVAL_DAYS` (déf. 7), `WEBUILD_LINK_TRACK_ITEMS_PER_TICK` (déf. 5, max 50).
+  - **Sécurité** : autorisation cron factorisée + durcie en temps constant ([lib/cron/authorize.ts](../../lib/cron/authorize.ts), `timingSafeEqual`) — partagée par `gsc-import` et `link-tracking`. Reco pérenne : privilégier le worker (surface nulle) ; palier « haut de gamme » = BullMQ + Redis (Bull Board déjà en infra) sans réécrire `processLinkTrackingQueue`.
+  - Migration `20260528200000_link_gsc_tracking` (enum `LinkTrackSide`, table `link_gsc_snapshot`, colonne+index `lastGscTrackedAt`) — **à appliquer** (`prisma migrate deploy`).
 
 ### Pièges API (ne pas régresser)
 
