@@ -87,7 +87,13 @@ export function getNavCard(id: string): NavCard | undefined {
   return fx.NAV_DECK.find((c) => c.id === id);
 }
 
-/** Suggestions IA (donner / promouvoir). TODO: P3. */
+/**
+ * Suggestions IA (donner / promouvoir). TODO: P3.
+ * La donnée réelle existe désormais : `EditorialSuggestion` est peuplée par
+ * lib/matching (triggerMatching → runMatching). Reste fixtures tant que
+ * GAME_LOOP_ENABLED=false ET que le mapping EditorialSuggestion → Suggestion
+ * front (qui exige les crédits, hors périmètre matching) n'est pas tranché.
+ */
 export function getSuggestions(): Suggestion[] {
   return fx.AI_SUGGESTIONS;
 }
@@ -97,7 +103,12 @@ export function getRecentActivity(): Activity[] {
   return fx.RECENT_ACTIVITY;
 }
 
-/** Partenaires éditoriaux suggérés (flux « Donner »). TODO: P3. */
+/**
+ * Partenaires éditoriaux suggérés (flux « Donner »). TODO: P3.
+ * Source réelle = lib/matching `findPartners`/`EditorialSuggestion`. Reste
+ * fixtures : le type front `Partner` embarque une `NavCard` complète + des
+ * crédits (hors périmètre matching) → mapping à faire avec l'UI/crédits P3.
+ */
 export function getPartners(): Partner[] {
   return fx.PARTNERS_SUGGESTED;
 }

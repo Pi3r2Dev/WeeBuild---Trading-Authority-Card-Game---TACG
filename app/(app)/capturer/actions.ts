@@ -16,6 +16,7 @@ import { computeAuthority, type AuthorityResult } from "@/lib/authority/score";
 import { extractEditorial, type EditorialExtract } from "@/lib/authority/extract";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth-session";
+import { embedSite } from "@/lib/matching/embed-site";
 
 export interface CaptureSuccess {
   ok: true;
@@ -147,6 +148,15 @@ async function persistCapture(
     where: { siteId: persisted.id },
     update: cardFields,
     create: { siteId: persisted.id, ...cardFields },
+  });
+
+  // Embedding topical (best-effort) : alimente Site.embedding (pgvector 1536d),
+  // clé du matching P3. Ne JAMAIS casser la capture si l'embedding échoue
+  // (pas de clé LiteLLM, infra injoignable…) → embedSite log + avale l'erreur.
+  await embedSite(persisted.id, {
+    title: site.title,
+    description: site.description,
+    markdown: site.markdown,
   });
 
   // Snapshot insert-only : on conserve l'historique de chaque (re)capture.
