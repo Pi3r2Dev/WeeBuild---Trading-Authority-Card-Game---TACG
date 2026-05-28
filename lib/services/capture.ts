@@ -51,12 +51,27 @@ export async function captureSite(rawUrl: string): Promise<CapturedSite> {
 }
 
 /**
+ * Le format `screenshot` exige un moteur Firecrawl à navigateur CDP (fire-engine).
+ * Un déploiement self-hosted sans ce moteur renvoie `SCRAPE_ALL_ENGINES_FAILED`
+ * (liste de moteurs vide, HTTP 500) DÈS qu'on le demande — ce qui faisait échouer
+ * toute capture (rescan, onboarding, import GSC). On le rend donc opt-in : poser
+ * `FIRECRAWL_SCREENSHOT=true` quand l'infra gère le screenshot. Sans lui, le
+ * portrait retombe sur og:image / logo (cf. extract-visual-assets.ts).
+ */
+function screenshotEnabled(): boolean {
+  return process.env.FIRECRAWL_SCREENSHOT === "true";
+}
+
+/**
  * Capture enrichie Tier 1 — texte + assets visuels (logo, hero, screenshot viewport).
  * `onlyMainContent: false` pour conserver header/hero dans le HTML.
  */
 export async function captureSiteWithVisuals(rawUrl: string): Promise<CapturedSite> {
+  const formats = screenshotEnabled()
+    ? [...VISUAL_SCRAPE_FORMATS]
+    : VISUAL_SCRAPE_FORMATS.filter((f) => f !== "screenshot");
   const scraped = await firecrawl.scrape(rawUrl, {
-    formats: [...VISUAL_SCRAPE_FORMATS],
+    formats,
     onlyMainContent: false,
     waitFor: 1_500,
   });

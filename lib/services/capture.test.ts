@@ -17,10 +17,11 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  delete process.env.FIRECRAWL_SCREENSHOT;
 });
 
 describe("captureSiteWithVisuals", () => {
-  it("attache visualAssets depuis le scrape enrichi", async () => {
+  it("attache visualAssets (logo + hero) sans demander de screenshot par défaut", async () => {
     mockScrape.mockResolvedValue({
       markdown: "# Titre\nContenu",
       html: FIXTURE_SAAS,
@@ -29,13 +30,29 @@ describe("captureSiteWithVisuals", () => {
         sourceURL: "https://example.com",
         ogImage: "https://cdn.example.com/og/hero-wide.jpg",
       },
-      screenshot: "https://firecrawl.test/shot.webp",
     });
 
     const site = await captureSiteWithVisuals("https://example.com");
     expect(site.visualAssets?.heroImageUrl).toBe("https://cdn.example.com/og/hero-wide.jpg");
-    expect(site.visualAssets?.homepageScreenshotUrl).toBe("https://firecrawl.test/shot.webp");
+    expect(site.visualAssets?.homepageScreenshotUrl).toBeNull();
     expect(site.visualAssets?.logoUrl).toContain("apple-touch-icon");
+    const formats = mockScrape.mock.calls[0][1]?.formats ?? [];
+    expect(formats).toContain("markdown");
+    expect(formats).toContain("html");
+    expect(formats).not.toContain("screenshot");
+  });
+
+  it("demande le screenshot quand FIRECRAWL_SCREENSHOT=true", async () => {
+    process.env.FIRECRAWL_SCREENSHOT = "true";
+    mockScrape.mockResolvedValue({
+      markdown: "# Titre\nContenu",
+      html: FIXTURE_SAAS,
+      metadata: { title: "T", sourceURL: "https://example.com" },
+      screenshot: "https://firecrawl.test/shot.webp",
+    });
+
+    const site = await captureSiteWithVisuals("https://example.com");
+    expect(site.visualAssets?.homepageScreenshotUrl).toBe("https://firecrawl.test/shot.webp");
     expect(mockScrape).toHaveBeenCalledWith(
       "https://example.com",
       expect.objectContaining({ onlyMainContent: false, formats: expect.arrayContaining(["screenshot"]) }),

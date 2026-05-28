@@ -169,6 +169,10 @@ export async function scrape(rawUrl: string, opts: ScrapeOptions = {}): Promise<
         url: url.toString(),
         formats: resolveFormats(opts),
         onlyMainContent: opts.onlyMainContent ?? true,
+        // Aligne le budget de rendu Firecrawl sur notre fenêtre fetch (sinon il
+        // applique son défaut ~30 s et abandonne avant l'abort client → SCRAPE_TIMEOUT
+        // sur les pages JS lourdes / rendu à froid). Marge de 5 s pour recevoir l'erreur.
+        timeout: Math.max(timeoutMs - 5_000, 10_000),
         ...(waitFor != null ? { waitFor } : {}),
       });
 
