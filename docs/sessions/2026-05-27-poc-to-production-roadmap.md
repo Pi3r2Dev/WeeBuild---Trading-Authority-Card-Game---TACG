@@ -11,6 +11,14 @@ tags: [roadmap, production, architecture, orchestration]
 # Roadmap POC → production — cadrage phasé (jalons + dépendances)
 
 ## Status
+open — **P1 DÉPLOYÉ EN PRODUCTION** (2026-05-28) sur `https://weebuildtacg.augmenter.pro` (cert TLS OK, conteneur `healthy`). Vérifié SSH : `migrate deploy` no-op (base déjà migrée), self `/login` 200, Firecrawl `10.10.0.1:3002` 200, LiteLLM `litellm:4000` alive, `shared_postgres` résolu. Image Coolify build pack Dockerfile (réseau `coolify`, env runtime-only + placeholders de build). **Reste (user)** : ajouter la **redirect URI prod GCP** `https://weebuildtacg.augmenter.pro/api/auth/callback/google` + origine, puis **test login Google** (compte test-user). Ensuite : nettoyer la donnée de seed dev en prod si besoin (dev et prod partagent `webuild_db`). Phases P2/P3/P4 ensuite.
+
+### Historique build déploiement (3 itérations)
+1. `public/` absent → `COPY /app/public` échouait → ajout `public/.gitkeep` (commit a7c0790).
+2. `prisma generate` → `PrismaConfigEnvError: DATABASE_URL` (rendu runtime-only) → placeholders d'env de build dans le Dockerfile (commit 669fd0b).
+3. ✅ Build OK → conteneur up healthy, deps joignables, HTTPS public 307→/login.
+
+## Ancien Status (P1 code-complet)
 open — **P1 CODE-COMPLET** (2026-05-28). Tranche verticale entière en code : Google login (Better Auth + scope GSC) → déclarer/capturer un site → `Site/Card/AuthoritySnapshot` persistés → deck lu depuis la DB ; routes protégées par middleware. `tsc` + `next build` (15 routes) verts ; OAuth vérifié jusqu'à l'écran Google. **Reste P1, gaté sur le user** : (a) **test manuel du login Google réel** (compte test-user GCP) ; (b) **exécution déploiement** (créer le service Coolify + repo↔Coolify + secrets + domaine prod + build image). **5 lots verts NON committés** (D1+D3, Prisma, 4b, Dockerfile, 4a) — commit très en retard. Phases P2/P3/P4 à n'attaquer qu'après P1 déployé+committé+testé.
 
 ## Items ouverts pour P2 (notés, non bloquants)
@@ -117,7 +125,9 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 3. **Entrée PgBouncer** pour `webuild_db` (cohérent avec le pooling existant). — ⏳
 4. ✅ **FAIT (2026-05-28)** : client GCP OAuth dédié créé (dev), `.env.local` configuré. **Domaine prod = `weebuildtacg.augmenter.pro`** → reste à ajouter côté GCP la redirect URI prod `https://weebuildtacg.augmenter.pro/api/auth/callback/google` + l'origine, et un **enregistrement DNS A** `weebuildtacg.augmenter.pro` → IP serveur Coolify.
 5. ✅ **FAIT (2026-05-28)** : tous les lots P1 committés sur `main` (HEAD `e453b42`, arbre propre).
-6. **Déploiement Coolify (user, en cours)** : Build Pack **Dockerfile**, *Connect to Predefined Network* `coolify`, port `3000`, healthcheck `/login`, FQDN `https://weebuildtacg.augmenter.pro`, env du [deploy plan](../plans/p1-coolify-deploy-plan.md) (⚠ `NEXT_PUBLIC_APP_URL` à cocher « Build Variable »). Prune disque avant un gros build.
+6. ✅ **FAIT (2026-05-28)** : déployé sur Coolify (Dockerfile, réseau `coolify`, port 3000), live sur `https://weebuildtacg.augmenter.pro` (TLS OK, healthy, deps vérifiées). Env Coolify toutes **runtime-only** (le build utilise des placeholders ; `NEXT_PUBLIC_APP_URL` via build-arg).
+7. **Redirect URI prod GCP** : ajouter `https://weebuildtacg.augmenter.pro/api/auth/callback/google` + origine `https://weebuildtacg.augmenter.pro` dans le client OAuth → débloque le login Google en prod. — ⏳
+8. **Test login Google prod** (compte test-user GCP) → vérifier session + `Account.scope` GSC + redirect deck. — ⏳
 
 ## How to resume
 1. Lire ce doc (Status + sous-tâches + findings) + [blueprint P1](../plans/p1-prod-foundation-blueprint.md) (réalité Prisma 7) + [deploy plan](../plans/p1-coolify-deploy-plan.md).
