@@ -11,6 +11,7 @@ import type { GscImportCandidate } from "@/lib/gsc/batch-import";
 import {
   getActiveGscImportBatchAction,
   getGscImportBatchStatusAction,
+  getLatestFinishedGscImportBatchAction,
   listGscImportCandidatesAction,
   startGscImportBatchAction,
   tickGscImportQueueAction,
@@ -64,6 +65,11 @@ export function GscBatchImport() {
       const active = await getActiveGscImportBatchAction();
       if (active.ok && active.progress) {
         setProgress(active.progress);
+        return;
+      }
+      const latest = await getLatestFinishedGscImportBatchAction();
+      if (latest.ok && latest.progress) {
+        setProgress(latest.progress);
       }
     });
     return () => {
@@ -187,6 +193,7 @@ export function GscBatchImport() {
               }}
             />
           </div>
+          <BatchItemErrors items={progress.items} live />
         </div>
       )}
 
@@ -293,17 +300,21 @@ function BatchSummary({ progress }: { progress: BatchProgress }) {
   const ok = progress.completedItems;
   const fail = progress.failedItems;
   const skip = progress.skippedItems;
+  const allFailed = ok === 0 && fail > 0;
 
   return (
     <div
       style={{
         marginBottom: 16,
         padding: "12px 14px",
-        background: ok > 0 ? "rgba(57,255,20,0.08)" : "rgba(251,191,36,0.08)",
-        border: `1px solid ${ok > 0 ? "rgba(57,255,20,0.35)" : "rgba(251,191,36,0.3)"}`,
+        background: allFailed ? "rgba(220,38,38,0.08)" : ok > 0 ? "rgba(57,255,20,0.08)" : "rgba(251,191,36,0.08)",
+        border: `1px solid ${
+          allFailed ? "rgba(220,38,38,0.35)" : ok > 0 ? "rgba(57,255,20,0.35)" : "rgba(251,191,36,0.3)"
+        }`,
         borderRadius: 8,
         fontSize: 12.5,
         lineHeight: 1.5,
+        color: allFailed ? "#fca5a5" : "inherit",
       }}
     >
       <strong>Import terminé</strong> — {ok} carte{ok > 1 ? "s" : ""} créée{ok > 1 ? "s" : ""}
@@ -317,7 +328,57 @@ function BatchSummary({ progress }: { progress: BatchProgress }) {
           </Link>
         </>
       )}
+      <BatchItemErrors items={progress.items} />
     </div>
+  );
+}
+
+/** Détail des échecs / ignorés — le message est stocké en base sur chaque item du lot. */
+function BatchItemErrors({
+  items,
+  live = false,
+}: {
+  items: BatchProgress["items"];
+  live?: boolean;
+}) {
+  const problems = items.filter((i) => i.status === "FAILED" || i.status === "SKIPPED");
+  if (problems.length === 0) return null;
+
+  return (
+    <ul
+      style={{
+        margin: live ? "10px 0 0" : "10px 0 0",
+        padding: 0,
+        listStyle: "none",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
+      {problems.map((item) => (
+        <li
+          key={item.id}
+          style={{
+            padding: "8px 10px",
+            background: item.status === "FAILED" ? "rgba(220,38,38,0.12)" : "rgba(251,191,36,0.08)",
+            border: `1px solid ${item.status === "FAILED" ? "rgba(220,38,38,0.35)" : "rgba(251,191,36,0.3)"}`,
+            borderRadius: 6,
+            fontSize: 12,
+            lineHeight: 1.45,
+            color: item.status === "FAILED" ? "#fca5a5" : "#fcd34d",
+          }}
+        >
+          <strong>{item.domain}</strong>
+          <span style={{ opacity: 0.75 }}> · {item.gscProperty}</span>
+          <div style={{ marginTop: 4 }}>
+            {item.error ??
+              (item.status === "SKIPPED"
+                ? "Import ignoré (domaine déjà présent ou filtré)."
+                : "Échec sans message détaillé — consulte les logs serveur.")}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

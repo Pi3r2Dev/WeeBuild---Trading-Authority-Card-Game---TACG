@@ -423,3 +423,14 @@ export async function getActiveGscImportBatch(userId: string): Promise<GscImport
   if (!batch) return null;
   return getGscImportBatchProgress(userId, batch.id);
 }
+
+/** Dernier lot terminé (COMPLETED/PARTIAL/FAILED) — pour réafficher erreurs après rechargement UI. */
+export async function getLatestFinishedGscImportBatch(userId: string): Promise<GscImportBatchProgress | null> {
+  const batch = await db.gscImportBatch.findFirst({
+    where: { userId, status: { in: ["COMPLETED", "PARTIAL", "FAILED"] } },
+    orderBy: { finishedAt: "desc" },
+    select: { id: true },
+  });
+  if (!batch) return null;
+  return getGscImportBatchProgress(userId, batch.id);
+}

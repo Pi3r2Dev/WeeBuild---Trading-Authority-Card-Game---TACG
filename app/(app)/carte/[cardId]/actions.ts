@@ -2,6 +2,7 @@
 
 /**
  * Server action — rescan Firecrawl d'une carte existante (quota 1/semaine, admin illimité).
+ * Re-fetch GSC en parallèle si un snapshot v2 existait déjà (cf. refresh-gsc.ts).
  */
 
 import type { CardData } from "@/lib/domain";
@@ -15,6 +16,8 @@ export interface RescanCardSuccess {
   card: CardData;
   authority: AuthorityResultV2;
   extractSource: EditorialExtract["source"];
+  /** Présent si le re-fetch GSC a échoué (ancien snapshot conservé). */
+  gscWarning?: string;
 }
 
 export interface RescanCardFailure {

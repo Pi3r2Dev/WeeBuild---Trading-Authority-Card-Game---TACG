@@ -1,14 +1,18 @@
 # =============================================================================
 # WeBuild — Trading Authority Game · image de prod (Coolify, build pack Dockerfile)
 # Next.js 15 (output: "standalone") + React 19 + Prisma 7 (driver adapter pg).
-# Multi-stage : deps → builder → runner. `node server.js` sur le port 3000.
+# Multi-stage : builder ∥ proddeps → runner. `node server.js` sur le port 3000.
 #
 # Optimisations build (2026-05-28) :
+#  - Plus de stage `deps` intermédiaire ni COPY node_modules entre stages (~110 s
+#    gagnées par copie évitée sur hôte Celeron).
+#  - `builder` et `proddeps` partent en parallèle (BuildKit) depuis `base`.
+#  - `proddeps` = `npm ci --omit=dev` direct (pas COPY+prune ~155 s).
 #  - Cache BuildKit npm (`/root/.npm`) + `.next/cache` → rebuilds incrémentaux.
-#  - Stage `proddeps` = `npm prune --omit=dev` sur le node_modules de `deps`
-#    (évite un 2e `npm ci` réseau ~30 s sur hôte Celeron).
-#  - `.dockerignore` exclut docs/design_handoff → contexte léger.
-#  - `leva` / `r3f-perf` / `tsx` en devDependencies → absent du runtime prod.
+#  - `.npmrc` : prefer-offline, audit/fund/progress off.
+#  - Stack R3F/Three/html-to-image en devDependencies → absent du runtime prod
+#    (bundlé au build dans .next/static, pas chargé depuis node_modules).
+#  - `.dockerignore` exclut docs/e2e/tests → contexte léger.
 #
 # Décisions clés (cf. docs/plans/p1-coolify-deploy-plan.md) :
 #  - Prisma 7 : client généré dans lib/generated/prisma (gitignoré) → `prisma
@@ -29,14 +33,8 @@ WORKDIR /app
 # wget : utilisé par le healthcheck Coolify.
 RUN apk add --no-cache libc6-compat wget
 
-# ---- Dependencies ----
-# Toutes les deps (dont devDeps) pour pouvoir builder Next + générer Prisma.
-FROM base AS deps
-COPY package.json package-lock.json* ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
-
 # ---- Builder ----
+# Installe toutes les deps (dont devDeps / R3F pour le build Next) puis compile.
 FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 # ── Env de BUILD uniquement (jamais dans l'image runtime) ───────────────────
@@ -53,7 +51,9 @@ ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 ENV BETTER_AUTH_SECRET="build-only-placeholder-not-used-at-runtime"
 ENV GOOGLE_CLIENT_ID="build-only-placeholder"
 ENV GOOGLE_CLIENT_SECRET="build-only-placeholder"
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json* .npmrc ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 COPY . .
 # Prisma 7 : génère le client dans lib/generated/prisma (gitignoré → absent du
 # contexte de build, doit être (re)généré ici).
@@ -64,14 +64,13 @@ RUN --mount=type=cache,target=/app/.next/cache \
     npm run build
 
 # ---- Prod deps (pour le CLI prisma au boot) ----
+# Parallèle à `builder`. Installe UNIQUEMENT les deps prod (~40 pkgs sans R3F).
 # Le standalone n'embarque QUE les modules tracés à l'exécution applicative — il
 # n'inclut PAS le CLI `prisma` (appelé via `npx prisma migrate deploy` au boot).
-# On pruné le node_modules du stage `deps` (prod only) au lieu d'un 2e `npm ci`
-# → pas de re-téléchargement réseau (~30 s gagnées sur hôte Celeron).
 FROM base AS proddeps
-COPY package.json package-lock.json* ./
-COPY --from=deps /app/node_modules ./node_modules
-RUN npm prune --omit=dev
+COPY package.json package-lock.json* .npmrc ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev
 
 # ---- Runner ----
 FROM base AS runner
@@ -86,8 +85,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 WORKDIR /app
 
-# 1) node_modules pruné (prod) → fournit le CLI `prisma` + ses deps pour
-#    `prisma migrate deploy` au démarrage.
+# 1) node_modules prod (CLI `prisma` + deps migrate) — léger, sans R3F/Three.
 COPY --from=proddeps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # 2) Sortie standalone Next (inclut server.js + un node_modules tracé déposé

@@ -12,6 +12,7 @@ import {
   createGscImportBatch,
   getActiveGscImportBatch,
   getGscImportBatchProgress,
+  getLatestFinishedGscImportBatch,
   GscImportError,
   listGscImportCandidates,
   processGscImportQueue,
@@ -119,6 +120,19 @@ export async function getActiveGscImportBatchAction(): Promise<
   try {
     const userId = (await requireSession()).user.id;
     const progress = await getActiveGscImportBatch(userId);
+    return { ok: true, progress };
+  } catch (e) {
+    return { ok: false, error: `Erreur inattendue : ${(e as Error).message}` };
+  }
+}
+
+/** Dernier lot terminé — permet de réafficher le détail des échecs après rechargement. */
+export async function getLatestFinishedGscImportBatchAction(): Promise<
+  { ok: true; progress: GscImportBatchProgress | null } | GscBatchFailure
+> {
+  try {
+    const userId = (await requireSession()).user.id;
+    const progress = await getLatestFinishedGscImportBatch(userId);
     return { ok: true, progress };
   } catch (e) {
     return { ok: false, error: `Erreur inattendue : ${(e as Error).message}` };

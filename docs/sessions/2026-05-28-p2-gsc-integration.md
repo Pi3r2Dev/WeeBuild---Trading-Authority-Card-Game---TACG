@@ -29,6 +29,7 @@ tags: [p2, gsc, authority-score, search-console]
 - Erreurs GSC → message FR (`GscError`), pas de crash.
 - **Totaux GSC (2026-05-28)** : clics/impressions via requête API **sans dimension** (aligné dashboard GSC) ; si plusieurs propriétés vérifiées (préfixe URL + `sc-domain:`), on retient celle avec le **plus d'impressions** (évite un préfixe étroit sous-estimé). Fenêtre ~28 j avec lag 3 j (données consolidées) — peut différer légèrement du filtre « 28 jours » GSC qui inclut les jours récents.
 - **Review fetch (2026-05-28)** : GET `/sites` + `propertyCoversUrl` + variantes www/apex ; `queryCount` paginé **une seule fois** sur la propriété gagnante. Pièges documentés en tête de [lib/services/gsc.ts](../../lib/services/gsc.ts).
+- **Rescan (2026-05-28)** : « Rescanner la carte » re-fetch GSC via [lib/capturer/refresh-gsc.ts](../../lib/capturer/refresh-gsc.ts) si un snapshot existait — avant, le rescan relisait l'ancien snapshot (données GSC figées).
 
 ### Pièges API (ne pas régresser)
 

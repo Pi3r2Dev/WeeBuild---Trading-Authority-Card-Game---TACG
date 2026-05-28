@@ -25,6 +25,16 @@ coverage
 .env.*
 !.env.local.example
 
+# ─── Tests E2E / unitaires (non requis au build Next) ─────────────────────
+e2e
+playwright.config.ts
+playwright-report
+test-results
+vitest.config.ts
+tsconfig.e2e.json
+**/*.test.ts
+**/*.test.tsx
+
 # ─── Docs / design / assets lourds non requis au build ────────────────────
 docs
 design_handoff_webuild_tag

@@ -11,7 +11,7 @@ tags: [deploy, docker, prisma, next]
 # Artefact de build de déploiement Coolify : Dockerfile multi-stage + Next standalone (P1, sous-tâche #5)
 
 ## Status
-green — Dockerfile + .dockerignore livrés ; `tsc --noEmit` vert ; `npm run build` produit `.next/standalone/server.js`. Docker build local non tenté (daemon Docker Desktop éteint) → à valider au déploiement.
+green — Dockerfile + .dockerignore livrés ; `tsc --noEmit` vert ; `npm run build` produit `.next/standalone/server.js`. **Build Coolify validé** (2026-05-28, commit `a87f31b`) ; optimisations build appliquées le même jour (cf. §Optimisations 2026-05-28).
 
 ## Done in this session
 - `next.config.ts` : ajout de `output: "standalone"` + `serverExternalPackages: ["@prisma/adapter-pg", "pg"]` (préserve `reactStrictMode`).
@@ -40,12 +40,31 @@ green — Dockerfile + .dockerignore livrés ; `tsc --noEmit` vert ; `npm run bu
 
 ## Décisions clés (Dockerfile)
 - **Node 22-alpine** : aligné sur le runtime local (v22.14.0) et Next 15.5.18. Les voisins augmenter sont en node:20 mais le projet tourne en 22.
-- **4 stages** : `deps` (npm ci complet) → `builder` (`npx prisma generate` + `npm run build`) → `proddeps` (`npm ci --omit=dev` séparé) → `runner`.
-- **Pourquoi `proddeps`** : le bundle standalone NE trace PAS le CLI `prisma` (vérifié : `.next/standalone/node_modules/.bin/prisma` absent), or `prisma migrate deploy` au boot en a besoin. On dépose donc un node_modules pruné prod à la racine de l'app runtime ; le node_modules tracé du standalone est copié PAR-DESSUS (priorité au runtime applicatif). Chaîne `prisma → @prisma/config → c12 → dotenv` toutes prod (flag `dev: undefined`) → survivent à `--omit=dev`.
+- **4 stages** : `builder` ∥ `proddeps` (parallèles BuildKit) → `runner`. *(2026-05-28 : stage `deps` supprimé — voir §Optimisations.)*
+- **Pourquoi `proddeps`** : le bundle standalone NE trace PAS le CLI `prisma` (vérifié : `.next/standalone/node_modules/.bin/prisma` absent), or `prisma migrate deploy` au boot en a besoin. On dépose donc un node_modules prod-only à la racine de l'app runtime ; le node_modules tracé du standalone est copié PAR-DESSUS (priorité au runtime applicatif). Chaîne `prisma → @prisma/config → c12 → dotenv` toutes prod (flag `dev: undefined`) → survivent à `--omit=dev`.
 - **Client Prisma généré** : bundlé inline dans les chunks serveur (vérifié : `.nft.json` n'a aucune ref fichier vers `lib/generated/prisma` → import inliné, pas un require externe). On copie quand même `lib/generated/prisma` dans le runner par sûreté + conformité spec.
 - **`pg`** : sécurisé sur 3 fronts — dep directe + `serverExternalPackages` + présent transitivement via `@prisma/adapter-pg`.
 - **CMD** : `sh -c "npx prisma migrate deploy && node server.js"` (pattern observé sur backend augmenter). Migrate idempotent au pré-démarrage. Seed JAMAIS lancé (dev only, non copié dans l'image).
 - **Healthcheck** : `wget --spider http://localhost:3000/login` (page publique), interval 15s / start-period 30s / retries 5 (aligné observé).
+
+## Optimisations build (2026-05-28)
+
+Premier déploiement Coolify (~6 min build) : goulots identifiés dans les logs BuildKit.
+
+| Étape (avant) | Durée observée | Action |
+|---|---|---|
+| `COPY --from=deps node_modules` ×2 | ~110 s chacune | Suppression stage `deps` ; `builder` fait `npm ci` in-place |
+| `npm prune --omit=dev` sur 605 pkgs | ~45 s | `proddeps` = `npm ci --omit=dev` direct (~213 pkgs) |
+| `COPY proddeps → runner` | ~83 s | Moins de pkgs prod (R3F hors runtime) → copie plus légère |
+| Warnings peer `r3f-perf` → vieux `drei@9` | bruit npm | `overrides` dans `package.json` |
+
+**Changements livrés :**
+- `Dockerfile` : 3 stages effectifs (`builder` ∥ `proddeps` → `runner`), `.npmrc` copié au build.
+- `package.json` : stack R3F (`three`, `@react-three/*`, `html-to-image`) → `devDependencies` (bundlé au build Next, absent du `node_modules` runtime prod). `overrides` pour `r3f-perf`.
+- `.npmrc` : `prefer-offline`, `audit=false`, `fund=false`, `progress=false`.
+- `.dockerignore` : exclusion `e2e/`, tests `*.test.ts`, configs Playwright/Vitest.
+
+**Gain estimé 1er build** : ~2–3 min (évite 2× COPY node_modules + prune). **Rebuilds incrémentaux** : cache BuildKit npm + `.next/cache` inchangés.
 
 ## Next concrete step
 1. (Optionnel local) Démarrer Docker Desktop puis `docker build -t webuild:local .` pour valider l'image avant le push Coolify.
@@ -57,7 +76,7 @@ green — Dockerfile + .dockerignore livrés ; `tsc --noEmit` vert ; `npm run bu
 - `LITELLM_BASE_URL` : `https://litellm.augmenter.pro` vs `http://litellm:4000` (réseau coolify) — à trancher côté config Coolify, hors périmètre Dockerfile.
 
 ## Blockers
-- Aucun bloquant pour le livrable. Risque résiduel : `docker build` non testé localement (daemon éteint) → 1ère vérif réelle au déploiement.
+- Aucun bloquant pour le livrable. Build Coolify validé 2026-05-28 ; surveiller temps rebuild après push de ces optimisations.
 
 ## How to resume
 1. Lire ce doc + [docs/plans/p1-coolify-deploy-plan.md](../plans/p1-coolify-deploy-plan.md) (§Plan point 2 + §Risques).

@@ -23,16 +23,19 @@ export interface CardDetailView {
 export function CardDetailClient({ initial }: { initial: CardDetailView }) {
   const [view, setView] = useState(initial);
   const [error, setError] = useState<string | null>(null);
+  const [gscWarning, setGscWarning] = useState<string | null>(null);
   const [pending, startRescan] = useTransition();
 
   function runRescan() {
     setError(null);
+    setGscWarning(null);
     startRescan(async () => {
       const result: RescanCardResult = await rescanCardAction(view.card.id);
       if (!result.ok) {
         setError(result.error);
         return;
       }
+      if (result.gscWarning) setGscWarning(result.gscWarning);
       setView((prev) => ({
         ...prev,
         card: result.card,
@@ -115,7 +118,9 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
               {isAdmin
                 ? "Mode admin : pas de limite hebdomadaire."
                 : canRescan
-                  ? "1 rescan par semaine · Firecrawl recapture le site et recalcule le score."
+                  ? withGsc
+                    ? "1 rescan / semaine · Firecrawl + Search Console (28 j) recalculés."
+                    : "1 rescan par semaine · Firecrawl recapture le site et recalcule le score."
                   : nextRescanAt
                     ? `Prochain rescan possible le ${new Date(nextRescanAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}.`
                     : "Quota hebdomadaire atteint."}
@@ -124,8 +129,27 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
 
           {pending && (
             <p style={{ color: "var(--hub-fg-soft)", fontSize: 13, marginBottom: 12 }}>
-              Firecrawl recapture la page, puis on met à jour le résumé et le score…
+              {withGsc
+                ? "Firecrawl + Search Console en cours, puis mise à jour du score…"
+                : "Firecrawl recapture la page, puis on met à jour le résumé et le score…"}
             </p>
+          )}
+
+          {gscWarning && (
+            <div
+              style={{
+                padding: "10px 14px",
+                marginBottom: 12,
+                background: "rgba(251,191,36,0.08)",
+                border: "1px solid rgba(251,191,36,0.35)",
+                borderRadius: 8,
+                color: "#fcd34d",
+                fontSize: 12.5,
+                lineHeight: 1.5,
+              }}
+            >
+              Search Console non rafraîchie : {gscWarning}. Les signaux GSC précédents sont conservés.
+            </div>
           )}
 
           {error && (

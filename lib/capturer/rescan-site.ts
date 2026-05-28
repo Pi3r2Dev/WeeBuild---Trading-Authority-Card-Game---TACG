@@ -1,14 +1,17 @@
 /**
  * Rescan d'un site existant — re-crawl Firecrawl + ré-extraction + re-score.
  * Quota 1/semaine par site (sauf admin). Ne remplace pas la capture initiale.
+ *
+ * Si un `GscSnapshot` existe déjà, Search Console est **re-fetchée** en parallèle
+ * du crawl (best-effort) — sinon le rescan ne mettrait à jour que le on-page v1.
  */
 
 import type { CardData } from "@/lib/domain";
 import { isAdminEmail } from "@/lib/auth-admin";
 import { computeAuthorityV2, type AuthorityResultV2 } from "@/lib/authority/score-v2";
-import { getLatestGscInputForSite } from "@/lib/authority/gsc-input";
 import { extractEditorial, type EditorialExtract } from "@/lib/authority/extract";
 import { applyAuthorityToSite } from "@/lib/capturer/apply-authority";
+import { refreshGscSnapshotIfLinked } from "@/lib/capturer/refresh-gsc";
 import {
   evaluateRescanPolicy,
   formatRescanAvailableAt,
@@ -29,6 +32,8 @@ export interface RescanSiteResult {
   card: CardData;
   authority: AuthorityResultV2;
   extractSource: EditorialExtract["source"];
+  /** Avertissement FR si le re-fetch GSC a échoué (données GSC précédentes conservées). */
+  gscWarning?: string;
 }
 
 /**
@@ -64,11 +69,14 @@ export async function rescanSiteByCardId(
   }
 
   const captured = await captureSite(cardRow.site.url);
-  const gscInput = await getLatestGscInputForSite(cardRow.siteId);
-  const [extract, authority] = await Promise.all([
+
+  // Token OAuth = propriétaire du site (pas l'admin qui rescane).
+  const [extract, gscRefresh] = await Promise.all([
     extractEditorial(captured),
-    Promise.resolve(computeAuthorityV2(captured, gscInput)),
+    refreshGscSnapshotIfLinked(cardRow.userId, cardRow.siteId),
   ]);
+
+  const authority = computeAuthorityV2(captured, gscRefresh.input);
 
   const rescanAt = new Date();
 
@@ -120,6 +128,7 @@ export async function rescanSiteByCardId(
     card: dbCardToCardData(refreshed as DbCardWithSite),
     authority,
     extractSource: extract.source,
+    gscWarning: gscRefresh.warning,
   };
 }
 
