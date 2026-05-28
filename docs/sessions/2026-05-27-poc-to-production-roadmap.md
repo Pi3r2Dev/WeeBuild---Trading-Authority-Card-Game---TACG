@@ -15,6 +15,11 @@ tags: [roadmap, production, architecture, orchestration]
 
 **P1.5 — Productization FAITE (2026-05-28)** : plan [p1-5-productization-transition.md](../plans/p1-5-productization-transition.md) (angle `frontend-design`, décisions D1-D5 tranchées : rail desktop / flag R&D / Inter gardé / seed laissé / peau honnête). **Impl livrée** ([handoff](2026-05-28-p15-productization.md)) : `AppShell` responsive (rail console desktop ↔ bottom-nav mobile, 100% CSS @900px, SSR-safe), `PhoneShell` retiré du produit (routes sous `app/(app)/`), `DevNav` + routes R&D gatées (`NEXT_PUBLIC_ENABLE_RND`, 404 par défaut), flag `GAME_LOOP_ENABLED=false` masque crédits/niveau/suggestions factices, onboarding 0-carte → `/capturer`. `tsc`+`build`+`lint` verts, captures mobile/desktop dans `docs/screenshots/` (gitignoré). **Reste → P3** : reflow multi-colonnes desktop par écran (§4, délibérément reporté) + remplir les sections masquées de vraies données puis `GAME_LOOP_ENABLED=true`.
 
+**P2+P3 — programme lancé (2026-05-28)**, ordre choisi = **P3 prioritaire + P2 GSC en parallèle** (cap 3, agents isolés en worktree pour le parallélisme).
+- ✅ **Fondation** ([handoff](2026-05-28-p3p2-foundation-migration.md)) : migration additive `20260528000000_p3_p2_foundation` sur `webuild_db` — 8 modèles P3 (cf. [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md)) + `gsc_snapshot` (signaux Tier-2 metrique §2, `source` OAUTH/SCREENSHOT, insert-only). snake_case, `CREATE EXTENSION` commentés (rôle non-superuser), `migrate deploy` + `generate` + `tsc` verts. **Gate schéma levé.**
+- ⏳ P3 : embeddings capture → matching (pgvector+bge rerank+anti-cycle) → crédits/donateur → câblage UI + `GAME_LOOP=true`.
+- ⏳ P2 : intégration GSC (fetch via refresh token) + score v2 ; **calibrage data-gated reporté**.
+
 ### Historique build déploiement (3 itérations)
 1. `public/` absent → `COPY /app/public` échouait → ajout `public/.gitkeep` (commit a7c0790).
 2. `prisma generate` → `PrismaConfigEnvError: DATABASE_URL` (rendu runtime-only) → placeholders d'env de build dans le Dockerfile (commit 669fd0b).
