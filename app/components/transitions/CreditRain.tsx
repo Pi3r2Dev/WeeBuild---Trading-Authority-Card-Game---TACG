@@ -114,7 +114,7 @@ export function CreditRain() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: "var(--font-pixel-display)", fontSize: 8, color: ACCENT_GREEN, letterSpacing: 1.5 }}>LIEN VÉRIFIÉ</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--hub-fg)", marginTop: 3 }}>journal-du-geek.fr</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--hub-fg)", marginTop: 3 }}>journa-geekachu.fr</div>
             <div style={{ fontSize: 11, color: "var(--hub-fg-soft)", marginTop: 2 }}>Capture confirmée · récompense créditée</div>
           </div>
           <div style={{ fontFamily: "var(--font-hub)", fontWeight: 800, fontSize: 18, color: ACCENT_GREEN, textShadow: `0 0 10px ${ACCENT_GREEN}`, display: "inline-flex", alignItems: "center", gap: 4 }}>

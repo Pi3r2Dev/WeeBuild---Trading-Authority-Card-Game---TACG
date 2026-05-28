@@ -9,7 +9,7 @@ import { StatusBar } from "../hub/primitives";
 import { Card } from "../card/Card";
 import { TransitionFrame } from "./TransitionFrame";
 
-const target = NAV_DECK.find((c) => c.id === "jdg")!;
+const target = NAV_DECK.find((c) => c.id === "journa-geek")!;
 
 // Dimensions de base de la carte (px), avant mise à l'échelle.
 const CARD_W = 320;

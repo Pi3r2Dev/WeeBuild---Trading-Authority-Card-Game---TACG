@@ -10,15 +10,16 @@ import { icons } from "./icons";
 import { GAME_LOOP_ENABLED } from "../app/flags";
 
 const LINKS: [string, string][] = [
-  ["tom-tech", "jdg"],
-  ["jdg", "presse-citron"],
-  ["presse-citron", "lemonde"],
-  ["lemonde", "forbes"],
-  ["forbes", "finance-malin"],
-  ["finance-malin", "wikipedia"],
-  ["wikipedia", "marie"],
-  ["marie", "tom-tech"],
-  ["presse-citron", "wikipedia"],
+  ["korbenito", "numeramon"],
+  ["numeramon", "journa-geek"],
+  ["journa-geek", "citron-presse"],
+  ["citron-presse", "limonade"],
+  ["limonade", "echozoum"],
+  ["echozoum", "forbeshadow"],
+  ["forbeshadow", "wikimons"],
+  ["wikimons", "marmitont"],
+  ["marmitont", "korbenito"],
+  ["citron-presse", "wikimons"],
 ];
 
 /** Carte écosystème — composant CLIENT (état de sélection), données en props. */

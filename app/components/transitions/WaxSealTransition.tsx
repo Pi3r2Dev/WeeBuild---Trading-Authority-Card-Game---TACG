@@ -12,7 +12,7 @@ import { TransitionFrame } from "./TransitionFrame";
 
 type Phase = "ready" | "stamping" | "sealed";
 
-const target = NAV_DECK.find((c) => c.id === "jdg")!;
+const target = NAV_DECK.find((c) => c.id === "journa-geek")!;
 
 // Calendrier de la séquence (ms, relatifs au début du cycle).
 const STAMP_DELAY = 1800; // ready → stamping

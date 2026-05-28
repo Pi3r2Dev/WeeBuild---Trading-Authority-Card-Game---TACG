@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { lookup } from "node:dns/promises";
-import { assertScrapableUrl, SsrfError } from "./ssrf";
+import { assertScrapableUrl, normalizeScrapableUrlInput, SsrfError } from "./ssrf";
 
 vi.mock("node:dns/promises", () => ({ lookup: vi.fn() }));
 const mockLookup = vi.mocked(lookup);
@@ -10,8 +10,31 @@ function resolvesTo(...addresses: string[]) {
   mockLookup.mockResolvedValue(addresses.map((address) => ({ address, family: address.includes(":") ? 6 : 4 })) as never);
 }
 
+describe("normalizeScrapableUrlInput", () => {
+  it("préfixe https:// sur un domaine nu", () => {
+    expect(normalizeScrapableUrlInput("ouquequoi.fr")).toBe("https://ouquequoi.fr");
+    expect(normalizeScrapableUrlInput("  exemple.fr/chemin  ")).toBe("https://exemple.fr/chemin");
+  });
+
+  it("laisse http(s):// inchangé", () => {
+    expect(normalizeScrapableUrlInput("https://a.fr")).toBe("https://a.fr");
+    expect(normalizeScrapableUrlInput("http://b.fr")).toBe("http://b.fr");
+  });
+
+  it("ne modifie pas les autres schémas (rejetés plus loin)", () => {
+    expect(normalizeScrapableUrlInput("ftp://c.fr")).toBe("ftp://c.fr");
+  });
+});
+
 describe("assertScrapableUrl", () => {
   beforeEach(() => mockLookup.mockReset());
+
+  it("accepte un domaine sans schéma (https:// ajouté)", async () => {
+    resolvesTo("93.184.216.34");
+    const url = await assertScrapableUrl("ouquequoi.fr");
+    expect(url.href).toBe("https://ouquequoi.fr/");
+    expect(url.hostname).toBe("ouquequoi.fr");
+  });
 
   it("accepte une URL publique", async () => {
     resolvesTo("93.184.216.34");

@@ -10,7 +10,7 @@ import { GAME_LOOP_ENABLED } from "@/app/components/app/flags";
 
 const PIXEL: CSSProperties = { fontFamily: "var(--font-pixel-display)", letterSpacing: 1 };
 
-const EXAMPLES = ["https://lemonde.fr", "https://firecrawl.dev", "https://example.com"];
+const EXAMPLES = ["lemonde.fr", "firecrawl.dev", "example.com"];
 
 export function CaptureClient() {
   const [url, setUrl] = useState("");
@@ -56,7 +56,7 @@ export function CaptureClient() {
         <input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://votre-site.fr"
+          placeholder="votre-site.fr"
           inputMode="url"
           style={{
             flex: "1 1 320px",
@@ -105,7 +105,7 @@ export function CaptureClient() {
               cursor: busy ? "default" : "pointer",
             }}
           >
-            {ex.replace(/^https?:\/\//, "")}
+            {ex}
           </button>
         ))}
       </div>

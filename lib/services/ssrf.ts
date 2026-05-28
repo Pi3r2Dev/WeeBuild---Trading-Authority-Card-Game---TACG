@@ -64,6 +64,17 @@ function isBlockedIp(ip: string): boolean {
 }
 
 /**
+ * Préfixe `https://` quand l'utilisateur saisit un domaine nu (ex. `ouquequoi.fr`).
+ * Toute entrée avec `://` (http, https, ftp, etc.) est laissée au parseur + garde schéma.
+ */
+export function normalizeScrapableUrlInput(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.includes("://")) return trimmed;
+  return `https://${trimmed}`;
+}
+
+/**
  * Valide une URL cible et garantit qu'elle ne résout PAS vers une IP interne.
  * @returns l'URL normalisée si sûre.
  * @throws {SsrfError} URL invalide, schéma non http(s), DNS vide, ou IP privée.
@@ -71,9 +82,9 @@ function isBlockedIp(ip: string): boolean {
 export async function assertScrapableUrl(rawUrl: string): Promise<URL> {
   let url: URL;
   try {
-    url = new URL(rawUrl.trim());
+    url = new URL(normalizeScrapableUrlInput(rawUrl));
   } catch {
-    throw new SsrfError("URL invalide — attendu http(s)://exemple.fr");
+    throw new SsrfError("URL invalide — exemple : exemple.fr ou https://exemple.fr");
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new SsrfError(`Schéma non autorisé : ${url.protocol}`);

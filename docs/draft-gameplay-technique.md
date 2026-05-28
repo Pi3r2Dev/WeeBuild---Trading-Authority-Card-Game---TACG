@@ -177,6 +177,8 @@ CompteCredits  (par membre)
 
 > Principe directeur : **niveau, rareté et stats sont dérivés de l'autorité, jamais saisis à la main.** Règles nécessaires : `métrique → niveau/rareté` et `métrique → HP/ATK`.
 
+**POC front (2026-05-28)** : catalogue mock 4 éléments × 4 niveaux — sites FR connus parodiés en noms « Pokémon » (`marmitont.fr`, `limonade.fr`, `wikimons.org`…). Détail : [mock-catalogue.md](mock-catalogue.md), code `lib/data/mock-catalog.ts`.
+
 ---
 
 ## 4. Mapping données SEO → stats de jeu *(nouveau)*

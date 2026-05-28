@@ -266,7 +266,7 @@ lib/
 ├── authority/       # score d'autorité (pur) + extraction LLM
 ├── domain/          # entités & mapping carte
 ├── levels/          # niveaux 1–4
-└── data/            # fixtures de démo
+└── data/            # fixtures + catalogue mock Pokémon ([docs/mock-catalogue.md](docs/mock-catalogue.md))
 docs/                # doctrine produit (FR) — source de vérité
 └── assets/         # captures utilisées dans ce README
 ```

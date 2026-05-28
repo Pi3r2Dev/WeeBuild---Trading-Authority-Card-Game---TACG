@@ -26,7 +26,7 @@ const HoloCard3D = dynamic(() => import("../components/r3f/HoloCard3D"), {
   loading: () => loader,
 });
 
-const N4 = DEMO_CARDS[3]; // lemonde.fr — niveau 4 Holo
+const N4 = DEMO_CARDS[3]; // wikimons.org — niveau 4 Holo
 
 const ROWS: { critere: string; css: string; r3f: string; verdict: string }[] = [
   { critere: "Iridescence", css: "conic-gradient pilotée au pointeur (pseudo)", r3f: "Fresnel sur la normale 3D réelle — le foil suit l'angle de vue", verdict: "R3F + réaliste" },

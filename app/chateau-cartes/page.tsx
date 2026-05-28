@@ -18,7 +18,7 @@ const loader = (
 const CardBakeTexture = dynamic(() => import("../components/r3f/CardBakeTexture"), { ssr: false, loading: () => loader });
 const CardDomLive = dynamic(() => import("../components/r3f/CardDomLive"), { ssr: false, loading: () => loader });
 
-const N4 = DEMO_CARDS[3]; // lemonde.fr — niveau 4 Holo
+const N4 = DEMO_CARDS[3]; // wikimons.org — niveau 4 Holo
 
 export default function ChateauCartesPage() {
   if (!RND_ENABLED) notFound();
