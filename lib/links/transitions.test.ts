@@ -3,11 +3,13 @@ import {
   decideCreateLink,
   decidePublishLink,
   decideRejectSuggestion,
+  decideVerify,
   validatePublishedUrl,
   validateTargetUrl,
   type CreateLinkContext,
   type PublishLinkContext,
   type RejectSuggestionContext,
+  type VerifyContext,
 } from "./transitions";
 
 const createCtx = (over: Partial<CreateLinkContext> = {}): CreateLinkContext => ({
@@ -130,6 +132,52 @@ describe("decideRejectSuggestion", () => {
 
   it("refuse si pas propriétaire", () => {
     expect(decideRejectSuggestion(ctx(), "intrus").kind).toBe("error");
+  });
+});
+
+describe("decideVerify", () => {
+  const ctx = (over: Partial<VerifyContext> = {}): VerifyContext => ({
+    status: "PUBLISHED",
+    donorUserId: "user-1",
+    hasPublishedUrl: true,
+    verifiedAt: null,
+    creditsComputed: null,
+    ...over,
+  });
+
+  it("PUBLISHED + lien détecté → frappe les crédits estimés", () => {
+    expect(decideVerify(ctx(), { linkDetected: true }, "user-1", 12)).toEqual({ kind: "verify", credits: 12 });
+  });
+
+  it("PUBLISHED + lien absent → still_missing (pas de frappe)", () => {
+    expect(decideVerify(ctx(), { linkDetected: false }, "user-1", 12)).toEqual({ kind: "still_missing" });
+  });
+
+  it("VERIFIED + lien toujours là → still_present (rien à refaire)", () => {
+    const c = ctx({ status: "VERIFIED", verifiedAt: new Date(), creditsComputed: 12 });
+    expect(decideVerify(c, { linkDetected: true }, "user-1", 12)).toEqual({ kind: "still_present" });
+  });
+
+  it("VERIFIED + lien disparu → clawback du montant gelé", () => {
+    const c = ctx({ status: "VERIFIED", verifiedAt: new Date(), creditsComputed: 12 });
+    expect(decideVerify(c, { linkDetected: false }, "user-1", 99)).toEqual({ kind: "clawback", credits: 12 });
+  });
+
+  it("BROKEN + lien re-détecté → re-frappe", () => {
+    const c = ctx({ status: "BROKEN", verifiedAt: null, creditsComputed: 12 });
+    expect(decideVerify(c, { linkDetected: true }, "user-1", 12)).toEqual({ kind: "verify", credits: 12 });
+  });
+
+  it("refuse si pas propriétaire", () => {
+    expect(decideVerify(ctx(), { linkDetected: true }, "intrus", 12).kind).toBe("error");
+  });
+
+  it("refuse sans URL de publication", () => {
+    expect(decideVerify(ctx({ hasPublishedUrl: false }), { linkDetected: true }, "user-1", 12).kind).toBe("error");
+  });
+
+  it("refuse un lien pas encore publié (HUMAN_VALIDATED)", () => {
+    expect(decideVerify(ctx({ status: "HUMAN_VALIDATED" }), { linkDetected: true }, "user-1", 12).kind).toBe("error");
   });
 });
 

@@ -21,6 +21,17 @@ export type CardState = "dispo" | "en-echange" | "acquise" | "verrouillee";
 
 export type { AuthorityTrust };
 
+/**
+ * Assets visuels crawlés (URLs publiques durables post-ingest) attachés à la
+ * carte. `null` → le recto retombe sur le placeholder SVG (SiteShot).
+ * Sous-ensemble de `SiteVisualAssets` (sans la provenance, inutile au rendu).
+ */
+export interface CardVisualAssets {
+  logoUrl: string | null;
+  heroImageUrl: string | null;
+  homepageScreenshotUrl: string | null;
+}
+
 /** Libellés FR des états (source unique pour l'affichage). */
 export const STATE_LABEL: Record<CardState, string> = {
   dispo: "Disponible",
@@ -53,6 +64,8 @@ export interface CardData {
   editionTotal: string;
   /** Confiance du score (GSC OAuth = verified ; sans GSC = estimated). Visible par les autres joueurs. */
   authorityTrust: AuthorityTrust;
+  /** Portrait crawlé (logo/hero/screenshot) ; `null` → fallback SiteShot SVG. */
+  visualAssets: CardVisualAssets | null;
 }
 
 /** Carte enrichie pour la navigation/écosystème (coordonnées de carte + biome). */

@@ -198,3 +198,64 @@ export function decideRejectSuggestion(
   }
   return { kind: "reject" };
 }
+
+// ─────────────────────────── B4 : vérification ───────────────────────────
+
+/** Statuts d'un lien à partir desquels une vérification Firecrawl a du sens. */
+const VERIFIABLE_STATUSES = new Set(["PUBLISHED", "PROOF_PENDING", "VERIFIED", "BROKEN"]);
+
+/** Contexte chargé d'un lien pour décider de sa vérification. */
+export interface VerifyContext {
+  status: string;
+  donorUserId: string;
+  hasPublishedUrl: boolean;
+  verifiedAt: Date | null;
+  /** Montant déjà frappé (gelé) — sert au clawback pour annuler exactement. */
+  creditsComputed: number | null;
+}
+
+export type VerifyDecision =
+  | { kind: "error"; error: string }
+  /** Lien (re)trouvé et pas encore crédité → VERIFIED + frappe `+credits`. */
+  | { kind: "verify"; credits: number }
+  /** Lien crédité puis disparu → BROKEN + entrée `−credits` (annule la frappe). */
+  | { kind: "clawback"; credits: number }
+  /** Lien crédité toujours en place → rien à faire (proof rafraîchi seulement). */
+  | { kind: "still_present" }
+  /** Lien jamais crédité, toujours introuvable → proof seulement, pas de frappe. */
+  | { kind: "still_missing" };
+
+/**
+ * Décide l'issue d'une vérification à partir de l'état du lien + de la détection.
+ * Pur : `verify.ts` ré-applique la garde dans la transaction (anti double-frappe).
+ *
+ * @param estimatedCredits montant à frapper si première vérification réussie.
+ */
+export function decideVerify(
+  ctx: VerifyContext,
+  detection: { linkDetected: boolean },
+  userId: string,
+  estimatedCredits: number,
+): VerifyDecision {
+  if (ctx.donorUserId !== userId) {
+    return { kind: "error", error: "Accès refusé : ce lien ne vous appartient pas." };
+  }
+  if (!ctx.hasPublishedUrl) {
+    return { kind: "error", error: "Renseigne d’abord l’URL de publication du lien." };
+  }
+  if (!VERIFIABLE_STATUSES.has(ctx.status)) {
+    return { kind: "error", error: "Ce lien n’est pas encore publié — rien à vérifier." };
+  }
+
+  const wasCredited = ctx.status === "VERIFIED" && ctx.verifiedAt != null;
+
+  if (detection.linkDetected) {
+    if (wasCredited) return { kind: "still_present" };
+    return { kind: "verify", credits: estimatedCredits };
+  }
+  // Lien non détecté.
+  if (wasCredited) {
+    return { kind: "clawback", credits: ctx.creditsComputed ?? estimatedCredits };
+  }
+  return { kind: "still_missing" };
+}

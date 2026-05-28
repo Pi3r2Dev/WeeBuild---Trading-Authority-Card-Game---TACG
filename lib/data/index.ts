@@ -27,7 +27,15 @@ import { fetchRecentActivity } from "@/lib/activity/recent";
  */
 
 const CARD_WITH_SITE = {
-  site: { select: { domain: true, url: true } },
+  site: {
+    select: {
+      domain: true,
+      url: true,
+      logoUrl: true,
+      heroImageUrl: true,
+      homepageScreenshotUrl: true,
+    },
+  },
   user: { select: { name: true } },
 } as const;
 

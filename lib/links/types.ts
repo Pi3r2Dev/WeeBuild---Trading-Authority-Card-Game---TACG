@@ -80,3 +80,34 @@ export interface LinkDecisionInput {
   /** URL pointée chez le bénéficiaire (défaut = racine, éditable). */
   targetUrl: string;
 }
+
+/** Miroir littéral de l'enum Prisma `ProofStatus` (côté client). */
+export type ProofRecordStatus = "PENDING" | "CONFIRMED" | "NOT_FOUND" | "ERROR";
+
+/** Vue d'un lien publié + sa preuve, pour l'écran /preuves (B4). */
+export interface ProofView {
+  linkId: string;
+  /** Id de la carte bénéficiaire (pour l'aperçu MiniCard), `null` si absente. */
+  beneficiaryCardId: string | null;
+  targetDomain: string;
+  targetOwner: string;
+  targetLevel: number;
+  anchorText: string;
+  anchorType: AnchorType;
+  targetUrl: string;
+  publishedUrl: string | null;
+  status: LinkStatus;
+  /** Crédits gelés (`creditsComputed`) si vérifié, sinon estimation indicative. */
+  credits: number;
+  verifiedAt: string | null;
+  /** Dernière preuve de capture (null si jamais vérifié). */
+  proof: {
+    status: ProofRecordStatus;
+    linkDetected: boolean;
+    mentionDetected: boolean;
+    rel: string | null;
+    positionInPage: number | null;
+    lastCheckedAt: string;
+    checkCount: number;
+  } | null;
+}

@@ -500,7 +500,7 @@ async function fetchExtendedPropertyMetrics(
     fetchDistinctDimensionCount(accessToken, siteUrl, startDate, endDate, "query"),
     fetchDistinctDimensionCount(accessToken, siteUrl, startDate, endDate, "page"),
     fetchSitemapStats(accessToken, siteUrl, (url, init) =>
-      fetchWithTimeout(url, init ?? {}, QUERY_TIMEOUT_MS, "Search Console (sitemaps)"),
+      fetchWithTimeout(String(url), init ?? {}, QUERY_TIMEOUT_MS, "Search Console (sitemaps)"),
     ).catch(() => null),
   ]);
 

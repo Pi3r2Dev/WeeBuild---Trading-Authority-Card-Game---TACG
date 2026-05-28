@@ -37,8 +37,26 @@ export interface DbCardWithSite {
   edition: string;
   editionTotal: string;
   authorityTrust?: string;
-  site: { domain: string; url: string };
+  site: {
+    domain: string;
+    url: string;
+    logoUrl?: string | null;
+    heroImageUrl?: string | null;
+    homepageScreenshotUrl?: string | null;
+  };
   user?: { name: string | null } | null;
+}
+
+/**
+ * Réduit les colonnes `Site.*Url` à un `CardVisualAssets`, ou `null` si aucun
+ * asset n'a été ingéré (→ le recto retombe sur le placeholder SVG).
+ */
+function siteVisualAssets(site: DbCardWithSite["site"]): CardData["visualAssets"] {
+  const logoUrl = site.logoUrl ?? null;
+  const heroImageUrl = site.heroImageUrl ?? null;
+  const homepageScreenshotUrl = site.homepageScreenshotUrl ?? null;
+  if (!logoUrl && !heroImageUrl && !homepageScreenshotUrl) return null;
+  return { logoUrl, heroImageUrl, homepageScreenshotUrl };
 }
 
 /** Coupe `https://`/`http://` pour l'affichage (parité avec les fixtures/actions). */
@@ -70,6 +88,7 @@ export function dbCardToCardData(card: DbCardWithSite): CardData {
     edition: card.edition,
     editionTotal: card.editionTotal,
     authorityTrust: fromPrismaAuthorityTrust(card.authorityTrust),
+    visualAssets: siteVisualAssets(card.site),
   };
 }
 

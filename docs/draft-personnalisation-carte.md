@@ -52,9 +52,9 @@ Chaque carte TCG doit **ressembler au site qu'elle représente** tout en **respe
 | **Dédup contenu (L1)** | ✅ | index hash → storageKey dans le store local/memory |
 | **Cache Redis (L2)** | 🚧 | non implémenté |
 | **Rendu A/B** | ✅ R&D | [SitePortrait.tsx](../app/components/card/SitePortrait.tsx) vs placeholder — route `/ab/portrait` |
-| **Rendu prod** | 🚧 | [CardFront.tsx](../app/components/card/CardFront.tsx) utilise encore **SiteShot** (SVG) |
-| **Lecture DB → UI** | 🚧 | aucun mapper `Site.logoUrl` → carte affichée en deck / hub |
-| **Tests** | ✅ | 111 tests vitest (extract, ingest, store, fetch, capture) |
+| **Rendu prod** | ✅ | [CardFront.tsx](../app/components/card/CardFront.tsx) bascule sur `SitePortrait` si `data.visualAssets` ; fallback `SiteShot` sinon |
+| **Lecture DB → UI** | ✅ | mapper `Site.{logoUrl,heroImageUrl,homepageScreenshotUrl}` → `CardData.visualAssets` ([mappers.ts](../lib/data/mappers.ts)) + selects deck/détail |
+| **Tests** | ✅ | 154 tests vitest (extract, ingest, store, fetch, capture, mappers visualAssets) |
 
 **En prod Coolify aujourd'hui** : prévoir **volume Docker** sur `WEBUILD_VISUAL_STORAGE_PATH` (défaut `./storage/visual`) — les blobs ne survivent pas à un redeploy sans volume.
 
@@ -252,8 +252,8 @@ Hors scope immédiat.
 ### Phase 2 — Rendu portrait (frontend)
 
 - [x] `SitePortrait` MVP + A/B
-- [ ] **Mapper DB** : `Site.logoUrl/heroImageUrl/…` → `CardData` / deck / hub
-- [ ] Remplacer `SiteShot` dans `CardFront` après validation A/B
+- [x] **Mapper DB** : `Site.logoUrl/heroImageUrl/…` → `CardData.visualAssets` / deck / hub *(2026-05-28)*
+- [x] Remplacer `SiteShot` dans `CardFront` (conditionnel `visualAssets`, fallback SVG) *(2026-05-28)*
 - [ ] Filtres N1/N2 affinés (canvas quantize)
 - [ ] Composition N3/N4 + parité château (bake DOM→texture)
 - [ ] Fallback : hero → screenshot → SVG → initiales
@@ -320,12 +320,13 @@ Hors scope immédiat.
 | 2026-05-28 | Spec + extracteur Tier 1 + tests + `captureSiteWithVisuals` + migration Site + A/B `/ab/portrait`. |
 | 2026-05-28 | Ingest blob : `VisualAssetStore` (memory/local), route `/api/assets/visual`, 111 tests, câblage persist/rescan. |
 | 2026-05-28 | Doc refonte §3/§12 — état implémenté vs backlog prod/front. |
+| 2026-05-28 | **P2-7 + P2-8** : `CardData.visualAssets` (mapper + selects deck/détail) + bascule `CardFront` → `SitePortrait` (fallback `SiteShot`). 154 tests verts, lint/typecheck OK. |
 
 ---
 
 ## 12. Reste à faire (priorisé)
 
-> **Prochaine session recommandée** : Phase 2 front (mapper DB → `SitePortrait` dans `CardFront`) en parallèle de l'itération visuelle sur `/ab/portrait`.
+> **Prochaine session recommandée** : ~~mapper DB → `SitePortrait` dans `CardFront`~~ ✅ *(2026-05-28)* → désormais **itération filtres N1→N4 sur `/ab/portrait`** (P2-9) + **P0 prod** (migrate + volume) en parallèle.
 
 ### P0 — Bloquant prod (infra)
 
@@ -341,9 +342,9 @@ Hors scope immédiat.
 
 ### P2 — Produit visible (frontend)
 
-7. **Mapper données** — lire `Site.logoUrl`, `heroImageUrl`, `homepageScreenshotUrl` dans `lib/data/mappers` ou `CardData` ; exposer au deck / `/carte/[cardId]`.
-8. **Basculer `CardFront`** — remplacer `<SiteShot>` par `<SitePortrait>` quand assets présents ; fallback SVG sinon.
-9. **Itérer filtres** sur `/ab/portrait` (N1→N4) jusqu'à validation design ; puis figer CSS.
+7. ✅ **Mapper données** *(2026-05-28)* — `CardData.visualAssets` (`CardVisualAssets`) alimenté depuis `Site.{logoUrl,heroImageUrl,homepageScreenshotUrl}` dans [mappers.ts](../lib/data/mappers.ts) ; selects ajoutés deck ([index.ts](../lib/data/index.ts)) + détail ([card-detail.ts](../lib/data/card-detail.ts)).
+8. ✅ **Basculer `CardFront`** *(2026-05-28)* — `<SitePortrait>` si `data.visualAssets`, fallback `<SiteShot>` sinon ([CardFront.tsx](../app/components/card/CardFront.tsx)).
+9. **Itérer filtres** sur `/ab/portrait` (N1→N4) jusqu'à validation design ; puis figer CSS. ← *prochaine étape P2*
 10. **Parité château** — vérifier bake `html-to-image` inclut le nouveau portrait ([CardCastle.tsx](../app/components/r3f/CardCastle.tsx)).
 
 ### P3 — Qualité & scale

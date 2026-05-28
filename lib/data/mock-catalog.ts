@@ -112,6 +112,7 @@ export class MockCardFactory {
       edition: spec.edition,
       editionTotal: EDITION_TOTAL[spec.level],
       authorityTrust: "estimated",
+      visualAssets: null,
       ...stats,
       ...overrides,
     };

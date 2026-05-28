@@ -4,13 +4,13 @@
  */
 /* eslint-disable @next/next/no-img-element -- URLs crawlées dynamiques ; next/image non adapté en R&D */
 
-import type { Level } from "./types";
-import type { SiteVisualAssets } from "@/lib/capture/visual-asset-types";
+import type { CardVisualAssets, Level } from "./types";
 import styles from "./SitePortrait.module.css";
 
 export interface SitePortraitProps {
   level: Level;
-  assets: SiteVisualAssets;
+  /** URLs publiques des slots (sous-ensemble de `SiteVisualAssets`). */
+  assets: CardVisualAssets;
   /** Domaine affiché en fallback typographique (initiales). */
   domain: string;
 }

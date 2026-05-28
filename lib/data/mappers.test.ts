@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  dbCardToCardData,
   editorialSuggestionToPartner,
   editorialSuggestionToSuggestion,
   editorialSuggestionToTopic,
+  type DbCardWithSite,
   type DbEditorialSuggestionRow,
 } from "./mappers";
 
@@ -42,6 +44,39 @@ function row(overrides: Partial<DbEditorialSuggestionRow> = {}): DbEditorialSugg
     ...overrides,
   };
 }
+
+function cardRow(siteOverrides: Partial<DbCardWithSite["site"]> = {}): DbCardWithSite {
+  return {
+    ...CARD_ROW,
+    site: { domain: "cible.fr", url: "https://cible.fr", ...siteOverrides },
+  } as DbCardWithSite;
+}
+
+describe("dbCardToCardData — visualAssets", () => {
+  it("renvoie null si aucun asset crawlé", () => {
+    expect(dbCardToCardData(cardRow()).visualAssets).toBeNull();
+  });
+
+  it("construit l'objet dès qu'un slot est présent (autres = null)", () => {
+    const card = dbCardToCardData(cardRow({ logoUrl: "/api/assets/visual/s/logo/abc.png" }));
+    expect(card.visualAssets).toEqual({
+      logoUrl: "/api/assets/visual/s/logo/abc.png",
+      heroImageUrl: null,
+      homepageScreenshotUrl: null,
+    });
+  });
+
+  it("normalise les champs absents/undefined en null", () => {
+    const card = dbCardToCardData(
+      cardRow({ heroImageUrl: "/hero.webp", homepageScreenshotUrl: undefined }),
+    );
+    expect(card.visualAssets).toEqual({
+      logoUrl: null,
+      heroImageUrl: "/hero.webp",
+      homepageScreenshotUrl: null,
+    });
+  });
+});
 
 describe("editorialSuggestion mappers", () => {
   it("mappe vers Partner avec carte cible", () => {

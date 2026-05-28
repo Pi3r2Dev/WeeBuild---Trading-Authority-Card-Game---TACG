@@ -3,6 +3,7 @@ import { ERA_LABEL } from "./types";
 import { ElementGlyph, GemBadgeRecto, LevelDots } from "./glyphs";
 import { StatBar } from "./StatBar";
 import { SiteShot } from "./SiteShot";
+import { SitePortrait } from "./SitePortrait";
 
 /**
  * Recto du Gabarit D « Badge tactique » (itération polie) :
@@ -150,7 +151,11 @@ export function CardFront({ data, level }: { data: CardData; level: Level }) {
               overflow: "hidden",
             }}
           >
-            <SiteShot level={level} />
+            {data.visualAssets ? (
+              <SitePortrait level={level} assets={data.visualAssets} domain={data.domain} />
+            ) : (
+              <SiteShot level={level} />
+            )}
             <div
               style={{
                 position: "absolute",
