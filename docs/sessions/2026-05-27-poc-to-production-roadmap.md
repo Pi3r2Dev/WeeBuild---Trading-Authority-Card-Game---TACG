@@ -17,8 +17,9 @@ tags: [roadmap, production, architecture, orchestration]
 
 **P2+P3 — programme lancé (2026-05-28)**, ordre choisi = **P3 prioritaire + P2 GSC en parallèle** (cap 3, agents isolés en worktree pour le parallélisme).
 - ✅ **Fondation** ([handoff](2026-05-28-p3p2-foundation-migration.md)) : migration additive `20260528000000_p3_p2_foundation` sur `webuild_db` — 8 modèles P3 (cf. [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md)) + `gsc_snapshot` (signaux Tier-2 metrique §2, `source` OAUTH/SCREENSHOT, insert-only). snake_case, `CREATE EXTENSION` commentés (rôle non-superuser), `migrate deploy` + `generate` + `tsc` verts. **Gate schéma levé.**
-- ⏳ P3 : embeddings capture → matching (pgvector+bge rerank+anti-cycle) → crédits/donateur → câblage UI + `GAME_LOOP=true`.
-- ⏳ P2 : intégration GSC (fetch via refresh token) + score v2 ; **calibrage data-gated reporté**.
+- ✅ **P3 matching** ([handoff](2026-05-28-p3-matching.md)) : `lib/services/embeddings.ts` (gte-qwen2 1536d) branché à la capture (best-effort) ; `lib/matching/*` (pgvector cosine 3× + anti-cycle §5 + persistance `MatchingSession`/`EditorialSuggestion`, scoring réel). ⚠ **rerank bge injoignable** (aucune route rerank pour `sk-webuild`) → fallback ordre cosine (réactivable via `RERANK_MODEL`). Texte éditorial = placeholders `[À GÉNÉRER]`. 13 sites seedés embeddés. tsc+build verts. **Découverte** : tables `@@map` snake_case mais **colonnes camelCase** (quoter en SQL raw).
+- ⏳ P3 reste : **génération texte éditorial** (groq-qwen3-32b FR, anti-footprint) → crédits/donateur → câblage UI + `GAME_LOOP=true`.
+- 🔄 P2 : intégration GSC + score v2 **en cours (worktree background)** ; calibrage data-gated reporté.
 
 ### Historique build déploiement (3 itérations)
 1. `public/` absent → `COPY /app/public` échouait → ajout `public/.gitkeep` (commit a7c0790).

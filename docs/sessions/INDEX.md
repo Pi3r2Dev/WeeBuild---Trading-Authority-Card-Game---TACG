@@ -13,3 +13,4 @@ Session handoff and orchestration tracker. Created and maintained by `/flow`.
 | 2026-05-28 | auth-better-auth-4a | closed | solo | (sous-tâche #3 de poc-to-production-roadmap — done, vert) |
 | 2026-05-28 | p15-productization | closed | solo | (P1.5 de poc-to-production-roadmap — AppShell/peau honnête done, committé) |
 | 2026-05-28 | p3p2-foundation-migration | closed | solo | (fondation P2+P3 de poc-to-production-roadmap — migration done, vert) |
+| 2026-05-28 | p3-matching | closed | solo | (P3 matching de poc-to-production-roadmap — done, vert ; rerank en fallback cosine) |
