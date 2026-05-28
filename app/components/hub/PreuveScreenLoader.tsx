@@ -1,5 +1,5 @@
 import { getMyDeck, getNavDeck, getProofs } from "@/lib/data";
-import { DEMO_USER_ID } from "@/lib/data/demo-user";
+import { requireSession } from "@/lib/auth-session";
 import { PreuveScreen } from "./PreuveScreen";
 
 /**
@@ -15,8 +15,8 @@ import { PreuveScreen } from "./PreuveScreen";
  * en P1 (les sceaux ne sont pas le périmètre 4b).
  */
 export async function PreuveScreenLoader() {
-  // TODO(4a): remplacer DEMO_USER_ID par (await requireSession()).user.id
-  const [mySites, navDeck] = await Promise.all([getMyDeck(DEMO_USER_ID), getNavDeck()]);
+  const userId = (await requireSession()).user.id;
+  const [mySites, navDeck] = await Promise.all([getMyDeck(userId), getNavDeck()]);
   const proofs = getProofs(); // P3 — fixtures
   return <PreuveScreen mySites={mySites} navDeck={navDeck} proofs={proofs} />;
 }

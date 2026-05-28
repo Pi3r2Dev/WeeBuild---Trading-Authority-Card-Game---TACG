@@ -19,9 +19,10 @@ import * as fx from "./fixtures";
  * lib/db.ts (exception explicite), pas ici — sinon une erreur de config serait
  * masquée par les mocks.
  *
- * ⚠ Couture pré-auth : les accesseurs « par utilisateur » prennent `userId` en
- * argument (découplé de l'auth). Les écrans passent `DEMO_USER_ID` tant que 4a
- * n'est pas là ; chercher `TODO(4a)` côté appelants pour brancher requireSession().
+ * Les accesseurs « par utilisateur » prennent `userId` en argument (découplé de
+ * l'auth). Depuis 4a, les écrans/Loaders fournissent cet id via
+ * `(await requireSession()).user.id` (cf. lib/auth-session.ts) ; `DEMO_USER_ID`
+ * ne sert plus qu'au seed (prisma/seed.ts).
  */
 
 // Sélection Prisma partagée : carte + son site (domain/url) + propriétaire (name).

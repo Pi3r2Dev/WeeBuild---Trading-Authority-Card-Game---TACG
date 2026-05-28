@@ -1,6 +1,6 @@
 import { ACCENT_VIOLET } from "./constants";
 import { getMe, getMyDeck } from "@/lib/data";
-import { DEMO_USER_ID } from "@/lib/data/demo-user";
+import { requireSession } from "@/lib/auth-session";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MyHand } from "./MiniCard";
@@ -10,8 +10,8 @@ const FILTERS = ["Tech", "IA", "SEO", "Dev", "Productivité"];
 
 /** « Soyez découvert » : dépenser des crédits pour que l’IA vous propose. */
 export async function EtreDecouvert() {
-  // TODO(4a): remplacer DEMO_USER_ID par (await requireSession()).user.id
-  const [ME, MY_SITES] = await Promise.all([getMe(DEMO_USER_ID), getMyDeck(DEMO_USER_ID)]);
+  const userId = (await requireSession()).user.id;
+  const [ME, MY_SITES] = await Promise.all([getMe(userId), getMyDeck(userId)]);
 
   return (
     <>

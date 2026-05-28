@@ -15,7 +15,7 @@ import { captureSite, CaptureError } from "@/lib/services/capture";
 import { computeAuthority, type AuthorityResult } from "@/lib/authority/score";
 import { extractEditorial, type EditorialExtract } from "@/lib/authority/extract";
 import { db } from "@/lib/db";
-import { DEMO_USER_ID } from "@/lib/data/demo-user";
+import { requireSession } from "@/lib/auth-session";
 
 export interface CaptureSuccess {
   ok: true;
@@ -34,6 +34,8 @@ export type CaptureResult = CaptureSuccess | CaptureFailure;
 
 export async function captureCard(rawUrl: string): Promise<CaptureResult> {
   try {
+    // La capture s'attribue au user connecté (session Better Auth, 4a).
+    const userId = (await requireSession()).user.id;
     const site = await captureSite(rawUrl);
     const [extract, authority] = await Promise.all([
       extractEditorial(site),
@@ -43,9 +45,8 @@ export async function captureCard(rawUrl: string): Promise<CaptureResult> {
     const { stats, level } = authority;
 
     // ── Persistance (4b) : Site + Card (1-1) + AuthoritySnapshot, sous le user
-    // de démo tant que l'auth (4a) n'est pas là.
-    // TODO(4a): remplacer DEMO_USER_ID par (await requireSession()).user.id
-    const siteId = await persistCapture(DEMO_USER_ID, site, authority, extract);
+    // connecté (4a).
+    const siteId = await persistCapture(userId, site, authority, extract);
 
     const card: CardData = {
       id: siteId,
@@ -83,8 +84,8 @@ export async function captureCard(rawUrl: string): Promise<CaptureResult> {
  * Idempotent sur (user, domaine) : re-capturer le même site met à jour la carte
  * et ajoute un nouveau snapshot. Retourne l'id du Site.
  *
- * NB : on upsert aussi le User de démo (défensif) → `/capturer` reste testable
- * sans avoir lancé le seed au préalable.
+ * Le `userId` provient de la session Better Auth (4a) → le User existe déjà en
+ * base (créé au callback OAuth), plus besoin d'upsert défensif.
  */
 async function persistCapture(
   userId: string,
@@ -92,13 +93,6 @@ async function persistCapture(
   authority: AuthorityResult,
   extract: EditorialExtract,
 ): Promise<string> {
-  // TODO(4a): supprimer cet upsert — le User viendra de la session Better Auth.
-  await db.user.upsert({
-    where: { id: userId },
-    update: {},
-    create: { id: userId, email: `${userId}@webuild.local`, name: "Alex M.", emailVerified: true },
-  });
-
   const { stats, level, score } = authority;
 
   const persisted = await db.site.upsert({

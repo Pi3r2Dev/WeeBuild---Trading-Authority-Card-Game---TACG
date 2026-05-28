@@ -1,5 +1,5 @@
 import { getMe, getNavDeck } from "@/lib/data";
-import { DEMO_USER_ID } from "@/lib/data/demo-user";
+import { requireSession } from "@/lib/auth-session";
 import { EcosystemeMap } from "./EcosystemeMap";
 
 /**
@@ -10,7 +10,7 @@ import { EcosystemeMap } from "./EcosystemeMap";
  * descendent en props vers le composant client.
  */
 export async function EcosystemeMapLoader() {
-  // TODO(4a): remplacer DEMO_USER_ID par (await requireSession()).user.id
-  const [me, navDeck] = await Promise.all([getMe(DEMO_USER_ID), getNavDeck()]);
+  const userId = (await requireSession()).user.id;
+  const [me, navDeck] = await Promise.all([getMe(userId), getNavDeck()]);
   return <EcosystemeMap me={me} navDeck={navDeck} />;
 }
