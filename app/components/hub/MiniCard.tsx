@@ -1,11 +1,22 @@
 "use client";
 
-import Link from "next/link";
+import { createPortal } from "react-dom";
+import { useSyncExternalStore } from "react";
 import type { CardData, CardState } from "../card/types";
 import { Card } from "../card/Card";
 import { AuthorityTrustBadge } from "../authority/AuthorityTrustBadge";
 import { shouldShowAuthorityTrustBadge } from "@/lib/authority/trust";
+import {
+  HAND_FAN_SCALE,
+  HAND_GRAB_SCALE,
+  HAND_HOVER_LIFT,
+  HAND_HOVER_ZOOM,
+} from "@/lib/hub/hand-gesture";
+import { useHandCardGesture } from "./useHandCardGesture";
+import styles from "./MiniCard.module.css";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
+
+const emptySubscribe = () => () => {};
 
 const CARD_W = 320;
 const CARD_H = 540;
@@ -84,7 +95,26 @@ export function MiniCardTCG({
   );
 }
 
-/** Les sites possédés en éventail TCG ; clic → fiche `/carte/[id]`. */
+function HandCardFace({
+  site,
+  scale,
+  interactive,
+}: {
+  site: CardData;
+  scale: number;
+  interactive: boolean;
+}) {
+  return (
+    <div
+      className={`${styles.handCardScaled} ${interactive ? styles.handCardScaledInteractive : ""}`}
+      style={{ transform: `scale(${scale})` }}
+    >
+      <Card data={site} level={site.level} state="dispo" interactive={interactive} />
+    </div>
+  );
+}
+
+/** Les sites possédés en éventail TCG — survol zoom · tap → fiche · drag → attraper. */
 export function MyHand({
   sites,
   fan = true,
@@ -95,85 +125,113 @@ export function MyHand({
   /** Libellé cooldown rescan par `cardId` (ex. « Rescan dans 3 j »). */
   rescanBadges?: Record<string, string>;
 }) {
-  const scale = 0.34;
+  const scale = HAND_FAN_SCALE;
   const cardW = CARD_W * scale;
   const cardH = CARD_H * scale;
   const n = sites.length;
   const overlap = fan ? 36 : 8;
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const { hoveredId, setHoveredId, grabbed, onCardPointerDown } = useHandCardGesture();
 
   return (
-    <div
-      style={{
-        position: "relative",
-        height: cardH + (fan ? 30 : 12),
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-end",
-      }}
-    >
-      {sites.map((site, i) => {
-        const offset = i - (n - 1) / 2;
-        const rot = fan ? offset * 6 : 0;
-        const tY = fan ? Math.abs(offset) * 6 : 0;
-        const rescanBadge = rescanBadges[site.id];
-        return (
-          <Link
-            key={site.id}
-            href={`/carte/${site.id}`}
-            aria-label={`Voir la carte ${site.domain}`}
-            style={{
-              marginLeft: i === 0 ? 0 : -overlap,
-              transform: `rotateZ(${rot}deg) translateY(${tY}px)`,
-              transformOrigin: "center bottom",
-              transition: "transform 0.3s cubic-bezier(.2,.7,.2,1)",
-              cursor: "pointer",
-              zIndex: i,
-              filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.5))",
-              textDecoration: "none",
-            }}
-          >
-            <div style={{ width: cardW, height: cardH, position: "relative" }}>
+    <>
+      <div className={styles.hand} style={{ height: cardH + (fan ? 30 : 12) }}>
+        {sites.map((site, i) => {
+          const offset = i - (n - 1) / 2;
+          const rot = fan ? offset * 6 : 0;
+          const tY = fan ? Math.abs(offset) * 6 : 0;
+          const rescanBadge = rescanBadges[site.id];
+          const isHovered = hoveredId === site.id && grabbed?.card.id !== site.id;
+          const isGrabbed = grabbed?.card.id === site.id;
+          const isRaised = isHovered || isGrabbed;
+          const hoverScale = isHovered ? HAND_HOVER_ZOOM : 1;
+          const hoverLift = isHovered ? HAND_HOVER_LIFT : 0;
+
+          return (
+            <div
+              key={site.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Carte ${site.domain} — tape pour ouvrir, glisse pour attraper`}
+              className={`${styles.handCard} ${isHovered ? styles.handCardHovered : ""} ${isGrabbed ? styles.handCardGhost : ""}`}
+              style={{
+                marginLeft: i === 0 ? 0 : -overlap,
+                width: cardW,
+                height: cardH,
+                transform: `rotateZ(${rot}deg) translateY(${tY - hoverLift}px) scale(${hoverScale})`,
+                zIndex: isRaised ? 100 + i : i,
+              }}
+              onPointerEnter={() => setHoveredId(site.id)}
+              onPointerLeave={() => setHoveredId((id) => (id === site.id ? null : id))}
+              onPointerDown={(e) => onCardPointerDown(e, site)}
+            >
+              <div className={styles.handCardInner} style={{ width: cardW, height: cardH }}>
+                <HandCardFace site={site} scale={scale} interactive={false} />
+                {rescanBadge && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 4,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      padding: "3px 8px",
+                      background: "rgba(15,23,42,0.92)",
+                      border: "1px solid rgba(251,191,36,0.45)",
+                      color: "#fcd34d",
+                      fontFamily: "var(--font-pixel-display)",
+                      fontSize: 6,
+                      letterSpacing: 0.6,
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.45)",
+                      zIndex: 2,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {rescanBadge}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {mounted &&
+        grabbed &&
+        createPortal(
+          <>
+            <div
+              className={styles.grabbedCard}
+              style={{
+                left: grabbed.x,
+                top: grabbed.y,
+                width: CARD_W * HAND_GRAB_SCALE,
+                height: CARD_H * HAND_GRAB_SCALE,
+                transform: `translate(-50%, -50%) rotateZ(${grabbed.tiltDeg}deg)`,
+              }}
+            >
               <div
+                className={styles.handCardScaledInteractive}
                 style={{
                   position: "absolute",
                   top: 0,
                   left: 0,
-                  transform: `scale(${scale})`,
+                  transform: `scale(${HAND_GRAB_SCALE})`,
                   transformOrigin: "top left",
-                  pointerEvents: "none",
                 }}
               >
-                <Card data={site} level={site.level} state="dispo" interactive={false} />
+                <Card data={grabbed.card} level={grabbed.card.level} state="dispo" interactive />
               </div>
-              {rescanBadge && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 4,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    padding: "3px 8px",
-                    background: "rgba(15,23,42,0.92)",
-                    border: "1px solid rgba(251,191,36,0.45)",
-                    color: "#fcd34d",
-                    fontFamily: "var(--font-pixel-display)",
-                    fontSize: 6,
-                    letterSpacing: 0.6,
-                    borderRadius: 4,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.45)",
-                    zIndex: 2,
-                  }}
-                >
-                  {rescanBadge}
-                </div>
-              )}
             </div>
-          </Link>
-        );
-      })}
-    </div>
+            <p className={styles.grabbedHint} aria-live="polite">
+              Carte en main — relâche pour la remettre
+            </p>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }
 

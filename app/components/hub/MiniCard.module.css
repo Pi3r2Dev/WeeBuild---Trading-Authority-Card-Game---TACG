@@ -1,0 +1,88 @@
+/* Éventail « Ma main » — survol + slot fantôme pendant le drag. */
+
+.hand {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  touch-action: none;
+}
+
+.handCard {
+  position: relative;
+  flex-shrink: 0;
+  transform-origin: center bottom;
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 0.25s ease,
+    opacity 0.25s ease;
+  cursor: grab;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.handCard:active {
+  cursor: grabbing;
+}
+
+.handCardHovered {
+  filter: drop-shadow(0 14px 28px rgba(138, 43, 226, 0.35));
+}
+
+.handCardGhost {
+  opacity: 0.22;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
+  pointer-events: none;
+}
+
+.handCardInner {
+  position: relative;
+}
+
+.handCardScaled {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.handCardScaledInteractive {
+  pointer-events: auto;
+}
+
+/* Carte flottante pendant le drag (portal body). */
+.grabbedCard {
+  position: fixed;
+  z-index: 1200;
+  pointer-events: none;
+  transform-origin: center center;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.65));
+  will-change: transform;
+}
+
+.grabbedHint {
+  position: fixed;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1201;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(138, 43, 226, 0.45);
+  color: var(--hub-fg-soft);
+  font-family: var(--font-pixel-display);
+  font-size: 7px;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .handCard {
+    transition: filter 0.2s ease;
+  }
+}

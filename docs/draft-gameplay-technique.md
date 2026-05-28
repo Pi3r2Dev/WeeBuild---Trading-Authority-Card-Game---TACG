@@ -19,6 +19,7 @@ Transformer l'achat / l'échange de **backlinks SEO** en un **Trading Card Game*
 ### 2.1 Boucle d'expérience (issue du concept)
 - L'utilisateur **parcourt** un catalogue de cartes (= backlinks disponibles).
 - Au **survol / sélection**, la carte s'avance et active ses effets (shaders, anim 3D selon le niveau).
+- **Implémenté (2026-05-28) — « Ma main » hub** : éventail CSS (`MyHand`) avec **zoom au survol** ; **tap** → fiche `/carte/[id]` ; **drag** (seuil 8 px, même logique que `CardCastle`) → attraper la carte en overlay 2D (tilt au mouvement, relâcher = remise dans l'éventail). Physique 3D du château = route `/chateau` uniquement.
 - Deux pistes de navigation envisagées :
   - **Option A — Deck Showcase 3D** : carrousel cylindrique infini ou tapis de cartes posées à plat (Three.js / React Three Fiber). *Recommandé dans le concept.*
   - **Option B — Carte du monde arcade** : chaque site partenaire est un « nœud » (façon Super Mario World / FFVIII) ; cliquer ouvre le deck des ancres/pages dispo de ce site.
