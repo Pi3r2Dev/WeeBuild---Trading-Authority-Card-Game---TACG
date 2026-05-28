@@ -8,9 +8,7 @@ import { Perf } from "r3f-perf";
 import { getFontEmbedCSS, toCanvas } from "html-to-image";
 import * as THREE from "three";
 import { LEVEL_COLORS } from "@/lib/levels";
-// R&D (cf. plan 4b, reco R&D) : reste sur fixtures. On importe DIRECTEMENT les
-// fixtures et non l'accesseur lib/data — devenu async + couplé à Prisma (lib/db),
-// donc non importable dans un module client (this file = "use client").
+// Fallback démo si la main est vide (page produit `/chateau` passe le deck réel en props).
 import { DEMO_CARDS } from "@/lib/data/fixtures";
 import { CardFront } from "../card/CardFront";
 import { CardBack } from "../card/CardBack";
@@ -49,8 +47,22 @@ const CARD_H = 540;
 const BAKE_PIXEL_RATIO = 2;
 // Plancher émissif des faces texturées : garde l'art lisible même éclairé/dans l'ombre (le `map` capte l'ambiance).
 const CARD_EMISSIVE = 0.5;
-/** Deck réutilisé sur les emplacements (une carte par niveau → 4 cartes bakées, partagées). */
-const DECK: CardData[] = DEMO_CARDS;
+/**
+ * Deck effectif du château : main du joueur ou fixtures démo.
+ * On ne bake que les cartes uniques (max 4) pour limiter mémoire / temps html-to-image.
+ */
+function resolveCastleDeck(cards?: CardData[]): CardData[] {
+  const src = cards?.length ? cards : DEMO_CARDS;
+  const seen = new Set<string>();
+  const uniq: CardData[] = [];
+  for (const c of src) {
+    if (seen.has(c.id)) continue;
+    seen.add(c.id);
+    uniq.push(c);
+    if (uniq.length >= 4) break;
+  }
+  return uniq.length > 0 ? uniq : DEMO_CARDS.slice(0, 4);
+}
 
 /** Textures bakées d'une carte : recto (CardFront) + verso (CardBack). */
 type CardTex = { front: THREE.CanvasTexture; back: THREE.CanvasTexture };
@@ -333,6 +345,7 @@ function Grabbable({
   setGrabbedId,
   bodies,
   textures,
+  deck,
 }: {
   live: boolean;
   grabbedId: number | null;
@@ -340,6 +353,7 @@ function Grabbable({
   setGrabbedId: (v: number | null) => void;
   bodies: React.RefObject<Map<number, RapierRigidBody>>;
   textures: CardTex[] | null;
+  deck: CardData[];
 }) {
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera);
@@ -482,14 +496,14 @@ function Grabbable({
     <>
       <Ground />
       {CASTLE.map((spec, i) => {
-        const card = DECK[i % DECK.length]; // emplacement → carte du deck (cycle sur les 4 niveaux)
+        const card = deck[i % deck.length]; // emplacement → carte du deck (cycle)
         return (
           <PhysCard
             key={i}
             index={i}
             spec={spec}
             type={i === grabbedId ? "kinematicPosition" : live ? "dynamic" : "fixed"}
-            tex={textures?.[i % DECK.length] ?? null}
+            tex={textures?.[i % deck.length] ?? null}
             level={card.level}
             register={register}
             onPointerDown={onCardPointerDown}
@@ -501,8 +515,18 @@ function Grabbable({
   );
 }
 
+export interface CardCastleProps {
+  /** Largeur du viewport WebGL (px). Omis = 680. */
+  width?: number;
+  /** Hauteur du viewport WebGL (px). Omis = 540. */
+  height?: number;
+  /** Cartes du membre ; vide → démo (4 niveaux). */
+  cards?: CardData[];
+}
+
 /** Château de cartes physique — figé au départ ; tap = pousser, glisser = attraper. */
-export default function CardCastle({ width = 680, height = 540 }: { width?: number; height?: number }) {
+export default function CardCastle({ width = 680, height = 540, cards }: CardCastleProps) {
+  const deck = useMemo(() => resolveCastleDeck(cards), [cards]);
   const [resetKey, setResetKey] = useState(0);
   const [live, setLive] = useState(false);
   const [grabbedId, setGrabbedId] = useState<number | null>(null);
@@ -519,7 +543,7 @@ export default function CardCastle({ width = 680, height = 540 }: { width?: numb
 
   return (
     <div style={{ width: "100%", maxWidth: width, height, position: "relative", margin: "0 auto", touchAction: "none" }}>
-      <CardTextureBaker cards={DECK} onReady={setTextures} />
+      <CardTextureBaker cards={deck} onReady={setTextures} />
       <Canvas
         dpr={[1, 2]}
         camera={{ position: [5, 3.4, 9.5], fov: 44 }}
@@ -536,10 +560,10 @@ export default function CardCastle({ width = 680, height = 540 }: { width?: numb
         <ContactShadows position={[0, 0.01, 0]} opacity={0.55} scale={14} blur={2.2} far={5} color="#000000" />
         <Suspense fallback={null}>
           <Physics key={resetKey} gravity={[0, -9.81, 0]}>
-            <Grabbable live={live} grabbedId={grabbedId} setLive={setLive} setGrabbedId={setGrabbedId} bodies={bodies} textures={textures} />
+            <Grabbable live={live} grabbedId={grabbedId} setLive={setLive} setGrabbedId={setGrabbedId} bodies={bodies} textures={textures} deck={deck} />
           </Physics>
         </Suspense>
-        <Perf position="top-left" minimal />
+        {process.env.NODE_ENV === "development" && <Perf position="top-left" minimal />}
       </Canvas>
 
       <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 12, alignItems: "center", pointerEvents: "none" }}>

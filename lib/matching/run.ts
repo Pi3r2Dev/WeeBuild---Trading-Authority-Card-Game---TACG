@@ -16,12 +16,29 @@
 
 import { db } from "@/lib/db";
 import { findPartners, type FindPartnersOptions, type MatchOutcome } from "./match";
+import { generateForSession, type GenerateForSessionResult } from "@/lib/editorial/generate-for-session";
 
 /** Résultat de `runMatching` : la session créée + le détail du matching. */
 export interface RunMatchingResult {
   matchingSessionId: string;
   suggestionsCreated: number;
   outcome: MatchOutcome;
+  /**
+   * Détail de la génération éditoriale si `generate: true` a été demandé (sinon
+   * `null` — les suggestions restent en placeholder, génération différée).
+   */
+  generation: GenerateForSessionResult | null;
+}
+
+/** Options d'orchestration de `runMatching` (matching + génération). */
+export interface RunMatchingOptions extends FindPartnersOptions {
+  /**
+   * Si `true`, enchaîne la génération éditoriale (angle + ancre + embedding) sur
+   * les suggestions créées (cf. lib/editorial/generate-for-session.ts). Gracieux :
+   * un échec de génération n'invalide pas la session (placeholders conservés).
+   * Défaut `false` — matching seul (structure + scoring), génération à la demande.
+   */
+  generate?: boolean;
 }
 
 /**
@@ -41,7 +58,7 @@ function placeholderTopic(sourceDomain: string, targetDomain: string): string {
  */
 export async function runMatching(
   siteId: string,
-  opts: FindPartnersOptions = {},
+  opts: RunMatchingOptions = {},
 ): Promise<RunMatchingResult> {
   // Propriétaire du site source → propriétaire de la session.
   const source = await db.site.findUniqueOrThrow({
@@ -84,9 +101,17 @@ export async function runMatching(
     })),
   });
 
+  // Génération éditoriale optionnelle (angle + ancre + embedding, sous quotas
+  // d'ancres + dédup sémantique). Gracieuse : ne jette pas si le LLM échoue.
+  let generation: GenerateForSessionResult | null = null;
+  if (opts.generate) {
+    generation = await generateForSession(session.id);
+  }
+
   return {
     matchingSessionId: session.id,
     suggestionsCreated: outcome.matches.length,
     outcome,
+    generation,
   };
 }

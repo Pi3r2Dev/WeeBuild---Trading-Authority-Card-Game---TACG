@@ -13,7 +13,8 @@
 export const GAME_LOOP_ENABLED = false;
 
 /**
- * Routes R&D (`/rnd /chateau /chateau-cartes /cards /transitions`) + `DevNav` :
+ * Routes R&D (`/rnd /chateau-cartes /cards /transitions`) + `DevNav` :
+ * `/chateau` (château 3D) est une route PRODUIT dans `(app)` — hors flag R&D.
  * visibles uniquement quand `NEXT_PUBLIC_ENABLE_RND === "true"` (cf. §9 D2).
  * Défaut off → 404 en prod, code conservé mais invisible.
  */

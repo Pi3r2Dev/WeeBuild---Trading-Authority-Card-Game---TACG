@@ -158,6 +158,26 @@ body {
   .app-canvas-inner > * {
     --screen-bottom-inset: 0px;
   }
+
+  /* Château 3D : canvas WebGL plus large que le max hub (~1100px). */
+  .app-canvas-inner:has(.chateau-screen) {
+    max-width: min(1280px, 100%);
+  }
+
+  .chateau-screen .hub-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chateau-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+  }
 }
 
 /* Sur mobile, l'inner est transparent (pass-through plein écran). */

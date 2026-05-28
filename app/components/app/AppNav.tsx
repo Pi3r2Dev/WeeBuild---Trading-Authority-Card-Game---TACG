@@ -7,6 +7,7 @@ import { ACCENT_VIOLET } from "../hub/constants";
 /** Items de navigation produit — source unique pour les deux variantes. */
 export const NAV_ITEMS = [
   { href: "/", label: "Hub", icon: "⬢" },
+  { href: "/chateau", label: "Château", icon: "△" },
   { href: "/ecosysteme", label: "Écosystème", icon: "◯" },
   { href: "/donner", label: "Donner", icon: "↗" },
   { href: "/decouvrir", label: "Découvrir", icon: "◆" },

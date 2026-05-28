@@ -12,7 +12,7 @@
 
 const BASE_URL = process.env.LITELLM_BASE_URL ?? "https://litellm.augmenter.pro";
 const API_KEY = process.env.LITELLM_API_KEY ?? "";
-const TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 /** Alias sémantiques de la passerelle (cf. litellm-config.yaml). */
 export type LlmModel = "fast4b" | "groq-fast" | "groq-qwen3-32b" | "gte-qwen2-local";
@@ -29,17 +29,22 @@ interface ChatOptions {
   /** Demande une réponse JSON stricte (response_format json_object). */
   json?: boolean;
   temperature?: number;
+  /**
+   * Timeout d'appel (ms). Défaut 30 s. À relever pour les modèles « reasoning »
+   * (ex. `groq-qwen3-32b`) dont la latence + le temps de file dépassent 30 s.
+   */
+  timeoutMs?: number;
 }
 
 /** Erreur d'appel LLM (réseau, HTTP, clé manquante). */
 export class LlmError extends Error {}
 
 /** Une complétion chat. Renvoie le contenu texte brut du 1er choix. */
-export async function chat({ model, system, user, json, temperature = 0.3 }: ChatOptions): Promise<string> {
+export async function chat({ model, system, user, json, temperature = 0.3, timeoutMs = DEFAULT_TIMEOUT_MS }: ChatOptions): Promise<string> {
   if (!isConfigured()) throw new LlmError("LITELLM_API_KEY absente — fallback attendu côté appelant.");
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/v1/chat/completions`, {
@@ -58,7 +63,9 @@ export async function chat({ model, system, user, json, temperature = 0.3 }: Cha
     });
   } catch (e) {
     throw new LlmError(
-      controller.signal.aborted ? "Appel LLM expiré (30 s)." : `LiteLLM injoignable (${(e as Error).message}).`,
+      controller.signal.aborted
+        ? `Appel LLM expiré (${Math.round(timeoutMs / 1000)} s).`
+        : `LiteLLM injoignable (${(e as Error).message}).`,
     );
   } finally {
     clearTimeout(timer);
