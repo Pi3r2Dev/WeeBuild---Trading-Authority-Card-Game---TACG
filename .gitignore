@@ -30,6 +30,12 @@ design_handoff_webuild_tag/
 .playwright-mcp/
 docs/screenshots/
 
+# playwright E2E
+/e2e/.auth/
+/playwright-report/
+/test-results/
+/blob-report/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -26,6 +26,9 @@ if (!process.env.BETTER_AUTH_SECRET) {
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+/** Auth email/mot de passe — UNIQUEMENT quand `E2E_ENABLE=true` (Playwright local/CI). */
+const e2eAuthEnabled = process.env.E2E_ENABLE === "true";
+
 export const auth = betterAuth({
   // Base URL du serveur d'auth (évite les redirect_uri_mismatch Google).
   baseURL: process.env.BETTER_AUTH_URL ?? appUrl,
@@ -46,17 +49,21 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      // Scope ADDITIONNEL demandé dès l'OAuth : `webmasters.readonly` = GSC
-      // (P2 + preuve d'ownership, ADR-002). Better Auth ajoute déjà
-      // openid/email/profile par défaut — on ne les redéclare pas (évite un
-      // doublon dans l'URL d'autorisation).
       scope: ["https://www.googleapis.com/auth/webmasters.readonly"],
-      // Refresh token GSC durable (P2) : Google ne le délivre qu'avec offline +
-      // consentement forcé.
       accessType: "offline",
       prompt: "select_account consent",
     },
   },
+
+  // Playwright E2E : connexion sans OAuth Google (cf. docs/e2e-playwright.md).
+  ...(e2eAuthEnabled
+    ? {
+        emailAndPassword: {
+          enabled: true,
+          minPasswordLength: 8,
+        },
+      }
+    : {}),
 
   // Origines de confiance (CSRF) — l'app elle-même.
   trustedOrigins: [appUrl],

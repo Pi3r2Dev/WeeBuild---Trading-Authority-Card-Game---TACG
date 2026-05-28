@@ -52,6 +52,7 @@ model User {
   receivedLinks       EditorialLink[]    @relation("LinkBeneficiary")
   promotions          Promotion[]
   matchingSessions    MatchingSession[]
+  gscImportBatches    GscImportBatch[]
 
   @@map("user")
 }
@@ -286,6 +287,84 @@ model GscSnapshot {
 
   @@index([siteId, fetchedAt(sort: Desc)])
   @@map("gsc_snapshot")
+}
+
+/// Cycle de vie d'un lot d'import GSC (déclaration multi-sites).
+enum GscImportBatchStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+/// Cycle de vie d'une propriété GSC dans un lot.
+enum GscImportItemStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
+/// Lot d'import Search Console lancé par un membre (traité par worker/cron).
+/// Chaque item = 1 propriété GSC → Firecrawl + carte + snapshot GSC (score v2).
+model GscImportBatch {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status GscImportBatchStatus @default(PENDING)
+
+  /// Politique au moment du lancement (ex. délégués autorisés via flag produit).
+  allowDelegated Boolean @default(false)
+
+  totalItems     Int @default(0)
+  completedItems Int @default(0)
+  failedItems    Int @default(0)
+  skippedItems   Int @default(0)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  items GscImportBatchItem[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("gsc_import_batch")
+}
+
+/// Une propriété GSC à importer dans un lot (1 domaine logique par item).
+model GscImportBatchItem {
+  id      String @id @default(uuid())
+  batchId String
+  batch   GscImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  /// Forme exacte GSC (`sc-domain:` ou préfixe URL).
+  gscProperty     String
+  permissionLevel String
+  domain          String
+  captureUrl      String
+
+  status GscImportItemStatus @default(PENDING)
+
+  siteId String?
+  cardId String?
+  error  String? @db.Text
+
+  attempts   Int @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  @@unique([batchId, gscProperty])
+  @@index([batchId, status])
+  @@index([status])
+  @@map("gsc_import_batch_item")
 }
 
 // ════════════════════════════════════════════════════════════════════════════

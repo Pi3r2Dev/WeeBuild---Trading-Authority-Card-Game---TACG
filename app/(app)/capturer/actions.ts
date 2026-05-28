@@ -12,10 +12,9 @@ import { captureSite, CaptureError } from "@/lib/services/capture";
 import { computeAuthorityV2, type AuthorityResultV2 } from "@/lib/authority/score-v2";
 import { getLatestGscInputForDomain } from "@/lib/authority/gsc-input";
 import { extractEditorial, type EditorialExtract } from "@/lib/authority/extract";
-import { applyAuthorityToSite } from "@/lib/capturer/apply-authority";
+import { persistCapture } from "@/lib/capturer/persist-capture";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth-session";
-import { embedSite } from "@/lib/matching/embed-site";
 
 export interface CaptureSuccess {
   ok: true;
@@ -56,77 +55,4 @@ export async function captureCard(rawUrl: string): Promise<CaptureResult> {
     if (e instanceof CaptureError) return { ok: false, error: e.message };
     return { ok: false, error: `Erreur inattendue : ${(e as Error).message}` };
   }
-}
-
-async function persistCapture(
-  userId: string,
-  site: Awaited<ReturnType<typeof captureSite>>,
-  authority: AuthorityResultV2,
-  extract: EditorialExtract,
-): Promise<string> {
-  const { stats, level } = authority;
-
-  const persisted = await db.site.upsert({
-    where: { userId_domain: { userId, domain: site.domain } },
-    update: {
-      url: site.url,
-      status: "READY",
-      title: site.title || null,
-      description: site.description || null,
-      markdown: site.markdown,
-      internalLinks: site.internalLinks,
-      externalLinks: site.externalLinks,
-      imageCount: site.imageCount,
-      https: site.https,
-      element: extract.element,
-      thematique: extract.thematique,
-    },
-    create: {
-      userId,
-      url: site.url,
-      domain: site.domain,
-      status: "READY",
-      title: site.title || null,
-      description: site.description || null,
-      markdown: site.markdown,
-      internalLinks: site.internalLinks,
-      externalLinks: site.externalLinks,
-      imageCount: site.imageCount,
-      https: site.https,
-      element: extract.element,
-      thematique: extract.thematique,
-    },
-  });
-
-  const cardFields = {
-    userId,
-    level,
-    hp: stats.hp,
-    atk: stats.atk,
-    tf: stats.tf,
-    cf: stats.cf,
-    dr: stats.dr,
-    anchor: extract.anchor,
-    element: extract.element,
-    thematique: extract.thematique,
-    summary: extract.summary,
-    linkType: "dofollow",
-    status: "dispo",
-    price: level,
-  };
-  await db.card.upsert({
-    where: { siteId: persisted.id },
-    update: cardFields,
-    create: { siteId: persisted.id, ...cardFields },
-  });
-
-  await embedSite(persisted.id, {
-    title: site.title,
-    description: site.description,
-    markdown: site.markdown,
-  });
-
-  await applyAuthorityToSite(persisted.id, userId, authority, extract);
-
-  return persisted.id;
 }

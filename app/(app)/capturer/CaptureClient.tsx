@@ -6,6 +6,7 @@ import { Card } from "@/app/components/card/Card";
 import { ERA_LABEL } from "@/lib/levels";
 import { captureCard, type CaptureResult } from "./actions";
 import { enrichWithGscAction, type EnrichGscResult } from "./gsc-actions";
+import { GscBatchImport } from "./GscBatchImport";
 import { MatchingTrigger } from "@/app/components/hub/MatchingTrigger";
 import { GAME_LOOP_ENABLED } from "@/app/components/app/flags";
 
@@ -110,6 +111,8 @@ export function CaptureClient() {
           </button>
         ))}
       </div>
+
+      <GscBatchImport />
 
       {pending && (
         <p style={{ color: "var(--hub-fg-soft)" }}>

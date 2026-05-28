@@ -8,7 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "smoketest": "playwright test e2e/smoke e2e/guest",
+    "smoketest:report": "playwright show-report",
+    "worker:gsc-import": "tsx scripts/gsc-import-worker.ts",
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -31,16 +38,17 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
-    "leva": "^0.10.1",
-    "r3f-perf": "^7.2.3",
-    "tsx": "^4.22.3",
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.184.1",
     "eslint": "^9",
     "eslint-config-next": "^15",
+    "leva": "^0.10.1",
+    "r3f-perf": "^7.2.3",
+    "tsx": "^4.22.3",
     "typescript": "^5",
     "vitest": "^4.1.7"
   }

@@ -70,6 +70,7 @@ AS = w_seo · S_seo  +  w_geo · S_geo
 ## 6. Anti-gaming & vérification de propriété
 
 - **GSC OAuth = preuve de propriété + données infalsifiables** (le meilleur rempart).
+- **Import batch (2026-05-28)** : seules les propriétés `siteOwner` sont proposées par défaut ; `siteRestrictedUser` / `siteUnverifiedUser` exclus ; `siteFullUser` (accès délégué « gestion ») réservé à un flag produit futur (`WEBUILD_GSC_ALLOW_DELEGATED`) pour gestionnaires multi-sites de confiance.
 - **Screenshots GSC = forgeables** → vision + heuristiques anti-fraude, ou poids plafonné vs voie OAuth.
 - **Mentions réseau = gameables** (le membre les influence) → anti-abus, plafonds.
 - Rappel : la rareté a une valeur sociale → les membres voudront gonfler l'AS.
@@ -82,9 +83,10 @@ AS = w_seo · S_seo  +  w_geo · S_geo
 
 - **Score v1** (`metricVersion: v1-onpage`) : heuristiques Firecrawl — inchangé, utilisé sans snapshot GSC.
 - **Score v2** (`metricVersion: v2-gsc`) : blend v1 + signaux GSC normalisés (`lib/authority/score-v2.ts`) — **poids non calibrés** 🚧.
-- **Flux `/capturer`** : première capture → v1 ; si `GscSnapshot` déjà lié au domaine → v2 direct ; bouton **« Enrichir avec Google Search Console »** → `captureGscAction` + re-score v2.
+- **Flux `/capturer`** : première capture → v1 ; si `GscSnapshot` déjà lié au domaine → v2 direct ; bouton **« Enrichir avec Google Search Console »** → `captureGscAction` + re-score v2 ; **import batch** (plusieurs propriétés owner) via file `GscImportBatch` + worker/cron.
 - **Persistance** : `GscSnapshot` + `AuthoritySnapshot` ; carte mise à jour via `apply-authority`.
 - **Tests unitaires** : agrégation GSC (`gsc.test.ts`), blend v2 (`score-v2.test.ts`).
+- **Client GSC** (`lib/services/gsc.ts`) : totaux sans dimension, sélection multi-propriétés (GET `/sites` + max impressions), pièges API documentés en tête de module *(cf. [sessions/2026-05-28-p2-gsc-integration.md](sessions/2026-05-28-p2-gsc-integration.md))*.
 
 - **Google OAuth** + scope `webmasters.readonly` (Better Auth) → pull GSC API.
 - **gemma4-vision** → lecture des screenshots GSC (fallback).

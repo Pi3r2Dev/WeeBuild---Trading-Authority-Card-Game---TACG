@@ -24,8 +24,21 @@ tags: [p2, gsc, authority-score, search-console]
 
 - Re-capture d'un domaine déjà lié à un `GscSnapshot` → score **v2** automatique.
 - Première capture → **v1** ; bouton **« Enrichir avec Google Search Console »** → fetch GSC + re-score v2.
+- **Import batch GSC (2026-05-28)** : section « Déclarer plusieurs sites en lot » sur `/capturer` — liste les propriétés **owner** (`siteOwner`), dédupliquées par domaine ; file persistée `GscImportBatch` / `GscImportBatchItem` ; traitement **worker/cron** (`npm run worker:gsc-import` ou `POST /api/cron/gsc-import` avec `CRON_SECRET`). Exclut `siteRestrictedUser` et `siteUnverifiedUser` ; `siteFullUser` (gestionnaires) réservé à `WEBUILD_GSC_ALLOW_DELEGATED=true`.
 - Prérequis GSC : même compte Google qu'à la connexion, scope `webmasters.readonly`, site **vérifié** dans GSC (préfixe URL ou `sc-domain:`).
 - Erreurs GSC → message FR (`GscError`), pas de crash.
+- **Totaux GSC (2026-05-28)** : clics/impressions via requête API **sans dimension** (aligné dashboard GSC) ; si plusieurs propriétés vérifiées (préfixe URL + `sc-domain:`), on retient celle avec le **plus d'impressions** (évite un préfixe étroit sous-estimé). Fenêtre ~28 j avec lag 3 j (données consolidées) — peut différer légèrement du filtre « 28 jours » GSC qui inclut les jours récents.
+- **Review fetch (2026-05-28)** : GET `/sites` + `propertyCoversUrl` + variantes www/apex ; `queryCount` paginé **une seule fois** sur la propriété gagnante. Pièges documentés en tête de [lib/services/gsc.ts](../../lib/services/gsc.ts).
+
+### Pièges API (ne pas régresser)
+
+| Piège | Symptôme | Correctif |
+|-------|----------|-----------|
+| Somme de rows `dimensions: ["query"]` | Clics très sous-estimés (ex. 23 vs 179) | Totaux via requête **sans dimension** |
+| Première propriété qui répond | Préfixe étroit vs `sc-domain:` | `pickBestGscProperty` (max impressions) |
+| Forme exacte de propriété | 403/404 | GET `/sites` + heuristiques www/apex/`sc-domain:` |
+| Pagination query sur tous les candidats | Latence / quota API | Pagination uniquement sur la propriété retenue |
+| UI « 28 j » vs notre fenêtre | Léger écart | `GSC_DATA_LAG_DAYS = 3` documenté |
 
 ## Questions en cours 🚧
 

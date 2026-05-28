@@ -1,22 +1,46 @@
 /**
  * Client Google Search Console (P2 — SEO Tier 2, cf. draft-metrique-autorite.md §2).
  *
- * Voie OAuth (préférée) : on échange le **refresh token** Google capté dès
- * l'OAuth Better Auth (scope `webmasters.readonly`, accessType offline, cf.
- * lib/auth.ts) contre un access token, puis on interroge la **Search Analytics
- * API**. Donnée first-party infalsifiable + preuve de propriété du site.
+ * ## Flux
  *
- * Flux : `getAccessToken(userId)` (refresh→access) → `fetchSearchAnalytics(...)`
- * (POST searchAnalytics/query → agrégats) → `captureGsc(userId, siteId)`
- * (orchestre + insère un `GscSnapshot` source=OAUTH).
+ * `getAccessToken(userId)` (refresh→access OAuth Better Auth, scope `webmasters.readonly`)
+ * → `listVerifiedSites` (GET /sites — propriétés vérifiées du compte)
+ * → `resolveGscPropertyCandidates` (filtre celles qui couvrent l'URL capturée)
+ * → `fetchPropertyTotals` (POST searchAnalytics/query **sans dimension** — totaux site-wide)
+ * → `pickBestGscProperty` (retient la propriété à plus forte couverture)
+ * → `fetchDistinctQueryCount` (pagination dimension `query`, uniquement sur la gagnante)
+ * → `captureGsc` (insère un `GscSnapshot` source=OAUTH).
  *
- * Le fallback SCREENSHOT (gemma4-vision) est HORS PÉRIMÈTRE ici (le modèle
- * `GscSnapshot.source` le prévoit, mais on ne produit que des snapshots OAUTH).
+ * ## Pièges API découverts en POC (2026-05-28)
  *
- * Module SERVEUR : lit `process.env` (GOOGLE_CLIENT_ID/SECRET), la DB et la
- * session — jamais importé côté client. Ne jette que des `GscError` (message FR
- * pour l'UI) pour les cas attendus (pas de compte Google, pas de refresh token,
- * site non vérifié dans GSC, API en erreur).
+ * 1. **Ne JAMAIS sommer des rows `dimensions: ["query"]`** pour obtenir les clics totaux.
+ *    L'API ne renvoie qu'un top-N (max 25 000 rows/page) ; le total dashboard GSC exige
+ *    une requête **sans dimension** (1 row = totaux site-wide). Bug initial : 23 clics
+ *    affichés vs 179 dans l'UI GSC (somme tronquée + mauvaise propriété).
+ *
+ * 2. **Plusieurs propriétés peuvent coexister** pour un même site (préfixe URL étroit,
+ *    variante www/apex, `sc-domain:`). L'API exige la forme **exacte** de la propriété.
+ *    Ne pas s'arrêter à la première qui répond : comparer les totaux et garder celle
+ *    avec le **plus d'impressions** (couverture la plus large).
+ *
+ * 3. **Préfixe URL ≠ propriété domaine** : `https://www.exemple.com/` ne couvre pas
+ *    automatiquement `sc-domain:exemple.com` (sous-domaines, variante sans www). On
+ *    liste les propriétés vérifiées via GET /sites puis on filtre avec
+ *    {@link propertyCoversUrl}.
+ *
+ * 4. **Fenêtre temporelle** : l'UI GSC « 28 jours » inclut les jours récents (partiels).
+ *    Notre fenêtre ~28 j exclut les `GSC_DATA_LAG_DAYS` derniers jours (données non
+ *    consolidées). Léger écart attendu vs le dashboard, pas un bug.
+ *
+ * 5. **Type de recherche** : on force `type: "web"` (aligné filtre « Web » du dashboard).
+ *
+ * 6. **Pagination queryCount** : coûteuse (N appels API) — exécutée **une seule fois**
+ *    sur la propriété retenue, pas sur chaque candidat.
+ *
+ * Le fallback SCREENSHOT (gemma4-vision) est HORS PÉRIMÈTRE ici (`GscSource.SCREENSHOT`
+ * prévu en schéma Prisma, non implémenté).
+ *
+ * Module SERVEUR uniquement — jamais importé côté client.
  */
 
 import { db } from "@/lib/db";
@@ -33,29 +57,72 @@ export const DEFAULT_WINDOW_DAYS = 28;
  * GSC ne dispose pas des tout derniers jours (latence ~2-3 j). On décale donc
  * la fin de fenêtre de 3 jours pour viser des données déjà consolidées.
  */
-const GSC_DATA_LAG_DAYS = 3;
+export const GSC_DATA_LAG_DAYS = 3;
 
 const TOKEN_TIMEOUT_MS = 15_000;
 const QUERY_TIMEOUT_MS = 30_000;
+/** Plafond API Search Analytics par page (max officiel = 25 000). */
+const GSC_ROW_LIMIT = 25_000;
 
-/** Agrégats d'une fenêtre Search Analytics (clics/impressions sommés, ctr/position moyennés). */
+// ── Types API Search Analytics ────────────────────────────────────────────────
+
+/** Une row renvoyée par POST searchAnalytics/query. */
+export interface SearchAnalyticsRow {
+  keys?: string[];
+  clicks?: number;
+  impressions?: number;
+  ctr?: number;
+  position?: number;
+}
+
+interface SearchAnalyticsResponse {
+  rows?: SearchAnalyticsRow[];
+  error?: { code?: number; message?: string; status?: string };
+}
+
+interface SearchAnalyticsQueryBody {
+  startDate: string;
+  endDate: string;
+  type?: "web";
+  dimensions?: string[];
+  rowLimit?: number;
+  startRow?: number;
+}
+
+interface SiteEntry {
+  siteUrl?: string;
+  permissionLevel?: string;
+}
+
+interface SitesListResponse {
+  siteEntry?: SiteEntry[];
+}
+
+/** Entrée GET /sites avec niveau de permission (ownership / délégué). */
+export interface GscSiteEntry {
+  siteUrl: string;
+  permissionLevel: string;
+}
+
+/** Agrégats d'une fenêtre Search Analytics sur une propriété GSC. */
 export interface GscAggregate {
   clicks: number;
   impressions: number;
-  /** Click-through rate moyen pondéré par impressions (0–1). */
+  /** Click-through rate (0–1), tel que renvoyé par l'API sur la row sans dimension. */
   ctr: number;
-  /** Position moyenne pondérée par impressions (1 = top ; plus bas = mieux). */
+  /** Position moyenne (1 = top), telle que renvoyée par l'API sur la row sans dimension. */
   position: number;
-  /** Nombre de requêtes distinctes ayant généré des impressions sur la fenêtre. */
+  /** Requêtes distinctes avec impressions (dimension `query`, pagination complète). */
   queryCount: number;
   /** Fenêtre couverte (date-only, ISO `YYYY-MM-DD`). */
   startDate: string;
   endDate: string;
-  /** Payload brut renvoyé par l'API (rows) — conservé pour recalcul sans re-fetch. */
-  raw: { rows: SearchAnalyticsRow[] };
+  /** Payload brut — audit et recalcul sans re-fetch. */
+  raw: { totalsRow: SearchAnalyticsRow | null; queryCount: number };
 }
 
 // ── env helpers ───────────────────────────────────────────────────────────────
+
 const clientId = () => process.env.GOOGLE_CLIENT_ID ?? "";
 const clientSecret = () => process.env.GOOGLE_CLIENT_SECRET ?? "";
 
@@ -95,13 +162,7 @@ interface GoogleTokenResponse {
 /**
  * Échange le refresh token Google du user contre un access token frais.
  *
- * Lit l'`account` Better Auth (providerId="google") du user. Met à jour
- * `accessToken`/`accessTokenExpiresAt` en base (best-effort, n'altère pas le
- * résultat en cas d'échec d'écriture).
- *
- * @throws {GscError} pas de compte Google, pas de refresh token (l'utilisateur
- *   doit s'être connecté avec consentement offline — cf. lib/auth.ts), ou refus
- *   Google (`invalid_grant` = consentement révoqué → reconnexion nécessaire).
+ * @throws {GscError} pas de compte Google, pas de refresh token, ou refus Google.
  */
 export async function getAccessToken(userId: string): Promise<string> {
   if (!isConfigured()) {
@@ -141,7 +202,6 @@ export async function getAccessToken(userId: string): Promise<string> {
 
   const json = (await res.json().catch(() => ({}))) as GoogleTokenResponse;
   if (!res.ok || !json.access_token) {
-    // `invalid_grant` = refresh token révoqué/expiré → l'utilisateur doit re-consentir.
     if (json.error === "invalid_grant") {
       throw new GscError(
         "Autorisation Google expirée ou révoquée : reconnecte-toi à Google pour ré-autoriser Search Console.",
@@ -154,7 +214,6 @@ export async function getAccessToken(userId: string): Promise<string> {
     );
   }
 
-  // Best-effort : on persiste l'access token frais (n'altère pas le retour si l'écriture échoue).
   if (json.expires_in) {
     const expiresAt = new Date(Date.now() + json.expires_in * 1000);
     await db.account
@@ -170,19 +229,111 @@ export async function getAccessToken(userId: string): Promise<string> {
   return json.access_token;
 }
 
-// ── Search Analytics API ───────────────────────────────────────────────────────
+// ── Propriétés GSC (matching) ─────────────────────────────────────────────────
 
-interface SearchAnalyticsRow {
-  keys?: string[];
-  clicks?: number;
-  impressions?: number;
-  ctr?: number;
-  position?: number;
+/** Normalise un hostname (insensible à la casse, sans préfixe www). */
+export function normalizeHost(hostname: string): string {
+  return hostname.replace(/^www\./i, "").toLowerCase();
 }
-interface SearchAnalyticsResponse {
-  rows?: SearchAnalyticsRow[];
-  error?: { code?: number; message?: string; status?: string };
+
+/**
+ * True si une propriété GSC peut couvrir le trafic de l'URL capturée.
+ *
+ * - `sc-domain:exemple.com` → apex + tous les sous-domaines.
+ * - Préfixe URL → même hôte (www/apex assoupli) ET chemin sous le préfixe.
+ */
+export function propertyCoversUrl(gscProperty: string, siteUrl: string): boolean {
+  try {
+    const site = new URL(siteUrl);
+
+    if (gscProperty.startsWith("sc-domain:")) {
+      const domain = gscProperty.slice("sc-domain:".length).toLowerCase();
+      const host = site.hostname.toLowerCase();
+      return host === domain || host.endsWith(`.${domain}`);
+    }
+
+    const prop = new URL(gscProperty);
+    if (normalizeHost(prop.hostname) !== normalizeHost(site.hostname)) {
+      return false;
+    }
+
+    const propPath = prop.pathname.endsWith("/") ? prop.pathname : `${prop.pathname}/`;
+    if (propPath === "/") return true;
+
+    const sitePath = site.pathname.endsWith("/") ? site.pathname : `${site.pathname}/`;
+    return sitePath.startsWith(propPath);
+  } catch {
+    return false;
+  }
 }
+
+/**
+ * Candidats heuristiques de propriété GSC pour une URL (forme exacte exigée par l'API).
+ *
+ * Génère : préfixe d'origine, variante www↔apex, `sc-domain:` (sans www).
+ * Utilisé en repli si GET /sites échoue, et pour compléter la liste vérifiée.
+ */
+export function siteUrlCandidates(url: string): string[] {
+  const candidates: string[] = [];
+  try {
+    const u = new URL(url);
+    const origin = `${u.protocol}//${u.host}`;
+    candidates.push(`${origin}/`);
+
+    const hostNoWww = u.host.replace(/^www\./i, "");
+    const apexHost = u.host.replace(/^www\./i, "");
+    const wwwHost = u.host.startsWith("www.") ? u.host : `www.${u.host}`;
+
+    if (apexHost !== u.host) {
+      candidates.push(`${u.protocol}//${apexHost}/`);
+    }
+    if (wwwHost !== u.host) {
+      candidates.push(`${u.protocol}//${wwwHost}/`);
+    }
+
+    candidates.push(`sc-domain:${hostNoWww}`);
+  } catch {
+    candidates.push(url);
+  }
+  return [...new Set(candidates)];
+}
+
+/**
+ * Fusionne propriétés vérifiées (GET /sites) filtrées + heuristiques, ordre préservé.
+ *
+ * Les propriétés vérifiées qui couvrent l'URL passent en premier (source de vérité
+ * côté compte Google) ; les heuristiques complètent au cas où la liste serait incomplète.
+ */
+export function resolveGscPropertyCandidates(verifiedSites: string[], siteUrl: string): string[] {
+  const fromVerified = verifiedSites.filter((p) => propertyCoversUrl(p, siteUrl));
+  const heuristic = siteUrlCandidates(siteUrl);
+  const merged = [...fromVerified];
+  for (const h of heuristic) {
+    if (!merged.includes(h)) merged.push(h);
+  }
+  return merged;
+}
+
+/**
+ * Choisit la propriété GSC la plus représentative parmi celles qui ont répondu.
+ *
+ * Critère : max impressions (couverture), puis max clics en cas d'égalité.
+ * Évite de retenir un préfixe URL étroit (ex. `/blog/`) alors que `sc-domain:`
+ * couvre tout le trafic.
+ */
+export function pickBestGscProperty<
+  T extends { property: string; aggregate: Pick<GscAggregate, "impressions" | "clicks"> },
+>(attempts: T[]): T | null {
+  if (attempts.length === 0) return null;
+  return attempts.reduce((best, cur) => {
+    if (cur.aggregate.impressions !== best.aggregate.impressions) {
+      return cur.aggregate.impressions > best.aggregate.impressions ? cur : best;
+    }
+    return cur.aggregate.clicks > best.aggregate.clicks ? cur : best;
+  });
+}
+
+// ── Search Analytics API ───────────────────────────────────────────────────────
 
 /** ISO date-only (`YYYY-MM-DD`) en UTC — format attendu par l'API GSC. */
 function isoDate(d: Date): string {
@@ -190,21 +341,15 @@ function isoDate(d: Date): string {
 }
 
 /**
- * Interroge la Search Analytics API pour `siteUrl` sur [startDate, endDate]
- * (dates ISO `YYYY-MM-DD`), dimension `query`, et agrège les rows.
+ * POST searchAnalytics/query — couche basse (totaux sans dimension, pagination query…).
  *
- * `siteUrl` doit être une PROPRIÉTÉ que l'utilisateur possède dans GSC, soit un
- * préfixe d'URL (`https://exemple.com/`) soit un domaine (`sc-domain:exemple.com`).
- * Si la propriété n'existe pas / n'est pas vérifiée → 403/404 → GscError explicite.
- *
- * @throws {GscError} site non vérifié dans GSC (403/404), ou erreur API.
+ * @throws {GscError} site non vérifié (403/404), ou erreur API.
  */
-export async function fetchSearchAnalytics(
+async function postSearchAnalyticsQuery(
   accessToken: string,
   siteUrl: string,
-  startDate: string,
-  endDate: string,
-): Promise<GscAggregate> {
+  body: SearchAnalyticsQueryBody,
+): Promise<SearchAnalyticsResponse> {
   const endpoint = `${GSC_API_BASE}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`;
   const res = await fetchWithTimeout(
     endpoint,
@@ -214,19 +359,13 @@ export async function fetchSearchAnalytics(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        startDate,
-        endDate,
-        dimensions: ["query"],
-        rowLimit: 1000,
-      }),
+      body: JSON.stringify({ type: "web", ...body }),
     },
     QUERY_TIMEOUT_MS,
     "Search Console",
   );
 
   if (res.status === 403 || res.status === 404) {
-    // Propriété absente ou non vérifiée pour ce compte.
     throw new GscError(
       `Propriété « ${siteUrl} » introuvable ou non vérifiée dans ta Search Console (${res.status}). ` +
         "Ajoute et vérifie ce site dans GSC avec le même compte Google, puis réessaie.",
@@ -238,19 +377,141 @@ export async function fetchSearchAnalytics(
     throw new GscError(`Search Console a répondu ${res.status}${json.error?.message ? ` : ${json.error.message}` : ""}.`);
   }
 
-  const rows = json.rows ?? [];
-  return { ...aggregateRows(rows), startDate, endDate, raw: { rows } };
+  return json;
 }
 
 /**
- * Agrège des rows Search Analytics (dimension query) :
- *   - clicks/impressions = sommes
- *   - ctr/position = moyennes PONDÉRÉES PAR IMPRESSIONS (une row à fort volume
- *     pèse plus qu'une row marginale ; évite qu'une requête à 1 impression et
- *     position 1 fausse la moyenne). Repli sur moyenne simple si 0 impression.
- *   - queryCount = nb de rows (requêtes distinctes).
+ * Liste les propriétés GSC accessibles au token avec leur niveau de permission.
  *
- * Pur (testable sans réseau).
+ * Retourne un tableau vide si l'appel échoue.
+ */
+export async function listVerifiedSiteEntries(accessToken: string): Promise<GscSiteEntry[]> {
+  try {
+    const res = await fetchWithTimeout(
+      `${GSC_API_BASE}/sites`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+      QUERY_TIMEOUT_MS,
+      "Search Console (liste des propriétés)",
+    );
+    if (!res.ok) return [];
+
+    const json = (await res.json()) as SitesListResponse;
+    return (json.siteEntry ?? [])
+      .filter((e): e is SiteEntry & { siteUrl: string } => Boolean(e.siteUrl))
+      .map((e) => ({
+        siteUrl: e.siteUrl,
+        permissionLevel: e.permissionLevel ?? "siteUnverifiedUser",
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Liste les propriétés GSC vérifiées accessibles au token (GET /webmasters/v3/sites).
+ *
+ * Filtre `siteUnverifiedUser`. Retourne un tableau vide si l'appel échoue
+ * (repli sur {@link siteUrlCandidates} dans {@link captureGsc}).
+ *
+ * @deprecated Préférer {@link listVerifiedSiteEntries} + filtre ownership en amont.
+ */
+export async function listVerifiedSites(accessToken: string): Promise<string[]> {
+  const entries = await listVerifiedSiteEntries(accessToken);
+  return entries
+    .filter((e) => e.permissionLevel !== "siteUnverifiedUser")
+    .map((e) => e.siteUrl);
+}
+
+/** Totaux site-wide (1 row, sans dimension) — aligné carte « Nombre total de clics » GSC. */
+async function fetchPropertyTotals(
+  accessToken: string,
+  siteUrl: string,
+  startDate: string,
+  endDate: string,
+): Promise<SearchAnalyticsRow | undefined> {
+  const json = await postSearchAnalyticsQuery(accessToken, siteUrl, { startDate, endDate });
+  return json.rows?.[0];
+}
+
+/**
+ * Compte les requêtes distinctes (dimension `query`) via pagination API.
+ *
+ * N'alimente que `queryCount` — les clics/impressions viennent de {@link fetchPropertyTotals}.
+ */
+async function fetchDistinctQueryCount(
+  accessToken: string,
+  siteUrl: string,
+  startDate: string,
+  endDate: string,
+): Promise<number> {
+  let count = 0;
+  let startRow = 0;
+
+  while (true) {
+    const json = await postSearchAnalyticsQuery(accessToken, siteUrl, {
+      startDate,
+      endDate,
+      dimensions: ["query"],
+      rowLimit: GSC_ROW_LIMIT,
+      startRow,
+    });
+    const batch = json.rows ?? [];
+    if (batch.length === 0) break;
+    count += batch.length;
+    if (batch.length < GSC_ROW_LIMIT) break;
+    startRow += batch.length;
+  }
+
+  return count;
+}
+
+/** Extrait les métriques principales d'une row totaux (sans dimension). */
+export function metricsFromTotalsRow(
+  totalsRow: SearchAnalyticsRow | undefined,
+): Pick<GscAggregate, "clicks" | "impressions" | "ctr" | "position"> {
+  return {
+    clicks: totalsRow?.clicks ?? 0,
+    impressions: totalsRow?.impressions ?? 0,
+    ctr: totalsRow?.ctr ?? 0,
+    position: totalsRow?.position ?? 0,
+  };
+}
+
+/**
+ * Interroge une propriété GSC : totaux (sans dimension) + queryCount paginé.
+ *
+ * Préférer {@link captureGsc} en prod (sélection multi-propriétés optimisée).
+ *
+ * @throws {GscError} site non vérifié, ou erreur API.
+ */
+export async function fetchSearchAnalytics(
+  accessToken: string,
+  siteUrl: string,
+  startDate: string,
+  endDate: string,
+): Promise<GscAggregate> {
+  const totalsRow = await fetchPropertyTotals(accessToken, siteUrl, startDate, endDate);
+  const queryCount = await fetchDistinctQueryCount(accessToken, siteUrl, startDate, endDate);
+  const metrics = metricsFromTotalsRow(totalsRow);
+
+  return {
+    ...metrics,
+    queryCount,
+    startDate,
+    endDate,
+    raw: { totalsRow: totalsRow ?? null, queryCount },
+  };
+}
+
+/**
+ * Agrège des rows Search Analytics (dimension `query`) — **utilitaire pur**.
+ *
+ * ⚠️ Ne pas utiliser pour les totaux site-wide : une liste de rows query est
+ * tronquée par `rowLimit` et ne reproduit pas le dashboard GSC. Conservé pour
+ * tests, recalculs futurs sur payload paginé, ou fallback screenshot.
+ *
+ * - clicks/impressions = sommes des rows
+ * - ctr/position = moyennes pondérées par impressions
  */
 export function aggregateRows(
   rows: SearchAnalyticsRow[],
@@ -259,7 +520,7 @@ export function aggregateRows(
   let impressions = 0;
   let weightedCtr = 0;
   let weightedPos = 0;
-  let posSum = 0; // repli moyenne simple si impressions == 0
+  let posSum = 0;
 
   for (const r of rows) {
     const imp = r.impressions ?? 0;
@@ -278,50 +539,32 @@ export function aggregateRows(
   return { clicks, impressions, ctr, position, queryCount };
 }
 
-// ── Orchestration + persistance ─────────────────────────────────────────────────
-
-/** Candidats de propriété GSC à tenter pour une URL (l'API exige une forme exacte). */
-export function siteUrlCandidates(url: string): string[] {
-  const candidates: string[] = [];
-  try {
-    const u = new URL(url);
-    const origin = `${u.protocol}//${u.host}`;
-    candidates.push(`${origin}/`); // préfixe d'URL exact
-    const bareHost = u.host.replace(/^www\./, "");
-    candidates.push(`sc-domain:${bareHost}`); // propriété de domaine
-  } catch {
-    candidates.push(url);
-  }
-  // Dédupe en conservant l'ordre.
-  return [...new Set(candidates)];
-}
+// ── Orchestration + persistance ───────────────────────────────────────────────
 
 export interface CaptureGscResult {
-  /** Id du `GscSnapshot` inséré. */
   snapshotId: string;
   siteId: string;
-  /** Forme de propriété GSC qui a répondu (préfixe URL ou `sc-domain:`). */
+  /** Forme exacte de la propriété GSC retenue (préfixe URL ou `sc-domain:`). */
   matchedProperty: string;
   aggregate: GscAggregate;
 }
 
+export interface CaptureGscOptions {
+  /** Propriété GSC déjà connue (import batch) — évite la sonde multi-candidats. */
+  matchedProperty?: string;
+}
+
 /**
- * Orchestre la capture GSC d'un site appartenant au user : token → fetch →
- * agrégats → insertion d'un `GscSnapshot` (source=OAUTH, fenêtre ~28 j).
+ * Orchestre la capture GSC : token → propriétés → totaux → meilleure propriété →
+ * queryCount → `GscSnapshot` (source=OAUTH, fenêtre ~28 j − lag).
  *
- * Essaie successivement les formes de propriété GSC (préfixe d'URL puis
- * `sc-domain:`) ; si AUCUNE n'est vérifiée pour ce compte → GscError explicite
- * (pas un crash). Le `siteId` doit appartenir au `userId` (vérifié en base).
- *
- * NB : ce n'est PAS une server action (pas de `requireSession` ici, pour rester
- * testable / réutilisable côté worker Celery futur). La server action
- * `captureGscAction` (app/(app)/capturer/gsc-actions.ts) l'enveloppe avec
- * `requireSession()`.
- *
- * @throws {GscError} site absent/étranger, OAuth non configuré, propriété non
- *   vérifiée, ou erreur API/réseau.
+ * @throws {GscError} site absent, OAuth absent, aucune propriété vérifiée, erreur API.
  */
-export async function captureGsc(userId: string, siteId: string): Promise<CaptureGscResult> {
+export async function captureGsc(
+  userId: string,
+  siteId: string,
+  options?: CaptureGscOptions,
+): Promise<CaptureGscResult> {
   const site = await db.site.findFirst({
     where: { id: siteId, userId },
     select: { id: true, url: true },
@@ -331,21 +574,44 @@ export async function captureGsc(userId: string, siteId: string): Promise<Captur
   }
 
   const accessToken = await getAccessToken(userId);
-
-  const candidates = siteUrlCandidates(site.url);
-  let aggregate: GscAggregate | null = null;
-  let matchedProperty = "";
-  let lastNotFound: GscError | null = null;
-
   const { startDate, endDate } = defaultWindow();
 
-  for (const property of candidates) {
+  if (options?.matchedProperty) {
+    const matchedProperty = options.matchedProperty;
+    const totalsRow = await fetchPropertyTotals(accessToken, matchedProperty, startDate, endDate);
+    const queryCount = await fetchDistinctQueryCount(accessToken, matchedProperty, startDate, endDate);
+    const metrics = metricsFromTotalsRow(totalsRow);
+    const aggregate: GscAggregate = {
+      ...metrics,
+      queryCount,
+      startDate,
+      endDate,
+      raw: { totalsRow: totalsRow ?? null, queryCount },
+    };
+    return persistGscSnapshot(site.id, matchedProperty, aggregate);
+  }
+
+  const verifiedSites = await listVerifiedSites(accessToken);
+  const properties = resolveGscPropertyCandidates(verifiedSites, site.url);
+
+  // Phase 1 — totaux uniquement (1 appel API / candidat, pas de pagination query).
+  const attempts: Array<{
+    property: string;
+    totalsRow: SearchAnalyticsRow | undefined;
+    aggregate: Pick<GscAggregate, "impressions" | "clicks">;
+  }> = [];
+  let lastNotFound: GscError | null = null;
+
+  for (const property of properties) {
     try {
-      aggregate = await fetchSearchAnalytics(accessToken, property, startDate, endDate);
-      matchedProperty = property;
-      break;
+      const totalsRow = await fetchPropertyTotals(accessToken, property, startDate, endDate);
+      const metrics = metricsFromTotalsRow(totalsRow);
+      attempts.push({
+        property,
+        totalsRow,
+        aggregate: { impressions: metrics.impressions, clicks: metrics.clicks },
+      });
     } catch (e) {
-      // 403/404 → on tente la forme de propriété suivante ; autre erreur → on remonte.
       if (e instanceof GscError && /introuvable ou non vérifiée/.test(e.message)) {
         lastNotFound = e;
         continue;
@@ -354,18 +620,40 @@ export async function captureGsc(userId: string, siteId: string): Promise<Captur
     }
   }
 
-  if (!aggregate) {
+  const best = pickBestGscProperty(attempts);
+  if (!best) {
     throw (
       lastNotFound ??
       new GscError(
-        `Aucune propriété Search Console vérifiée pour ce site (essayé : ${candidates.join(", ")}).`,
+        `Aucune propriété Search Console vérifiée pour ce site (essayé : ${properties.join(", ")}).`,
       )
     );
   }
 
+  // Phase 2 — queryCount une seule fois sur la propriété retenue.
+  const queryCount = await fetchDistinctQueryCount(accessToken, best.property, startDate, endDate);
+  const metrics = metricsFromTotalsRow(best.totalsRow);
+  const aggregate: GscAggregate = {
+    ...metrics,
+    queryCount,
+    startDate,
+    endDate,
+    raw: { totalsRow: best.totalsRow ?? null, queryCount },
+  };
+
+  const matchedProperty = best.property;
+
+  return persistGscSnapshot(site.id, matchedProperty, aggregate);
+}
+
+async function persistGscSnapshot(
+  siteId: string,
+  matchedProperty: string,
+  aggregate: GscAggregate,
+): Promise<CaptureGscResult> {
   const snapshot = await db.gscSnapshot.create({
     data: {
-      siteId: site.id,
+      siteId,
       source: "OAUTH",
       startDate: new Date(`${aggregate.startDate}T00:00:00Z`),
       endDate: new Date(`${aggregate.endDate}T00:00:00Z`),
@@ -374,17 +662,21 @@ export async function captureGsc(userId: string, siteId: string): Promise<Captur
       ctr: aggregate.ctr,
       position: aggregate.position,
       queryCount: aggregate.queryCount,
-      indexedPages: null, // non fourni par la Search Analytics API seule
-      // Json pur (le payload `rows` est déjà sérialisable).
+      indexedPages: null,
       rawJson: JSON.parse(JSON.stringify({ property: matchedProperty, ...aggregate.raw })),
     },
     select: { id: true },
   });
 
-  return { snapshotId: snapshot.id, siteId: site.id, matchedProperty, aggregate };
+  return { snapshotId: snapshot.id, siteId, matchedProperty, aggregate };
 }
 
-/** Fenêtre ~28 j décalée du lag de consolidation GSC, en dates ISO `YYYY-MM-DD`. */
+/**
+ * Fenêtre ~28 j décalée du lag de consolidation GSC, en dates ISO `YYYY-MM-DD`.
+ *
+ * Ex. pour `now = 2026-05-28` : `[2026-04-27, 2026-05-25]` (28 jours entre
+ * start et end, end = today − 3 j).
+ */
 export function defaultWindow(now: Date = new Date()): { startDate: string; endDate: string } {
   const end = new Date(now);
   end.setUTCDate(end.getUTCDate() - GSC_DATA_LAG_DAYS);

@@ -30,6 +30,13 @@ tags: [roadmap, production, architecture, orchestration]
 ## Ancien Status (P1 code-complet)
 open — **P1 CODE-COMPLET** (2026-05-28). Tranche verticale entière en code : Google login (Better Auth + scope GSC) → déclarer/capturer un site → `Site/Card/AuthoritySnapshot` persistés → deck lu depuis la DB ; routes protégées par middleware. `tsc` + `next build` (15 routes) verts ; OAuth vérifié jusqu'à l'écran Google. **Reste P1, gaté sur le user** : (a) **test manuel du login Google réel** (compte test-user GCP) ; (b) **exécution déploiement** (créer le service Coolify + repo↔Coolify + secrets + domaine prod + build image). **5 lots verts NON committés** (D1+D3, Prisma, 4b, Dockerfile, 4a) — commit très en retard. Phases P2/P3/P4 à n'attaquer qu'après P1 déployé+committé+testé.
 
+## 🛬 Handoff snapshot — 2026-05-28 (soir)
+- **HEAD** `46a6978` (chore cleanup worktree) ; **origin/main = `83c7aeb`** → 1 commit local non poussé (`46a6978`). Push `main` = redeploy Coolify auto.
+- **Committé & live** : P1 + P1.5 + fondation P2/P3 + **P3 matching (moteur+UI, `GAME_LOOP_ENABLED=true`)** + **P2 GSC (code, vérifié live)** + catalogue mock (`ada59dd`). L'app tourne sur `https://weebuildtacg.augmenter.pro`.
+- **⚠ WIP non committé (utilisateur, NE PAS écraser)** : suite **Playwright E2E** (`e2e/*`, `playwright.config.ts`, `lib/e2e/credentials.ts`, `docs/e2e-playwright.md`) + édits `gsc.ts`/`gsc.test.ts`/`auth.ts`/`gsc-actions.ts`/`package.json`/`.gitignore`/`draft-metrique-autorite.md`. **+ mes édits de ce handoff** (ce doc + INDEX) non committés.
+- **Test status** : **code applicatif vert** ; **scaffold E2E rouge** (tsc : `Cannot find module '@playwright/test'` → paquet non installé + `e2e/` à exclure du tsconfig app). C'est du WIP normal, pas une régression.
+- **Reste P3** : **B3** validation humaine + `EditorialLink` → **B4** preuves (Firecrawl) + `VERIFIED` + frappe crédits (ledger) + clawback → **B5** promotions. **P2** : calibrage `WEIGHTS`/`BANDS`/`GSC_BLEND` (data-gated).
+
 ## Items ouverts pour P2 (notés, non bloquants)
 - **Chiffrement au repos des tokens GSC** (`Account.accessToken`/`refreshToken`) — à trancher avant d'exploiter GSC en P2.
 - **`LITELLM_API_KEY` = master key en prod (2026-05-28)** : fonctionne mais répand le secret global de l'écosystème augmenter.pro → **remplacer par une virtual key dédiée `sk-webuild`** (API LiteLLM `POST /key/generate`). Sécurité, non bloquant.
@@ -137,10 +144,13 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 6. ✅ **FAIT (2026-05-28)** : déployé sur Coolify (Dockerfile, réseau `coolify`, port 3000), live sur `https://weebuildtacg.augmenter.pro` (TLS OK, healthy, deps vérifiées). Env Coolify toutes **runtime-only** (le build utilise des placeholders ; `NEXT_PUBLIC_APP_URL` via build-arg).
 7. ✅ **FAIT (2026-05-28)** : redirect URI prod GCP ajoutée + **login Google prod testé OK** (1 vrai user, scope GSC + refresh token captés).
 
-## How to resume (P1 terminé — prochaine phase P2 ou P3)
-1. Lire ce doc (Status = **P1 terminé & vérifié en prod**). P1 est live sur `https://weebuildtacg.augmenter.pro` ; déploiement auto au push sur `main` (Coolify). Dev DB via tunnel `ssh -N -L 5433:127.0.0.1:5432 coolify` → `localhost:5433`.
-2. `/flow resume` → choisir la phase, décomposer au Step O2/O3 :
-   - **P2** — GSC first-party (refresh token déjà capté) + calibrage `WEIGHTS`/`BANDS`. Lire [draft-metrique-autorite.md](../draft-metrique-autorite.md) + [draft-vision-geo.md](../draft-vision-geo.md). ⚠ Le calibrage gagne à avoir d'abord plusieurs **vrais sites capturés** (sinon données trop maigres).
-   - **P3** — boucle de jeu (matching pgvector + crédits/donateur + suggestions). Design prêt → [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md) ; migration additive (schéma P1 a déjà anticipé `Site.element`/`thematique`).
-3. **Avant ouverture publique** (cf. *Items ouverts P2*) : nettoyer le seed dev de `webuild_db` (dev/prod partagés) ; remplacer la master key LiteLLM par une virtual key `sk-webuild` ; chiffrer les tokens GSC au repos ; passer le consent screen GCP de Testing → Production (vérif Google du scope sensible).
-4. ⚠ Tables Postgres en **snake_case** (`user/account/session/site/card/authority_snapshot/verification`) — quoter `"user"` (mot réservé) en SQL brut.
+## How to resume (P1+P1.5 done · matching+UI+GSC live · suite = P3 B3→B4→B5)
+1. **Avant tout** : finir/committer le WIP E2E utilisateur (`npm i -D @playwright/test`, exclure `e2e/` du tsconfig app → tsc revert au vert), puis pousser `main` (origin à `83c7aeb`, `46a6978` non poussé) si tu veux redéployer. Ne pas écraser le WIP non committé.
+2. Lire ce doc (Status + Handoff snapshot). App live sur `https://weebuildtacg.augmenter.pro` (push `main` = redeploy Coolify). Dev DB via tunnel `ssh -N -L 5433:127.0.0.1:5432 coolify` → `localhost:5433`.
+3. `/flow resume` → décomposer la suite **P3** au Step O2/O3, dans l'ordre :
+   - **B3** — écran de validation/édition humaine d'une suggestion → création `EditorialLink` (cycle `PROPOSED→HUMAN_VALIDATED→PUBLISHED`). Réf : [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md) §2/§4.
+   - **B4** — preuve Firecrawl du lien posé → `VERIFIED` → **frappe crédits** (ledger `CreditLedgerEntry`) + clawback. `PROOFS_PIPELINE_ENABLED` à flipper.
+   - **B5** — promotions persistées (`Promotion`, dépense crédits).
+   - **P2 calibrage** (data-gated) : `WEIGHTS`/`BANDS`/`GSC_BLEND` quand assez de vrais sites + snapshots GSC.
+4. **Avant ouverture publique** (cf. *Items ouverts P2*) : nettoyer le seed dev de `webuild_db` (dev/prod partagés) ; virtual key LiteLLM `sk-webuild` ; chiffrer tokens GSC ; consent GCP Testing→Production.
+5. ⚠ Rappels SQL : tables **snake_case** mais **colonnes camelCase** (quoter `"user"`, `"siteId"`…) ; rerank `bge` en **fallback cosine** (réactivable via `RERANK_MODEL`).

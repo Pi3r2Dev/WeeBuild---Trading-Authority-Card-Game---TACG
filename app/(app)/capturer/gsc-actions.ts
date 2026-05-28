@@ -5,6 +5,9 @@
  *
  * - `captureGscAction` : fetch GSC → `GscSnapshot` (preuve ownership + données).
  * - `enrichWithGscAction` : capture GSC puis re-score v2 (carte + snapshot mis à jour).
+ *
+ * La logique fetch (totaux API, choix de propriété, fenêtre 28 j − lag) vit dans
+ * `lib/services/gsc.ts` — voir le bloc « Pièges API découverts en POC » en tête de module.
  */
 
 import type { CardData } from "@/lib/domain";
