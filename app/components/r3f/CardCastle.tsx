@@ -516,16 +516,18 @@ function Grabbable({
 }
 
 export interface CardCastleProps {
-  /** Largeur du viewport WebGL (px). Omis = 680. */
+  /** Si true, le viewport WebGL occupe 100 % du conteneur parent (route produit `/chateau`). */
+  fill?: boolean;
+  /** Largeur fixe (px) — ignorée si `fill`. */
   width?: number;
-  /** Hauteur du viewport WebGL (px). Omis = 540. */
+  /** Hauteur fixe (px) — ignorée si `fill`. */
   height?: number;
   /** Cartes du membre ; vide → démo (4 niveaux). */
   cards?: CardData[];
 }
 
 /** Château de cartes physique — figé au départ ; tap = pousser, glisser = attraper. */
-export default function CardCastle({ width = 680, height = 540, cards }: CardCastleProps) {
+export default function CardCastle({ fill = false, width = 680, height = 540, cards }: CardCastleProps) {
   const deck = useMemo(() => resolveCastleDeck(cards), [cards]);
   const [resetKey, setResetKey] = useState(0);
   const [live, setLive] = useState(false);
@@ -541,11 +543,23 @@ export default function CardCastle({ width = 680, height = 540, cards }: CardCas
 
   const hint = grabbedId != null ? "✋ Carte en main — relâche pour la lâcher" : live ? "💥 Château effondré" : "👆 Tape une carte · glisse pour l'attraper";
 
+  const shellStyle = fill
+    ? ({ width: "100%", height: "100%", position: "relative", touchAction: "none" } as const)
+    : ({
+        width: "100%",
+        maxWidth: width,
+        height,
+        position: "relative",
+        margin: "0 auto",
+        touchAction: "none",
+      } as const);
+
   return (
-    <div style={{ width: "100%", maxWidth: width, height, position: "relative", margin: "0 auto", touchAction: "none" }}>
+    <div style={shellStyle}>
       <CardTextureBaker cards={deck} onReady={setTextures} />
       <Canvas
         dpr={[1, 2]}
+        style={{ width: "100%", height: "100%", display: "block" }}
         camera={{ position: [5, 3.4, 9.5], fov: 44 }}
         onCreated={({ gl }) => {
           gl.domElement.style.touchAction = "none"; // mobile : pas de scroll/zoom de page pendant le drag

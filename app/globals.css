@@ -159,25 +159,66 @@ body {
     --screen-bottom-inset: 0px;
   }
 
-  /* Château 3D : canvas WebGL plus large que le max hub (~1100px). */
+  /* Château 3D : exploite toute la largeur du canvas (pas le plafond hub ~1100px). */
   .app-canvas-inner:has(.chateau-screen) {
-    max-width: min(1280px, 100%);
+    max-width: 100%;
   }
+}
 
-  .chateau-screen .hub-body {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* Château 3D — stage plein écran sous le header (mobile + desktop). */
+.chateau-screen .hub-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
 
-  .chateau-stage {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 8px;
-  }
+.chateau-stage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  margin-top: 4px;
+}
+
+.chateau-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hub-fg-soft);
+  font-size: 13px;
+  border: 1px dashed var(--hub-line);
+  border-radius: 12;
+  touch-action: none;
+}
+
+.chateau-demo-banner {
+  flex-shrink: 0;
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--hub-fg-soft);
+  background: rgba(138, 43, 226, 0.08);
+  border: 1px solid rgba(138, 43, 226, 0.35);
+  border-radius: 8;
+}
+
+.chateau-stage__hint {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--hub-fg-dim);
+  pointer-events: none;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
 }
 
 /* Sur mobile, l'inner est transparent (pass-through plein écran). */

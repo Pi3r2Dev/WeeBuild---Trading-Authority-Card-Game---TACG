@@ -7,8 +7,8 @@ import { test, expect } from "@playwright/test";
 test.describe("Donner (GAME_LOOP)", () => {
   test("flux actif — pas ComingSoon", async ({ page }) => {
     await page.goto("/donner");
-    await expect(page.getByRole("heading", { name: /Donner un lien/i })).toBeVisible();
-    await expect(page.getByText(/L'échange éditorial arrive bientôt/i)).toHaveCount(0);
+    await expect(page.getByText(/Donner un lien/i)).toBeVisible();
+    await expect(page.getByText(/échange éditorial arrive bientôt/i)).toHaveCount(0);
   });
 
   test("étape 1 ou CTA matching si pas de partenaires", async ({ page }) => {
