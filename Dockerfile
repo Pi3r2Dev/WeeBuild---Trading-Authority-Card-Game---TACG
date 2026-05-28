@@ -32,6 +32,20 @@ RUN --mount=type=cache,target=/root/.npm \
 # ---- Builder ----
 FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
+# ── Env de BUILD uniquement (jamais dans l'image runtime) ───────────────────
+# `prisma generate` (prisma.config.ts → env("DATABASE_URL")) et `next build`
+# (modules lib/db.ts / lib/auth.ts évalués au build) EXIGENT ces variables, mais
+# ne se connectent NI à Postgres NI à Google au build. On fournit donc des
+# placeholders ici. Le stage `runner` est distinct et reçoit les VRAIES valeurs
+# de Coolify au runtime → ces placeholders ne fuitent pas dans l'image finale.
+# Seul NEXT_PUBLIC_APP_URL doit être réel (figé dans le bundle client) : Coolify
+# le passe en --build-arg ; on le repropage en ENV pour que `next build` le voie.
+ARG NEXT_PUBLIC_APP_URL=https://weebuildtacg.augmenter.pro
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder?schema=public"
+ENV BETTER_AUTH_SECRET="build-only-placeholder-not-used-at-runtime"
+ENV GOOGLE_CLIENT_ID="build-only-placeholder"
+ENV GOOGLE_CLIENT_SECRET="build-only-placeholder"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Prisma 7 : génère le client dans lib/generated/prisma (gitignoré → absent du
