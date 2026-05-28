@@ -58,3 +58,5 @@ next-env.d.ts
 
 # Claude Code — worktrees d'agents (transitoires, jamais versionnés)
 .claude/worktrees/
+.devserver.log
+.devserver.log

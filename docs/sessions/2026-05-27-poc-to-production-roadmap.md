@@ -19,7 +19,9 @@ tags: [roadmap, production, architecture, orchestration]
 - ✅ **Fondation** ([handoff](2026-05-28-p3p2-foundation-migration.md)) : migration additive `20260528000000_p3_p2_foundation` sur `webuild_db` — 8 modèles P3 (cf. [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md)) + `gsc_snapshot` (signaux Tier-2 metrique §2, `source` OAUTH/SCREENSHOT, insert-only). snake_case, `CREATE EXTENSION` commentés (rôle non-superuser), `migrate deploy` + `generate` + `tsc` verts. **Gate schéma levé.**
 - ✅ **P3 matching moteur** ([handoff](2026-05-28-p3-matching.md)) : embeddings + pgvector + anti-cycle + persistance `EditorialSuggestion`.
 - ✅ **P3 matching UI** ([handoff](2026-05-28-p3-matching-ui.md)) : pont données (`getMe`/ledger, mappers, `lib/matching/read.ts`), `MatchingTrigger`, Hub/Donner/capture câblés, **`GAME_LOOP_ENABLED=true`**, `PROOFS_PIPELINE_ENABLED=false` (preuves = B4).
-- ⏳ P3 reste : **B3 validation humaine + EditorialLink** → **B4 preuves + frappe crédits** → **B5 promotions persistées**.
+- ✅ **B3 validation humaine + EditorialLink** (2026-05-28) — [blueprint](../plans/p3-b3-human-validation-blueprint.md) §9. `lib/links/{anchor-policy,transitions,write,read,types}`, `/donner/valider` + éditeur câblé.
+- ✅ **B4 preuves Firecrawl + frappe/clawback crédits** (2026-05-28) — `lib/links/{detect-link,verify}.ts`, `getProofViews`, `verifyLinkAction`, `/preuves` recâblé sur du réel, **`PROOFS_PIPELINE_ENABLED=true`**. Décisions arbitrées : déclenchement manuel (cron=P4) ; on crédite dès qu'un lien est détecté quel que soit le `rel` (mention sans lien enregistrée, non créditée — GEO=P4) ; clawback via re-vérification manuelle (BROKEN + entrée négative). `tsc` clean, 173 tests verts, `next build` OK.
+- ⏳ P3 reste : **B5 promotions persistées** (`Promotion`, dépense crédits).
 - ✅ P2 **code** : intégration GSC + score v2 sur `/capturer` (2026-05-28) — *cf.* [p2-gsc-integration](2026-05-28-p2-gsc-integration.md). 🚧 calibrage `GSC_BLEND` + test manuel prod + job périodique.
 
 ### Historique build déploiement (3 itérations)

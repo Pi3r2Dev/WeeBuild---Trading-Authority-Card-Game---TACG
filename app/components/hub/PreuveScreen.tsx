@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ACCENT_GREEN, ACCENT_VIOLET, LEVEL_LABEL } from "./constants";
 import type { NavCard } from "@/lib/domain";
 import type { LinkStatus, ProofView } from "@/lib/links/types";
-import { Body, ScreenHeader, SectionLabel, StatusBar, CreditsBadge } from "./primitives";
+import { Body, ScreenHeader, StatusBar, CreditsBadge } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG } from "./MiniCard";
 import { icons } from "./icons";
