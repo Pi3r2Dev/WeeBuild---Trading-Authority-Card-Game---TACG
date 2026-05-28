@@ -24,7 +24,7 @@ Utilisateur dédié : `e2e-playwright@webuild.local` (créé idempotent au setup
 ## Commandes
 
 ```bash
-# Suite smoke complète (guest + authentifié) — démarre Next si absent
+# Suite smoke complète (17 tests, ~1–2 min) — démarre Next via dev:e2e (sans Turbopack)
 npm run smoketest
 
 # Tous les projets Playwright (setup + guest + smoke)
@@ -36,6 +36,8 @@ npm run test:e2e:ui
 # Rapport HTML après échec
 npm run smoketest:report
 ```
+
+Le serveur E2E utilise `npm run dev:e2e` (`next dev` **sans** `--turbopack`) pour éviter les erreurs RSC sous charge Playwright. Le dev quotidien reste `npm run dev` (Turbopack).
 
 ## TypeScript
 

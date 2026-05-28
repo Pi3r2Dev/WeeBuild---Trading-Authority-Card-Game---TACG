@@ -15,5 +15,6 @@ Session handoff and orchestration tracker. Created and maintained by `/flow`.
 | 2026-05-28 | p3p2-foundation-migration | closed | solo | (fondation P2+P3 de poc-to-production-roadmap — migration done, vert) |
 | 2026-05-28 | p3-matching | closed | solo | (moteur matching — cf. p3-matching-ui pour UI) |
 | 2026-05-28 | p3-matching-ui | closed | solo | B3 EditorialLink / validation humaine |
+| 2026-05-28 | e2e-playwright | closed | solo | Specs integration @slow (matching/capture) |
 | 2026-05-28 | p2-gsc-integration | open | solo | Calibrage poids v2 sur données réelles ; test manuel GSC en prod |
 | 2026-05-28 | marketing-twitter-concours | open | solo | Trancher deadline + hashtag, puis générer visuels Gemini B/D |

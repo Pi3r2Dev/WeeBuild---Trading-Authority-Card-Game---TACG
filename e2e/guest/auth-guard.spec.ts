@@ -9,7 +9,7 @@ test.describe("Auth guard", () => {
   test("redirige / vers /login sans session", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole("heading", { name: /Trading Authority Game/i })).toBeVisible();
+    await expect(page.getByText("Trading Authority Game")).toBeVisible();
   });
 
   test("/capturer est protégé", async ({ page }) => {

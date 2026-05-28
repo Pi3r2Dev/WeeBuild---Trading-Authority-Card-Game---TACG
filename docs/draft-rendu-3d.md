@@ -124,6 +124,12 @@ Un **seul code** via les **Pointer Events** (souris/tactile/stylet unifiés) : o
 - **Relâché** : repasse `dynamic`, **pas de lancer** → elle **tombe** avec un léger couple aléatoire.
 - **Pièges** : `gl.domElement.setPointerCapture()` (entouré d'un `try/catch`) sinon un drag rapide sort du mesh et `pointermove` cesse de tomber ; écouter `pointermove/up/cancel` sur `gl.domElement` ; `touch-action: none` (sinon scroll/zoom de page sur mobile) ; **un corps kinématique ignore les collisions** → **clamper le Y cible** (`GROUND_MIN_Y`) pour ne pas passer sous le sol.
 
+### Layout produit `/chateau` (2026-05-28)
+
+- **Avant** : viewport WebGL plafonné (~960×620 px), centré dans le hub — héritage POC « fenêtre de jeu ».
+- **Après** : `.chateau-stage` en **flex:1** sous le header ; `CardCastle` avec prop **`fill`** → canvas **100 % × 100 %** du stage (R3F redimensionne avec le conteneur). Légende éditoriale en overlay discret en haut du stage (`.chateau-stage__hint`), contrôles interactifs en bas dans `CardCastle`.
+- **CSS** : [globals.css](../app/globals.css) (`.chateau-screen`, `.chateau-stage`) ; écran : [ChateauScreen.tsx](../app/components/hub/ChateauScreen.tsx).
+
 ---
 
 ## 10. Habillage des cartes du château — DOM→texture (= « Voie B »), A/B tranché
