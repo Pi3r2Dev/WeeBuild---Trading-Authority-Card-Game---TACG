@@ -4,6 +4,7 @@ import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
 import type { CardData, Partner, Topic } from "@/lib/domain";
+import { authorityTrustHint, shouldShowAuthorityTrustBadge } from "@/lib/authority/trust";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG, PlayLink } from "./MiniCard";
@@ -226,6 +227,18 @@ function Step2({ MY_SITES, PARTNERS_SUGGESTED }: { MY_SITES: CardData[]; PARTNER
               <div style={{ fontSize: 10, color: "var(--hub-fg-soft)", marginTop: 2 }}>
                 {p.card.thematique} · LV.{p.card.level} · {p.card.owner}
               </div>
+              {shouldShowAuthorityTrustBadge(p.card.authorityTrust) && (
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#fcd34d",
+                    marginTop: 4,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {authorityTrustHint(p.card.authorityTrust)}
+                </div>
+              )}
               <div style={{ fontSize: 11, color: "var(--hub-fg-soft)", marginTop: 8, lineHeight: 1.35, fontStyle: "italic" }}>« {p.reason} »</div>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>

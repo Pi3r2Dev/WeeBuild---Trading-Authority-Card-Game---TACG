@@ -111,6 +111,7 @@ export class MockCardFactory {
       price: PRICE_BY_LEVEL[spec.level],
       edition: spec.edition,
       editionTotal: EDITION_TOTAL[spec.level],
+      authorityTrust: "estimated",
       ...stats,
       ...overrides,
     };

@@ -13,9 +13,13 @@ import type { Level } from "@/lib/levels";
  * prématuré. À refaire quand les mécaniques seront tranchées.
  */
 
+import type { AuthorityTrust } from "@/lib/authority/trust";
+
 export type LinkType = "dofollow" | "nofollow" | "sponsored";
 export type ElementKind = "tech" | "finance" | "sante" | "media";
 export type CardState = "dispo" | "en-echange" | "acquise" | "verrouillee";
+
+export type { AuthorityTrust };
 
 /** Libellés FR des états (source unique pour l'affichage). */
 export const STATE_LABEL: Record<CardState, string> = {
@@ -47,6 +51,8 @@ export interface CardData {
   price: number;
   edition: string;
   editionTotal: string;
+  /** Confiance du score (GSC OAuth = verified ; sans GSC = estimated). Visible par les autres joueurs. */
+  authorityTrust: AuthorityTrust;
 }
 
 /** Carte enrichie pour la navigation/écosystème (coordonnées de carte + biome). */

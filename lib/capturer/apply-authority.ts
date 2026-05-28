@@ -6,6 +6,7 @@
 import { db } from "@/lib/db";
 import type { EditorialExtract } from "@/lib/authority/extract";
 import type { AuthorityResultV2 } from "@/lib/authority/score-v2";
+import { resolveAuthorityTrust, toPrismaAuthorityTrust } from "@/lib/authority/trust";
 
 /** Met à jour la carte et insère un snapshot d'autorité (historique insert-only). */
 export async function applyAuthorityToSite(
@@ -15,6 +16,16 @@ export async function applyAuthorityToSite(
   extract: Pick<EditorialExtract, "element" | "thematique" | "anchor" | "summary" | "source">,
 ): Promise<void> {
   const { stats, level, score } = authority;
+
+  const gscSnap = authority.withGsc
+    ? await db.gscSnapshot.findFirst({
+        where: { siteId },
+        orderBy: { fetchedAt: "desc" },
+        select: { source: true },
+      })
+    : null;
+
+  const authorityTrust = resolveAuthorityTrust(authority, gscSnap?.source ?? null);
 
   await db.card.updateMany({
     where: { siteId, userId },
@@ -26,6 +37,7 @@ export async function applyAuthorityToSite(
       cf: stats.cf,
       dr: stats.dr,
       price: level,
+      authorityTrust: toPrismaAuthorityTrust(authorityTrust),
     },
   });
 

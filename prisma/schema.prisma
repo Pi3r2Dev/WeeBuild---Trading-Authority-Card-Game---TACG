@@ -180,6 +180,15 @@ model Site {
   @@map("site")
 }
 
+/// Confiance du score d'autorité — badge visible par les autres joueurs (P2).
+/// `VERIFIED` = GSC OAuth (propriété prouvée) ; `ESTIMATED` = on-page seul ;
+/// `DECLARED` = fallback screenshot (forgeable, poids plafonné).
+enum AuthorityTrust {
+  ESTIMATED
+  VERIFIED
+  DECLARED
+}
+
 /// La carte TCG dérivée d'un site (1-1). Stocke TOUS les champs TCG (même en
 /// placeholder) → on ne carve pas Card/CardView prématurément (cf. blueprint P1
 /// et lib/domain/card.ts). `userId` dénormalisé (P1-I2) pour éviter un N+1 sur
@@ -211,6 +220,9 @@ model Card {
   price        Int    @default(0)
   edition      String @default("—")
   editionTotal String @default("—")
+
+  /// Dénormalisé depuis le dernier score (apply-authority) — lecture O(1) matching/hub.
+  authorityTrust AuthorityTrust @default(ESTIMATED)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

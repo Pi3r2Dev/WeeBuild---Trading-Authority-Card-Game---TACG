@@ -24,6 +24,7 @@ const CARD_ROW = {
   price: 2,
   edition: "001",
   editionTotal: "300",
+  authorityTrust: "ESTIMATED",
   site: { domain: "cible.fr", url: "https://cible.fr" },
   user: { name: "Marie L." },
 };
@@ -46,6 +47,7 @@ describe("editorialSuggestion mappers", () => {
   it("mappe vers Partner avec carte cible", () => {
     const p = editorialSuggestionToPartner(row());
     expect(p?.card.domain).toBe("cible.fr");
+    expect(p?.card.authorityTrust).toBe("estimated");
     expect(p?.relevance).toBe(0.88);
     expect(p?.credits).toBeGreaterThan(0);
   });

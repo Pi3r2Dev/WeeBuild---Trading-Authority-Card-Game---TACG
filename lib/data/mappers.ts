@@ -1,6 +1,7 @@
 import type { CardData, NavCard, ElementKind, LinkType, CardState } from "@/lib/domain";
 import type { Level } from "@/lib/levels";
 import type { Partner, Suggestion, Topic } from "@/lib/domain";
+import { fromPrismaAuthorityTrust } from "@/lib/authority/trust";
 import { estimateLinkCredits } from "@/lib/credits/estimate";
 
 /**
@@ -35,6 +36,7 @@ export interface DbCardWithSite {
   price: number;
   edition: string;
   editionTotal: string;
+  authorityTrust?: string;
   site: { domain: string; url: string };
   user?: { name: string | null } | null;
 }
@@ -67,6 +69,7 @@ export function dbCardToCardData(card: DbCardWithSite): CardData {
     price: card.price,
     edition: card.edition,
     editionTotal: card.editionTotal,
+    authorityTrust: fromPrismaAuthorityTrust(card.authorityTrust),
   };
 }
 

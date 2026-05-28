@@ -3,6 +3,8 @@
 import Link from "next/link";
 import type { CardData, CardState } from "../card/types";
 import { Card } from "../card/Card";
+import { AuthorityTrustBadge } from "../authority/AuthorityTrustBadge";
+import { shouldShowAuthorityTrustBadge } from "@/lib/authority/trust";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
 
 const CARD_W = 320;
@@ -52,6 +54,12 @@ export function MiniCardTCG({
       >
         <Card data={card} level={card.level} state={state} interactive={false} />
       </div>
+      {shouldShowAuthorityTrustBadge(card.authorityTrust) && (
+        <AuthorityTrustBadge
+          trust={card.authorityTrust === "declared" ? "declared" : "estimated"}
+          style={{ position: "absolute", top: -6, left: -6, zIndex: 2 }}
+        />
+      )}
       {badge && (
         <div
           style={{

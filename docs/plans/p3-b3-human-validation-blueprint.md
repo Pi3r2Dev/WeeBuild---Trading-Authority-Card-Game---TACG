@@ -11,6 +11,8 @@ tags: [p3, b3, editorial-link, human-validation, anti-footprint]
 
 Produit par l'agent `feature-dev:code-architect` (2026-05-28), orchestré depuis [poc-to-production-roadmap](../sessions/2026-05-27-poc-to-production-roadmap.md). **Impl gatée sur l'arbitrage des décisions §7 (surtout 1, 2, 3).**
 
+> **✅ IMPLÉMENTÉ (2026-05-28).** Décisions §7 + §9 (déc. 8-9) toutes câblées. Fichiers : `lib/links/{anchor-policy,transitions,write,read,types}.ts` (+ tests `anchor-policy.test.ts`, `transitions.test.ts` — 29 cas), `app/(app)/donner/link-actions.ts`, `app/(app)/donner/valider/{page,ValidationQueueClient}.tsx` + `[suggestionId]/{page,LinkEditorClient}.tsx`, bannière d'entrée dans `DonnerFlow.tsx`/`DonnerFlowLoader.tsx`. Écart vs §2 : la logique de transition pure est isolée dans `transitions.ts` (testable sans DB) et `write.ts` = orchestration Prisma. `tsc` clean sur B3, 145/145 tests verts. `next build` à reconfirmer une fois le WIP GSC parallèle (gsc.ts) compilable. **Suite = B4** (preuve Firecrawl → VERIFIED → frappe crédits) : `write.ts` accueillera `verifyLink()` ; contrat d'entrée = `EditorialLink(PUBLISHED, verifiedAt=null)`.
+
 ## 1. Résumé
 
 B3 = écran de **revue/édition/validation humaine** d'une `EditorialSuggestion` → création d'un `EditorialLink` persistant. Transforme une suggestion algorithmique en engagement éditorial tracé, **après édition humaine obligatoire** de l'ancre et saisie de l'URL.

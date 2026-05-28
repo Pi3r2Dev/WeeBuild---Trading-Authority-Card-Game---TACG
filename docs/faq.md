@@ -45,7 +45,10 @@ On **capture et résume automatiquement** ton site, on évalue son **autorité**
 Oui. Depuis la **fiche de ta carte** (`/carte/…`), tu peux demander un **rescan** : on recapture le site (Firecrawl), on ré-extrait le résumé et on **recalcule le score**. Chaque membre a droit à **1 rescan par semaine** par carte. Les **admins** (e-mails listés côté serveur) n'ont pas cette limite.
 
 ### Pourquoi connecter ma Google Search Console ?
-C'est optionnel mais recommandé : ça nous donne la **vraie donnée de Google** sur ton site (impressions, position, requêtes) pour calculer une autorité **juste**, et ça **prouve que le site t'appartient**. Tu peux la connecter en un clic (même compte Google) ou, à défaut, importer une capture d'écran qu'on analyse. Sans elle, on se base sur l'analyse publique de ton site (moins précise).
+C'est optionnel mais recommandé : ça nous donne la **vraie donnée de Google** sur ton site (impressions, position, requêtes) pour calculer une autorité **juste**, et ça **prouve que le site t'appartient**. Tu peux la connecter en un clic (même compte Google) ou, à défaut, importer une capture d'écran qu'on analyse. Sans elle, on se base sur l'analyse publique de ton site (moins précise) — les **autres joueurs** le voient via le badge **« ESTIMÉ »** sur ta carte dans le matching.
+
+### Comment savoir si une carte partenaire est fiable ?
+Les cartes **sans Search Console** affichent un badge **« ESTIMÉ »** (score on-page seul). Les cartes **vérifiées** (GSC OAuth connectée) n'affichent pas de badge — leur score inclut les données Google et la propriété du site est prouvée. C'est un **indicateur de jeu**, pas une garantie de classement.
 
 ### Puis-je utiliser ma propre image ?
 Oui. Tu peux **importer ton visuel** (logo, produit, illustration) ; on le **retravaille au style du niveau** de ta carte. Si tu n'importes rien, on en génère une automatiquement à partir de ton site. Dans tous les cas, l'image passe par le **filtre du niveau** pour rester cohérente avec l'univers — ta carte Game Boy *est* en pixels verts, ta carte holo *brille*.
