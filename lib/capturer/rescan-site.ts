@@ -3,7 +3,7 @@
  * Quota 1/semaine par site (sauf admin). Ne remplace pas la capture initiale.
  *
  * Si un `GscSnapshot` existe déjà, Search Console est **re-fetchée** en parallèle
- * du crawl (best-effort) — sinon le rescan ne mettrait à jour que le on-page v1.
+ * du crawl (best-effort). Sinon on tente quand même une première capture GSC.
  */
 
 import type { CardData } from "@/lib/domain";
@@ -12,13 +12,14 @@ import { computeAuthorityV2, type AuthorityResultV2 } from "@/lib/authority/scor
 import { extractEditorial, type EditorialExtract } from "@/lib/authority/extract";
 import { applyAuthorityToSite } from "@/lib/capturer/apply-authority";
 import { refreshGscSnapshotIfLinked } from "@/lib/capturer/refresh-gsc";
+import { ingestAndUpdateSiteVisuals } from "@/lib/capture/persist-visual-assets";
 import {
   evaluateRescanPolicy,
   formatRescanAvailableAt,
 } from "@/lib/capturer/rescan-policy";
 import { dbCardToCardData, type DbCardWithSite } from "@/lib/data/mappers";
 import { embedSite } from "@/lib/matching/embed-site";
-import { captureSite, CaptureError } from "@/lib/services/capture";
+import { captureSiteWithVisuals, CaptureError } from "@/lib/services/capture";
 import { db } from "@/lib/db";
 
 export class RescanError extends Error {
@@ -68,7 +69,7 @@ export async function rescanSiteByCardId(
     );
   }
 
-  const captured = await captureSite(cardRow.site.url);
+  const captured = await captureSiteWithVisuals(cardRow.site.url);
 
   // Token OAuth = propriétaire du site (pas l'admin qui rescane).
   const [extract, gscRefresh] = await Promise.all([
@@ -115,6 +116,10 @@ export async function rescanSiteByCardId(
   });
 
   await applyAuthorityToSite(cardRow.siteId, cardRow.userId, authority, extract);
+
+  if (captured.visualAssets) {
+    await ingestAndUpdateSiteVisuals(cardRow.siteId, captured.visualAssets);
+  }
 
   const refreshed = await db.card.findUniqueOrThrow({
     where: { id: cardId },

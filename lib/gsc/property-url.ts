@@ -20,11 +20,13 @@ export function domainFromGscProperty(gscProperty: string): string {
 
 /**
  * URL de départ pour Firecrawl à partir d'une propriété GSC.
- * `sc-domain:` → apex HTTPS ; préfixe URL → la propriété telle quelle.
+ *
+ * - `sc-domain:exemple.com` → `https://exemple.com/` (HTTPS apex — jamais le host nu)
+ * - préfixe URL → la propriété normalisée avec slash final
  */
 export function gscPropertyToCaptureUrl(gscProperty: string): string {
   if (gscProperty.startsWith("sc-domain:")) {
-    const domain = gscProperty.slice("sc-domain:".length);
+    const domain = normalizeHost(gscProperty.slice("sc-domain:".length));
     return `https://${domain}/`;
   }
   return gscProperty.endsWith("/") ? gscProperty : `${gscProperty}/`;

@@ -114,7 +114,13 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 | 6 | P2 | GSC OAuth + calibrage `WEIGHTS`/`BANDS` sur données réelles | `Plan` puis impl | pending | — |
 | 7 | P3 | Matching pgvector + rerank + filtres anti-cycle | `feature-dev:code-architect` | pending | — |
 | 8 | P3 | **Modèle de données boucle de jeu** (crédits + donateur + lien + besoins matching), forward-compatible avec schéma P1 | `feature-dev:code-architect` | **plan done** | [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md) |
+| B3 | P3 | **Validation humaine + EditorialLink** (blueprint) → impl gatée sur arbitrage §7 | `feature-dev:code-architect` (blueprint) | **blueprint done** | [p3-b3-human-validation-blueprint.md](../plans/p3-b3-human-validation-blueprint.md) |
 | 9 | P4 | Async Celery + Langfuse + GEO Sonar + score naturalité | `Plan` | pending | — |
+
+## Orchestration 2026-05-28 (soir bis) — point d'étape + relance P3
+- **Point d'étape consolidé** demandé par le user : tout P1/P1.5/P2-GSC(code)/P3-matching/E2E/marketing **fait & poussé** (`origin/main = HEAD`, E2E n'est plus du WIP). Reste réel = **boucle de jeu P3 (B3→B4→B5)** + calibrage data-gated + durcissement P4 + décisions marketing.
+- **Direction tranchée par le user** : finir la boucle **P3 B3→B4→B5** (séquentiel : B4 dépend de l'`EditorialLink` de B3, B5 des crédits de B4). Schéma P3 **déjà en place** (schema.prisma 185-253) → B3/B4/B5 = code applicatif pur, pas de migration.
+- **B3 : blueprint produit** (code-architect) → [p3-b3-human-validation-blueprint.md](../plans/p3-b3-human-validation-blueprint.md). **Impl en attente d'arbitrage** des décisions §7 (placement écran, 1-étape vs 2, sévérité anti-footprint).
 
 ## Open decisions
 - **Ordre de démarrage** : ✅ tranché — P1 d'abord, blueprint produit (sous-tâche #2 done).

@@ -8,7 +8,7 @@
  */
 
 import type { ElementKind } from "@/lib/domain";
-import { computeAuthorityV2 } from "@/lib/authority/score-v2";
+import { computeAuthorityV2, type GscScoreInput } from "@/lib/authority/score-v2";
 import { extractEditorial } from "@/lib/authority/extract";
 import { getLatestGscInputForSite, siteRowToCaptured } from "@/lib/authority/gsc-input";
 import { persistCapture } from "@/lib/capturer/persist-capture";
@@ -25,7 +25,7 @@ import {
   domainFromGscProperty,
   gscPropertyToCaptureUrl,
 } from "@/lib/gsc/property-url";
-import { captureSite, CaptureError } from "@/lib/services/capture";
+import { captureSiteWithVisuals, CaptureError } from "@/lib/services/capture";
 import {
   captureGsc,
   getAccessToken,
@@ -68,6 +68,7 @@ export interface GscImportBatchProgress {
     id: string;
     domain: string;
     gscProperty: string;
+    captureUrl: string;
     status: string;
     error: string | null;
     siteId: string | null;
@@ -226,7 +227,7 @@ async function finalizeBatchIfDone(batchId: string): Promise<void> {
 export async function importSingleGscProperty(
   userId: string,
   item: { gscProperty: string; captureUrl: string; domain: string },
-): Promise<{ siteId: string; cardId: string }> {
+): Promise<{ siteId: string; cardId: string; gscWarning?: string }> {
   const existing = await db.site.findFirst({
     where: { userId, domain: item.domain },
     include: { card: { select: { id: true } } },
@@ -235,13 +236,24 @@ export async function importSingleGscProperty(
     throw new GscImportError(`Le domaine « ${item.domain} » est déjà dans votre main.`);
   }
 
-  const captured = await captureSite(item.captureUrl);
+  const captured = await captureSiteWithVisuals(item.captureUrl);
   const extract = await extractEditorial(captured);
   const authorityV1 = computeAuthorityV2(captured, null);
 
   const siteId = await persistCapture(userId, captured, authorityV1, extract);
 
-  await captureGsc(userId, siteId, { matchedProperty: item.gscProperty });
+  let gscInput: GscScoreInput | null = null;
+  let gscWarning: string | undefined;
+  try {
+    await captureGsc(userId, siteId, { matchedProperty: item.gscProperty });
+    gscInput = await getLatestGscInputForSite(siteId);
+  } catch (e) {
+    if (e instanceof GscError) {
+      gscWarning = e.message;
+    } else {
+      throw e;
+    }
+  }
 
   const siteRow = await db.site.findFirstOrThrow({
     where: { id: siteId },
@@ -274,7 +286,6 @@ export async function importSingleGscProperty(
     throw new GscImportError("Carte absente après persistance — erreur interne.");
   }
 
-  const gscInput = await getLatestGscInputForSite(siteId);
   const authority = computeAuthorityV2(siteRowToCaptured(siteRow), gscInput);
 
   await applyAuthorityToSite(siteId, userId, authority, {
@@ -285,7 +296,7 @@ export async function importSingleGscProperty(
     source: extract.source,
   });
 
-  return { siteId, cardId: siteRow.card.id };
+  return { siteId, cardId: siteRow.card.id, gscWarning };
 }
 
 async function processOneItem(itemId: string): Promise<void> {
@@ -306,7 +317,7 @@ async function processOneItem(itemId: string): Promise<void> {
   });
 
   try {
-    const { siteId, cardId } = await importSingleGscProperty(item.batch.userId, {
+    const { siteId, cardId, gscWarning } = await importSingleGscProperty(item.batch.userId, {
       gscProperty: item.gscProperty,
       captureUrl: item.captureUrl,
       domain: item.domain,
@@ -319,7 +330,7 @@ async function processOneItem(itemId: string): Promise<void> {
         siteId,
         cardId,
         finishedAt: new Date(),
-        error: null,
+        error: gscWarning ?? null,
       },
     });
 
@@ -388,6 +399,7 @@ export async function getGscImportBatchProgress(
           id: true,
           domain: true,
           gscProperty: true,
+          captureUrl: true,
           status: true,
           error: true,
           siteId: true,

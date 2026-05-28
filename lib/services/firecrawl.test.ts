@@ -31,6 +31,26 @@ describe("scrape", () => {
     expect(res.metadata.title).toBe("T");
   });
 
+  it("parse screenshot quand withScreenshot est actif", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        success: true,
+        data: {
+          markdown: "# T",
+          html: "<p>x</p>",
+          metadata: { title: "T" },
+          screenshot: "https://cdn.firecrawl.test/viewport.webp",
+        },
+      }),
+    );
+    const res = await scrape("https://example.com", { withScreenshot: true });
+    expect(res.screenshot).toBe("https://cdn.firecrawl.test/viewport.webp");
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.formats.some((f: unknown) => typeof f === "object" && f !== null && (f as { type: string }).type === "screenshot")).toBe(
+      true,
+    );
+  });
+
   it("n'envoie PAS d'Authorization sans clé, mais l'envoie si FIRECRAWL_API_KEY est posé", async () => {
     fetchMock.mockResolvedValue(jsonResponse(ok));
     await scrape("https://example.com");

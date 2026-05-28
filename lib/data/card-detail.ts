@@ -83,6 +83,7 @@ export async function getCardDetailView(
   }
 
   return {
+    siteId: cardRow.siteId,
     card: dbCardToCardData(cardRow as DbCardWithSite),
     authority,
     extractSource,

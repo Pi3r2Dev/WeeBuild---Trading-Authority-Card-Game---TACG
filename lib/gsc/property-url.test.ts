@@ -16,8 +16,10 @@ describe("domainFromGscProperty", () => {
 });
 
 describe("gscPropertyToCaptureUrl", () => {
-  it("sc-domain → https apex", () => {
+  it("sc-domain → https apex (normalise la casse / www)", () => {
     expect(gscPropertyToCaptureUrl("sc-domain:exemple.com")).toBe("https://exemple.com/");
+    expect(gscPropertyToCaptureUrl("sc-domain:ouquequoi.fr")).toBe("https://ouquequoi.fr/");
+    expect(gscPropertyToCaptureUrl("sc-domain:WWW.Exemple.COM")).toBe("https://exemple.com/");
   });
 
   it("préfixe URL → slash final", () => {

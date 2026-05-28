@@ -18,3 +18,4 @@ Session handoff and orchestration tracker. Created and maintained by `/flow`.
 | 2026-05-28 | e2e-playwright | closed | solo | Specs integration @slow (matching/capture) |
 | 2026-05-28 | p2-gsc-integration | open | solo | Calibrage poids v2 sur données réelles ; test manuel GSC en prod |
 | 2026-05-28 | marketing-twitter-concours | open | solo | Trancher deadline + hashtag, puis générer visuels Gemini B/D |
+| 2026-05-28 | personnalisation-carte | open | solo | Ingest blob ✅ — visuel `/ab/portrait` ; prod = MinIO + volume Docker |

@@ -4,13 +4,14 @@ import { useState, useTransition, type CSSProperties } from "react";
 import Link from "next/link";
 import { Card } from "@/app/components/card/Card";
 import { ERA_LABEL } from "@/lib/levels";
-import { rescanCardAction, type RescanCardResult } from "./actions";
+import { rescanCardAction, enrichGscCardAction, type RescanCardResult } from "./actions";
 import type { CardData } from "@/lib/domain";
 import type { AuthorityResultV2 } from "@/lib/authority/score-v2";
 
 const PIXEL: CSSProperties = { fontFamily: "var(--font-pixel-display)", letterSpacing: 1 };
 
 export interface CardDetailView {
+  siteId: string;
   card: CardData;
   authority: AuthorityResultV2;
   extractSource: "llm" | "fallback";
@@ -25,6 +26,24 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
   const [error, setError] = useState<string | null>(null);
   const [gscWarning, setGscWarning] = useState<string | null>(null);
   const [pending, startRescan] = useTransition();
+  const [gscPending, startGscEnrich] = useTransition();
+
+  function runGscEnrich() {
+    setError(null);
+    setGscWarning(null);
+    startGscEnrich(async () => {
+      const result = await enrichGscCardAction(view.card.id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setView((prev) => ({
+        ...prev,
+        card: result.card,
+        authority: result.authority,
+      }));
+    });
+  }
 
   function runRescan() {
     setError(null);
@@ -50,6 +69,7 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
 
   const { card, authority, extractSource, canRescan, nextRescanAt, isAdmin } = view;
   const withGsc = authority.withGsc;
+  const busy = pending || gscPending;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -94,17 +114,17 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
             <button
               type="button"
               onClick={runRescan}
-              disabled={pending || !canRescan}
+              disabled={busy || !canRescan}
               style={{
                 padding: "12px 18px",
                 width: "100%",
-                background: pending || !canRescan ? "var(--hub-bg-2)" : "var(--hub-accent)",
-                color: pending || !canRescan ? "var(--hub-fg-soft)" : "#fff",
+                background: busy || !canRescan ? "var(--hub-bg-2)" : "var(--hub-accent)",
+                color: busy || !canRescan ? "var(--hub-fg-soft)" : "#fff",
                 border: "none",
                 borderRadius: 10,
                 fontWeight: 700,
                 fontSize: 14,
-                cursor: pending || !canRescan ? "default" : "pointer",
+                cursor: busy || !canRescan ? "default" : "pointer",
                 textAlign: "left",
               }}
             >
@@ -127,11 +147,40 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
             </p>
           </div>
 
-          {pending && (
+          {!withGsc && (
+            <div style={{ marginBottom: 16 }}>
+              <button
+                type="button"
+                onClick={runGscEnrich}
+                disabled={busy}
+                style={{
+                  padding: "12px 18px",
+                  width: "100%",
+                  background: busy ? "var(--hub-bg-2)" : "rgba(57,255,20,0.12)",
+                  color: busy ? "var(--hub-fg-soft)" : "var(--hub-accent-2)",
+                  border: "1px solid rgba(57,255,20,0.45)",
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: busy ? "default" : "pointer",
+                  textAlign: "left",
+                }}
+              >
+                {gscPending ? "Connexion Search Console…" : "↗ Enrichir avec Google Search Console"}
+              </button>
+              <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "var(--hub-fg-dim)", lineHeight: 1.45 }}>
+                Même compte Google qu&apos;à la connexion · propriété vérifiée dans ta Search Console.
+              </p>
+            </div>
+          )}
+
+          {(pending || gscPending) && (
             <p style={{ color: "var(--hub-fg-soft)", fontSize: 13, marginBottom: 12 }}>
-              {withGsc
-                ? "Firecrawl + Search Console en cours, puis mise à jour du score…"
-                : "Firecrawl recapture la page, puis on met à jour le résumé et le score…"}
+              {gscPending
+                ? "Interrogation Search Console (28 j) et recalcul du score v2…"
+                : withGsc
+                  ? "Firecrawl + Search Console en cours, puis mise à jour du score…"
+                  : "Firecrawl recapture la page, puis on met à jour le résumé et le score…"}
             </p>
           )}
 
@@ -148,7 +197,7 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
                 lineHeight: 1.5,
               }}
             >
-              Search Console non rafraîchie : {gscWarning}. Les signaux GSC précédents sont conservés.
+              Search Console : {gscWarning}
             </div>
           )}
 
@@ -187,11 +236,8 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
               </>
             ) : (
               <>
-                Score <strong>indicatif v1</strong> — signaux on-page uniquement. Connecte Search Console depuis{" "}
-                <Link href="/capturer" style={{ color: "inherit" }}>
-                  /capturer
-                </Link>{" "}
-                pour enrichir le Tier 2.
+                Score <strong>indicatif v1</strong> — signaux on-page uniquement. Utilise le bouton Search Console
+                ci-dessus pour passer en métrique v2 (impressions, clics, position).
               </>
             )}
           </div>

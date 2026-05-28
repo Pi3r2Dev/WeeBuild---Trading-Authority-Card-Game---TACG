@@ -7,11 +7,13 @@ import type { CapturedSite } from "@/lib/services/capture-types";
 import type { AuthorityResultV2 } from "@/lib/authority/score-v2";
 import type { EditorialExtract } from "@/lib/authority/extract";
 import { applyAuthorityToSite } from "@/lib/capturer/apply-authority";
+import { ingestAndUpdateSiteVisuals } from "@/lib/capture/persist-visual-assets";
 import { embedSite } from "@/lib/matching/embed-site";
 import { db } from "@/lib/db";
 
 /**
  * Upsert Site/Card, embedding pgvector, snapshot d'autorité.
+ * Ingestion blob des assets visuels après upsert (siteId requis).
  *
  * @returns id du site persisté.
  */
@@ -54,6 +56,10 @@ export async function persistCapture(
       thematique: extract.thematique,
     },
   });
+
+  if (site.visualAssets) {
+    await ingestAndUpdateSiteVisuals(persisted.id, site.visualAssets);
+  }
 
   const cardFields = {
     userId,

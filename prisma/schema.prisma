@@ -149,6 +149,13 @@ model Site {
   /// Dernier rescan Firecrawl demandé par le membre (quota 1/semaine ; admin illimité).
   lastRescanAt DateTime?
 
+  // ── P4 : assets visuels Tier 1 (logo / hero / screenshot homepage) ──
+  logoUrl               String?
+  heroImageUrl          String?
+  homepageScreenshotUrl String?
+  /// Provenance des assets (`SiteVisualAssets.provenance`) pour debug / re-score.
+  visualProvenanceJson  Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

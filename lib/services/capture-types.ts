@@ -3,6 +3,8 @@
  * d'entrée `capture.ts`. Sans dépendance pour éviter tout cycle d'import.
  */
 
+import type { SiteVisualAssets } from "@/lib/capture/visual-asset-types";
+
 /** Site capturé, normalisé — matière première de la carte et du score d'autorité. */
 export interface CapturedSite {
   url: string;
@@ -17,6 +19,8 @@ export interface CapturedSite {
   https: boolean;
   /** Backend ayant produit la capture (observabilité). */
   via: "firecrawl";
+  /** Assets visuels Tier 1 (logo / hero / screenshot) — absent si capture texte seule. */
+  visualAssets?: SiteVisualAssets | null;
 }
 
 /** Erreur de capture (réseau, HTTP, crawl échoué, SSRF) — message FR pour l'UI. */

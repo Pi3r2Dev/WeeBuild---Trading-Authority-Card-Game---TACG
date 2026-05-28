@@ -26,23 +26,40 @@ export interface ScrapeMetadata {
   language?: string;
   sourceURL?: string;
   ogImage?: string;
+  twitterImage?: string;
+  /** URL signée screenshot (si format demandé). */
+  screenshot?: string;
 }
 
 export interface ScrapeResult {
   markdown: string;
   html: string;
   metadata: ScrapeMetadata;
+  /** URL signée du screenshot viewport (si format demandé). */
+  screenshot?: string;
 }
+
+/** Options screenshot Firecrawl (viewport). */
+export interface ScreenshotFormatOptions {
+  type: "screenshot";
+  fullPage?: boolean;
+  quality?: number;
+  viewport?: { width: number; height: number };
+}
+
+export type ScrapeFormat = string | ScreenshotFormatOptions;
 
 export interface ScrapeOptions {
   /** Formats demandés (défaut : markdown + html). */
-  formats?: string[];
+  formats?: ScrapeFormat[];
   /** Ne garder que le contenu principal (défaut : true). */
   onlyMainContent?: boolean;
   /** Attente JS en ms (SPA lentes). Omis par défaut. */
   waitFor?: number;
   /** Timeout requête en ms (défaut : 45 000). */
   timeoutMs?: number;
+  /** Ajoute un screenshot viewport 1280×800. */
+  withScreenshot?: boolean;
 }
 
 /** Erreur Firecrawl — sous-classe de CaptureError pour un rendu UI uniforme. */
@@ -96,7 +113,36 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 interface FirecrawlScrapeResponse {
   success?: boolean;
   error?: string;
-  data?: { markdown?: string; html?: string; metadata?: ScrapeMetadata };
+  data?: {
+    markdown?: string;
+    html?: string;
+    metadata?: ScrapeMetadata;
+    screenshot?: string;
+  };
+}
+
+/** Formats effectifs pour la requête Firecrawl. */
+function resolveFormats(opts: ScrapeOptions): ScrapeFormat[] {
+  if (opts.formats?.length) return opts.formats;
+  const base: ScrapeFormat[] = ["markdown", "html"];
+  if (opts.withScreenshot) {
+    base.push({
+      type: "screenshot",
+      fullPage: false,
+      quality: 85,
+      viewport: { width: 1280, height: 800 },
+    });
+  }
+  return base;
+}
+
+/** Extrait l'URL screenshot depuis la payload Firecrawl. */
+function parseScreenshotUrl(data: FirecrawlScrapeResponse["data"]): string | undefined {
+  if (!data) return undefined;
+  const top = data.screenshot?.trim();
+  if (top) return top;
+  const meta = data.metadata?.screenshot?.trim();
+  return meta || undefined;
 }
 
 /**
@@ -110,12 +156,6 @@ export async function scrape(rawUrl: string, opts: ScrapeOptions = {}): Promise<
   if (!isConfigured()) throw new FirecrawlError("FIRECRAWL_API_URL non configurée.");
   const url = await assertScrapableUrl(rawUrl); // garde SSRF AVANT tout appel réseau
 
-  const body = JSON.stringify({
-    url: url.toString(),
-    formats: opts.formats ?? ["markdown", "html"],
-    onlyMainContent: opts.onlyMainContent ?? true,
-    ...(opts.waitFor != null ? { waitFor: opts.waitFor } : {}),
-  });
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const endpoint = `${baseUrl()}/v1/scrape`;
 
@@ -123,28 +163,54 @@ export async function scrape(rawUrl: string, opts: ScrapeOptions = {}): Promise<
     let lastErr: unknown;
     for (let attempt = 0; attempt < 2; attempt++) {
       if (attempt > 0) await sleep(RETRY_BACKOFF_MS);
+      // 2ᵉ tentative : waitFor plus long (SPA Next.js / Cloudflare lents).
+      const waitFor = attempt > 0 ? (opts.waitFor ?? 5_000) : opts.waitFor;
+      const attemptBody = JSON.stringify({
+        url: url.toString(),
+        formats: resolveFormats(opts),
+        onlyMainContent: opts.onlyMainContent ?? true,
+        ...(waitFor != null ? { waitFor } : {}),
+      });
+
       let res: Response;
       try {
-        res = await fetchWithTimeout(endpoint, { method: "POST", headers: authHeaders(), body }, timeoutMs);
+        res = await fetchWithTimeout(endpoint, { method: "POST", headers: authHeaders(), body: attemptBody }, timeoutMs);
       } catch (e) {
-        lastErr = e; // réseau / timeout → retryable
+        lastErr = e;
         continue;
       }
+
+      const target = url.toString();
+
       if (res.status >= 500) {
-        lastErr = new FirecrawlError(`Firecrawl a répondu ${res.status} ${res.statusText}.`);
-        continue; // 5xx → retryable
+        const detail = await res.text().catch(() => "");
+        const snippet = detail.length > 0 ? ` — ${detail.slice(0, 200)}` : "";
+        lastErr = new FirecrawlError(
+          `Firecrawl a répondu ${res.status} ${res.statusText} pour ${target}${snippet}`,
+        );
+        continue;
       }
-      if (!res.ok) throw new FirecrawlError(`Firecrawl a répondu ${res.status} ${res.statusText}.`);
+      if (!res.ok) {
+        throw new FirecrawlError(`Firecrawl a répondu ${res.status} ${res.statusText} pour ${target}.`);
+      }
 
       const json = (await res.json()) as FirecrawlScrapeResponse;
       if (!json.success || !json.data) {
-        throw new FirecrawlError(json.error || "Scrape échoué côté Firecrawl (success:false).");
+        throw new FirecrawlError(
+          json.error ? `${json.error} (URL : ${target})` : `Scrape échoué côté Firecrawl (URL : ${target}).`,
+        );
       }
       const markdown = (json.data.markdown ?? "").trim();
-      if (!markdown) throw new FirecrawlError("Firecrawl a renvoyé un markdown vide.");
-      return { markdown, html: json.data.html ?? "", metadata: json.data.metadata ?? {} };
+      if (!markdown) throw new FirecrawlError(`Firecrawl a renvoyé un markdown vide pour ${target}.`);
+      const screenshot = parseScreenshotUrl(json.data);
+      return {
+        markdown,
+        html: json.data.html ?? "",
+        metadata: json.data.metadata ?? {},
+        ...(screenshot ? { screenshot } : {}),
+      };
     }
-    throw lastErr instanceof Error ? lastErr : new FirecrawlError("Scrape échoué après retry.");
+    throw lastErr instanceof Error ? lastErr : new FirecrawlError(`Scrape échoué après retry (${url}).`);
   });
 }
 

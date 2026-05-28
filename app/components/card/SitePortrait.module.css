@@ -1,0 +1,117 @@
+/* Portrait personnalisé — filtres CSS par niveau (MVP A/B). */
+
+.portrait {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--c-deep, #0f380f);
+}
+
+.hero,
+.screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.screen {
+  opacity: 0.28;
+  mix-blend-mode: soft-light;
+}
+
+.logo {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 2px;
+  z-index: 2;
+}
+
+.initials {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display, monospace);
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: var(--c-pale, #9bbc0f);
+  opacity: 0.85;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.12) 0,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 3;
+}
+
+.holoOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: conic-gradient(
+    from 120deg at 50% 50%,
+    rgba(255, 0, 127, 0.25),
+    rgba(127, 0, 255, 0.2),
+    rgba(0, 255, 255, 0.25),
+    rgba(255, 0, 127, 0.25)
+  );
+  mix-blend-mode: color-dodge;
+  opacity: 0.45;
+  z-index: 3;
+}
+
+/* N1 Game Boy */
+.lvl1 .hero {
+  filter: grayscale(1) contrast(1.35) brightness(0.95);
+  image-rendering: pixelated;
+}
+
+.lvl1 .logo {
+  filter: grayscale(1) contrast(1.2);
+  image-rendering: pixelated;
+}
+
+/* N2 SNES */
+.lvl2 .hero {
+  filter: saturate(1.45) contrast(1.08);
+  image-rendering: pixelated;
+}
+
+/* N3 PS2 */
+.lvl3 .hero {
+  filter: saturate(0.75) contrast(1.05) brightness(1.05);
+}
+
+.lvl3 .screen {
+  opacity: 0.35;
+  filter: blur(0.3px);
+}
+
+/* N4 Holo */
+.lvl4 .hero {
+  filter: saturate(1.2) contrast(1.05);
+}
+
+.lvl4 .screen {
+  opacity: 0.2;
+  mix-blend-mode: screen;
+}

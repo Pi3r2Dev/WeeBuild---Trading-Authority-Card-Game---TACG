@@ -9,6 +9,7 @@
  */
 
 import { type CapturedSite, hostnameOf, imageCountFromHtml, linkStatsFromHtml } from "./capture-types";
+import { visualAssetsFromScrape, VISUAL_SCRAPE_FORMATS } from "@/lib/capture/visual-from-scrape";
 import * as firecrawl from "./firecrawl";
 
 export { CaptureError } from "./capture-types";
@@ -47,4 +48,18 @@ function fromScrape(scraped: firecrawl.ScrapeResult, requestedUrl: string): Capt
  */
 export async function captureSite(rawUrl: string): Promise<CapturedSite> {
   return fromScrape(await firecrawl.scrape(rawUrl), rawUrl);
+}
+
+/**
+ * Capture enrichie Tier 1 — texte + assets visuels (logo, hero, screenshot viewport).
+ * `onlyMainContent: false` pour conserver header/hero dans le HTML.
+ */
+export async function captureSiteWithVisuals(rawUrl: string): Promise<CapturedSite> {
+  const scraped = await firecrawl.scrape(rawUrl, {
+    formats: [...VISUAL_SCRAPE_FORMATS],
+    onlyMainContent: false,
+    waitFor: 1_500,
+  });
+  const site = fromScrape(scraped, rawUrl);
+  return { ...site, visualAssets: visualAssetsFromScrape(scraped, rawUrl) };
 }

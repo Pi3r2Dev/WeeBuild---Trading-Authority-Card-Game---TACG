@@ -40,6 +40,9 @@ export function DevNav() {
       <Link href="/rnd" style={LINK}>
         R&amp;D
       </Link>
+      <Link href="/ab/portrait" style={LINK}>
+        A/B Portrait
+      </Link>
       <Link href="/chateau" style={LINK}>
         Château
       </Link>

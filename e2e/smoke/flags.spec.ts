@@ -9,7 +9,9 @@ test.describe("Flags produit", () => {
   });
 
   test("routes R&D 404 sans NEXT_PUBLIC_ENABLE_RND", async ({ page }) => {
-    const res = await page.goto("/rnd");
-    expect(res?.status()).toBe(404);
+    for (const path of ["/rnd", "/ab/portrait"]) {
+      const res = await page.goto(path);
+      expect(res?.status()).toBe(404);
+    }
   });
 });

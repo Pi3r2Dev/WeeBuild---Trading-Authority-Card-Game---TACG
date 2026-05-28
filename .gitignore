@@ -53,5 +53,8 @@ next-env.d.ts
 # prisma — client généré (régénéré via `prisma generate`)
 /lib/generated/
 
+# blobs visuels ingérés (local FS dev — cf. WEBUILD_VISUAL_STORAGE_PATH)
+/storage/visual/
+
 # Claude Code — worktrees d'agents (transitoires, jamais versionnés)
 .claude/worktrees/

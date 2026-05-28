@@ -10,7 +10,7 @@ Moteur unique (Firecrawl) derrière un point d'entrée applicatif :
 | Fichier | Rôle |
 |---|---|
 | [firecrawl.ts](firecrawl.ts) | **Moteur de crawl** — Firecrawl self-hosted v3 (rendu JS). Client réutilisable `scrape()` / `healthcheck()`. |
-| [capture.ts](capture.ts) | **Point d'entrée** — `captureSite(url)` : Firecrawl → `CapturedSite` normalisé (consommé par l'UI/score). |
+| [capture.ts](capture.ts) | **Point d'entrée** — `captureSite(url)` ; `captureSiteWithVisuals(url)` (+ extract + ingest blob). |
 | [ssrf.ts](ssrf.ts) | Garde **SSRF** — résout le DNS de l'URL cible et refuse les IP privées/loopback/link-local. |
 | [capture-types.ts](capture-types.ts) | Types + helpers partagés (`CapturedSite`, `CaptureError`, parsing liens/images du HTML). |
 
@@ -46,6 +46,11 @@ const site = await captureSite("https://exemple.fr"); // CapturedSite
 |---|---|---|
 | `FIRECRAWL_API_URL` | oui | Pas de défaut. Non défini → la capture échoue (aucun fallback). |
 | `FIRECRAWL_API_KEY` | non | Self-hosted sans auth ; en-tête `Authorization` envoyé seulement si défini. |
+| `WEBUILD_VISUAL_STORAGE` | non | `local` (défaut) ou `memory` (tests). Backend blob logo/hero/screenshot. |
+| `WEBUILD_VISUAL_STORAGE_PATH` | non | Racine FS local (défaut : `./storage/visual`). |
+| `WEBUILD_VISUAL_PUBLIC_BASE` | non | Préfixe URL publique (défaut : `/api/assets/visual`). |
+
+> Ingestion visuelle : cf. [lib/capture/](../capture/) et [draft-personnalisation-carte.md](../../docs/draft-personnalisation-carte.md) §5.5.
 
 ### Réseau — accès à Firecrawl
 

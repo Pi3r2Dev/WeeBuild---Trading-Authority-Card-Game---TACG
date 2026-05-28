@@ -287,6 +287,9 @@ function CandidateRow({
           {candidate.domain}
         </div>
         <div style={{ fontSize: 11, color: "var(--hub-fg-dim)", marginTop: 2 }}>{candidate.gscProperty}</div>
+        <div style={{ fontSize: 10.5, color: "var(--hub-fg-dim)", marginTop: 2, opacity: 0.85 }}>
+          Capture Firecrawl : {candidate.captureUrl}
+        </div>
         <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
           <MiniBadge text={candidate.permissionLabel} accent={candidate.isOwner} />
           {candidate.alreadyImported && <MiniBadge text="Déjà importé" />}
@@ -341,7 +344,12 @@ function BatchItemErrors({
   items: BatchProgress["items"];
   live?: boolean;
 }) {
-  const problems = items.filter((i) => i.status === "FAILED" || i.status === "SKIPPED");
+  const problems = items.filter(
+    (i) =>
+      i.status === "FAILED" ||
+      i.status === "SKIPPED" ||
+      (i.status === "COMPLETED" && i.error),
+  );
   if (problems.length === 0) return null;
 
   return (
@@ -355,29 +363,41 @@ function BatchItemErrors({
         gap: 8,
       }}
     >
-      {problems.map((item) => (
+      {problems.map((item) => {
+        const isFailure = item.status === "FAILED";
+        const isGscWarning = item.status === "COMPLETED" && item.error;
+        return (
         <li
           key={item.id}
           style={{
             padding: "8px 10px",
-            background: item.status === "FAILED" ? "rgba(220,38,38,0.12)" : "rgba(251,191,36,0.08)",
-            border: `1px solid ${item.status === "FAILED" ? "rgba(220,38,38,0.35)" : "rgba(251,191,36,0.3)"}`,
+            background: isFailure
+              ? "rgba(220,38,38,0.12)"
+              : isGscWarning
+                ? "rgba(251,191,36,0.08)"
+                : "rgba(251,191,36,0.08)",
+            border: `1px solid ${isFailure ? "rgba(220,38,38,0.35)" : "rgba(251,191,36,0.3)"}`,
             borderRadius: 6,
             fontSize: 12,
             lineHeight: 1.45,
-            color: item.status === "FAILED" ? "#fca5a5" : "#fcd34d",
+            color: isFailure ? "#fca5a5" : "#fcd34d",
           }}
         >
           <strong>{item.domain}</strong>
           <span style={{ opacity: 0.75 }}> · {item.gscProperty}</span>
+          {"captureUrl" in item && item.captureUrl && (
+            <div style={{ marginTop: 2, fontSize: 11, opacity: 0.85 }}>Firecrawl → {item.captureUrl}</div>
+          )}
           <div style={{ marginTop: 4 }}>
+            {isGscWarning && <span style={{ fontWeight: 700 }}>Carte créée · GSC non liée : </span>}
             {item.error ??
               (item.status === "SKIPPED"
                 ? "Import ignoré (domaine déjà présent ou filtré)."
                 : "Échec sans message détaillé — consulte les logs serveur.")}
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

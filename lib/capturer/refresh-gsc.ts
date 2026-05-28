@@ -1,49 +1,39 @@
 /**
- * Re-fetch GSC lors d'un rescan ou recalcul — best-effort.
+ * Capture / re-fetch GSC lors d'un rescan, enrichissement ou import batch partiel.
  *
- * Le rescan Firecrawl ne suffit pas à rafraîchir les signaux Tier 2 : sans appel
- * explicite à `captureGsc`, on relit l'ancien `GscSnapshot` (données périmées).
- * Ce helper est invoqué quand un snapshot GSC existe déjà pour le site.
+ * Tente **toujours** `captureGsc` (best-effort) — pas seulement si un snapshot
+ * existait déjà. Sinon une carte créée sans GSC (import Firecrawl OK + GSC KO)
+ * reste bloquée en v1 sans message.
  */
 
 import { getLatestGscInputForSite } from "@/lib/authority/gsc-input";
 import type { GscScoreInput } from "@/lib/authority/score-v2";
-import { captureGsc, GscError } from "@/lib/services/gsc";
-import { db } from "@/lib/db";
+import { captureGsc, GscError, type CaptureGscOptions } from "@/lib/services/gsc";
 
 export interface RefreshGscResult {
   /** Entrée score v2 (nouveau snapshot ou ancien si échec API). */
   input: GscScoreInput | null;
   /** True si un nouveau `GscSnapshot` a été inséré. */
   refreshed: boolean;
-  /** Message FR si le re-fetch a échoué (OAuth, propriété, réseau). */
+  /** Message FR si le fetch GSC a échoué (OAuth, propriété, réseau). */
   warning?: string;
 }
 
 /**
- * Re-interroge Search Console si le site a déjà été enrichi GSC (v2).
+ * Interroge Search Console pour un site (première fois ou refresh).
  *
- * - Sans snapshot existant → `null` (pas de GSC à rafraîchir).
- * - Échec OAuth/API → conserve le dernier snapshot connu + `warning`.
  * - Succès → nouveau snapshot + métriques à jour.
+ * - Échec OAuth/API → `warning` + dernier snapshot connu (ou `null` si jamais lié).
  *
- * @param userId Propriétaire du site (token Google OAuth — pas l'admin en rescan délégué).
+ * @param userId Propriétaire du site (token Google OAuth).
  */
-export async function refreshGscSnapshotIfLinked(
+export async function tryCaptureGscForSite(
   userId: string,
   siteId: string,
+  options?: CaptureGscOptions,
 ): Promise<RefreshGscResult> {
-  const hasSnapshot = await db.gscSnapshot.findFirst({
-    where: { siteId },
-    select: { id: true },
-  });
-
-  if (!hasSnapshot) {
-    return { input: null, refreshed: false };
-  }
-
   try {
-    await captureGsc(userId, siteId);
+    await captureGsc(userId, siteId, options);
     const input = await getLatestGscInputForSite(siteId);
     return { input, refreshed: true };
   } catch (e) {
@@ -58,3 +48,6 @@ export async function refreshGscSnapshotIfLinked(
     throw e;
   }
 }
+
+/** @deprecated Alias — préférer {@link tryCaptureGscForSite}. */
+export const refreshGscSnapshotIfLinked = tryCaptureGscForSite;

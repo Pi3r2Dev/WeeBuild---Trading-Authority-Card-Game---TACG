@@ -8,7 +8,7 @@
 
 import type { CardData } from "@/lib/domain";
 import { dbCardToCardData } from "@/lib/data/mappers";
-import { captureSite, CaptureError } from "@/lib/services/capture";
+import { captureSiteWithVisuals, CaptureError } from "@/lib/services/capture";
 import { computeAuthorityV2, type AuthorityResultV2 } from "@/lib/authority/score-v2";
 import { getLatestGscInputForDomain } from "@/lib/authority/gsc-input";
 import { extractEditorial, type EditorialExtract } from "@/lib/authority/extract";
@@ -32,7 +32,7 @@ export type CaptureResult = CaptureSuccess | CaptureFailure;
 export async function captureCard(rawUrl: string): Promise<CaptureResult> {
   try {
     const userId = (await requireSession()).user.id;
-    const site = await captureSite(rawUrl);
+    const site = await captureSiteWithVisuals(rawUrl);
     const gscInput = await getLatestGscInputForDomain(userId, site.domain);
     const [extract, authority] = await Promise.all([
       extractEditorial(site),

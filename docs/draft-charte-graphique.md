@@ -2,9 +2,9 @@
 
 > **Statut : DRAFT** — document de travail, à challenger.
 > Projet : *WeBuild — Trading Authority Game*
-> Dernière maj : 2026-05-26 (enrichi)
+> Dernière maj : 2026-05-28 (lien personnalisation carte)
 > Sources : [readme.txt](../readme.txt) + exploration charte (palette/typo/assets/technique)
-> Voir aussi : [draft-gameplay-technique.md](draft-gameplay-technique.md)
+> Voir aussi : [draft-gameplay-technique.md](draft-gameplay-technique.md) · [draft-personnalisation-carte.md](draft-personnalisation-carte.md)
 
 ---
 
@@ -169,7 +169,7 @@ L'image n'est **pas** une génération IA opaque. Le membre **peut importer son 
 ### Génération de l'image *(principe acté §8 — restent les réglages)*
 - [ ] **Recettes de filtres** par niveau : valeurs exactes (seuils de quantize, matrice de dither, intensité bloom) à figer.
 - [ ] **LoRA / prompts par niveau** (chemin B) : à sourcer ou entraîner pour le remaster génératif.
-- [ ] **Image auto** (si pas d'import) : que représente-t-elle ? (screenshot du site stylisé ? visuel dérivé du résumé ? objet 3D thématique pour N3 ?)
+- [~] **Image auto** (si pas d'import) : **piste actée** — composition **logo + hero + screenshot homepage** (Tier 1 crawl), filtrée par niveau ; détail et checklist → [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §4–§8. Reste à valider avec le handoff (emplacement logo, visibilité screenshot en N1/N2).
 
 ### États & animations
 - [ ] États visuels d'une carte : disponible / survolée / sélectionnée / acquise / indisponible.

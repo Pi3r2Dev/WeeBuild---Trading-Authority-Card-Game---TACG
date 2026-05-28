@@ -2,7 +2,7 @@
 
 > **Statut : DRAFT** — document de travail, à challenger.
 > Projet : *WeBuild — Trading Authority Game*
-> Dernière maj : 2026-05-26
+> Dernière maj : 2026-05-28 (lien assets visuels carte)
 > Sources : [readme.txt](../readme.txt) + infra existante `unified-infrastructure` / `app.augmenter.pro` (explorée le 2026-05-26)
 > Voir aussi : [draft-gameplay-technique.md](draft-gameplay-technique.md) · [draft-charte-graphique.md](draft-charte-graphique.md)
 
@@ -58,6 +58,7 @@ Le pipeline réutilise l'infra partagée de l'écosystème `augmenter.pro` (dép
 
 ### Étape 1 — Capture *(Firecrawl)*
 - Appel `POST /v1/scrape` (formats `markdown` + `html`, `onlyMainContent`, `waitFor` pour les SPA) → `lib/services/firecrawl.ts`.
+- **Extension prévue (P4)** : même passe ou scrape visuel dédié avec `screenshot` viewport + extraction **logo / hero / screenshot** → portrait carte. Suivi : [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §4–§6.
 - Robustesse côté client : garde **SSRF** (refus IP internes), timeout, appels sérialisés + 1 retry/backoff (doux pour la box). *(Crawl4AI et son CrawlService NestJS sont retirés — moteur unique.)*
 - **Deux usages distincts** :
   - *Capture du site du membre* → matière première de la carte.

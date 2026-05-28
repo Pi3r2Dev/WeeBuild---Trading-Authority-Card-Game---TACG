@@ -1,13 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/db", () => ({
-  db: {
-    gscSnapshot: {
-      findFirst: vi.fn(),
-    },
-  },
-}));
-
 vi.mock("@/lib/services/gsc", () => ({
   captureGsc: vi.fn(),
   GscError: class GscError extends Error {},
@@ -17,27 +9,16 @@ vi.mock("@/lib/authority/gsc-input", () => ({
   getLatestGscInputForSite: vi.fn(),
 }));
 
-import { db } from "@/lib/db";
 import { captureGsc, GscError } from "@/lib/services/gsc";
 import { getLatestGscInputForSite } from "@/lib/authority/gsc-input";
-import { refreshGscSnapshotIfLinked } from "./refresh-gsc";
+import { tryCaptureGscForSite } from "./refresh-gsc";
 
-describe("refreshGscSnapshotIfLinked", () => {
+describe("tryCaptureGscForSite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("ne fait rien si aucun snapshot GSC existant", async () => {
-    vi.mocked(db.gscSnapshot.findFirst).mockResolvedValue(null);
-
-    const result = await refreshGscSnapshotIfLinked("user-1", "site-1");
-
-    expect(result).toEqual({ input: null, refreshed: false });
-    expect(captureGsc).not.toHaveBeenCalled();
-  });
-
-  it("re-fetch et retourne les nouvelles métriques", async () => {
-    vi.mocked(db.gscSnapshot.findFirst).mockResolvedValue({ id: "snap-old" });
+  it("tente toujours captureGsc même sans snapshot existant", async () => {
     vi.mocked(captureGsc).mockResolvedValue({
       snapshotId: "snap-new",
       siteId: "site-1",
@@ -45,35 +26,28 @@ describe("refreshGscSnapshotIfLinked", () => {
       aggregate: {} as never,
     });
     vi.mocked(getLatestGscInputForSite).mockResolvedValue({
-      clicks: 179,
-      impressions: 7200,
-      ctr: 0.025,
-      position: 10,
-      queryCount: 42,
+      clicks: 10,
+      impressions: 100,
+      ctr: 0.1,
+      position: 5,
+      queryCount: 3,
     });
 
-    const result = await refreshGscSnapshotIfLinked("user-1", "site-1");
+    const result = await tryCaptureGscForSite("user-1", "site-1");
 
-    expect(captureGsc).toHaveBeenCalledWith("user-1", "site-1");
+    expect(captureGsc).toHaveBeenCalledWith("user-1", "site-1", undefined);
     expect(result.refreshed).toBe(true);
-    expect(result.input?.clicks).toBe(179);
+    expect(result.input?.clicks).toBe(10);
   });
 
-  it("conserve l'ancien snapshot si l'API GSC échoue", async () => {
-    vi.mocked(db.gscSnapshot.findFirst).mockResolvedValue({ id: "snap-old" });
-    vi.mocked(captureGsc).mockRejectedValue(new GscError("Token expiré"));
-    vi.mocked(getLatestGscInputForSite).mockResolvedValue({
-      clicks: 23,
-      impressions: 1937,
-      ctr: 0.012,
-      position: 17.6,
-      queryCount: 10,
-    });
+  it("renvoie un warning si GSC échoue (première liaison)", async () => {
+    vi.mocked(captureGsc).mockRejectedValue(new GscError("Propriété non vérifiée"));
+    vi.mocked(getLatestGscInputForSite).mockResolvedValue(null);
 
-    const result = await refreshGscSnapshotIfLinked("user-1", "site-1");
+    const result = await tryCaptureGscForSite("user-1", "site-1");
 
     expect(result.refreshed).toBe(false);
-    expect(result.warning).toBe("Token expiré");
-    expect(result.input?.clicks).toBe(23);
+    expect(result.warning).toBe("Propriété non vérifiée");
+    expect(result.input).toBeNull();
   });
 });
