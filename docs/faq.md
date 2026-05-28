@@ -1,7 +1,7 @@
 # FAQ — Doctrine & vérité de référence
 
 > **Rôle de ce document** : source canonique du *pourquoi* et du *comment* de WeBuild. Sert de référence partagée pour l'équipe, de base au contenu public, et de **garde-fou de cohérence pour l'IA** (axe B) qui génère sujets et textes.
-> Dernière maj : 2026-05-26 · Voir aussi : [draft-gameplay-technique.md](draft-gameplay-technique.md) · [draft-pipeline-ia.md](draft-pipeline-ia.md) · [draft-charte-graphique.md](draft-charte-graphique.md)
+> Dernière maj : 2026-05-28 · Voir aussi : [draft-gameplay-technique.md](draft-gameplay-technique.md) · [draft-pipeline-ia.md](draft-pipeline-ia.md) · [draft-charte-graphique.md](draft-charte-graphique.md)
 
 ## Comment lire ce document
 - Les réponses sont **prêtes pour le public** sauf mention `🔒 interne`.
@@ -37,6 +37,9 @@ Connexion avec **Google**, puis tu déclares les **URLs de tes sites**.
 
 ### Comment ma carte est-elle créée ?
 On **capture et résume automatiquement** ton site, on évalue son **autorité**, et on en génère une **carte** dont le niveau (1 à 4) en découle. Tu ne la saisis pas : elle est **dérivée** de ton site.
+
+### Puis-je mettre à jour ma carte ?
+Oui. Depuis la **fiche de ta carte** (`/carte/…`), tu peux demander un **rescan** : on recapture le site (Firecrawl), on ré-extrait le résumé et on **recalcule le score**. Chaque membre a droit à **1 rescan par semaine** par carte. Les **admins** (e-mails listés côté serveur) n'ont pas cette limite.
 
 ### Pourquoi connecter ma Google Search Console ?
 C'est optionnel mais recommandé : ça nous donne la **vraie donnée de Google** sur ton site (impressions, position, requêtes) pour calculer une autorité **juste**, et ça **prouve que le site t'appartient**. Tu peux la connecter en un clic (même compte Google) ou, à défaut, importer une capture d'écran qu'on analyse. Sans elle, on se base sur l'analyse publique de ton site (moins précise).

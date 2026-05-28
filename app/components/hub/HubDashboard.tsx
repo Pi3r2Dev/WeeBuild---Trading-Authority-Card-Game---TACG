@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ACCENT_VIOLET } from "./constants";
 import { getSuggestions, getMe, getMyDeck, getNavDeck, getRecentActivity } from "@/lib/data";
+import { getMyDeckRescanBadges } from "@/lib/data/card-detail";
 import { requireSession } from "@/lib/auth-session";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
@@ -19,13 +20,15 @@ import { icons } from "./icons";
  * réelle restent visibles. Compte 0-carte → onboarding « Déclare ton 1er site ».
  */
 export async function HubDashboard() {
-  const userId = (await requireSession()).user.id;
-  const [ME, MY_SITES, NAV_DECK, AI_SUGGESTIONS, RECENT_ACTIVITY] = await Promise.all([
+  const session = await requireSession();
+  const userId = session.user.id;
+  const [ME, MY_SITES, NAV_DECK, AI_SUGGESTIONS, RECENT_ACTIVITY, RESCAN_BADGES] = await Promise.all([
     getMe(userId),
     getMyDeck(userId),
     getNavDeck(),
     GAME_LOOP_ENABLED ? getSuggestions(userId) : Promise.resolve([]),
     GAME_LOOP_ENABLED ? getRecentActivity(userId) : Promise.resolve([]),
+    getMyDeckRescanBadges(userId, session.user.email),
   ]);
   const firstName = ME.name.split(" ")[0];
   const hasCards = MY_SITES.length > 0;
@@ -110,7 +113,7 @@ export async function HubDashboard() {
             >
               MA MAIN · {MY_SITES.length} CARTES
             </SectionLabel>
-            <MyHand sites={MY_SITES} />
+            <MyHand sites={MY_SITES} rescanBadges={RESCAN_BADGES} />
           </>
         ) : (
           <FirstRunOnboarding />

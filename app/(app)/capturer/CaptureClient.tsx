@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition, type CSSProperties } from "react";
 import { Card } from "@/app/components/card/Card";
 import { ERA_LABEL } from "@/lib/levels";
@@ -165,11 +166,31 @@ function Result({
           <span style={{ ...PIXEL, fontSize: 40, color: "var(--hub-accent-2)" }}>{authority.score}</span>
           <span style={{ color: "var(--hub-fg-soft)", fontSize: 13 }}>/ 100 · score d&apos;autorité</span>
         </div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 18, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
           <Badge text={`NIVEAU ${card.level} · ${ERA_LABEL[card.level]}`} accent />
           <Badge text={authority.metricVersion === "v2-gsc" ? "métrique v2 · GSC" : "métrique v1 · on-page"} />
           <Badge text={extractSource === "llm" ? "extraction LLM" : "extraction fallback"} />
         </div>
+
+        <Link
+          href={`/carte/${card.id}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 18,
+            padding: "10px 16px",
+            background: "rgba(138,43,226,0.12)",
+            border: "1px solid rgba(138,43,226,0.45)",
+            color: "var(--hub-accent)",
+            borderRadius: 8,
+            fontWeight: 700,
+            fontSize: 13,
+            textDecoration: "none",
+          }}
+        >
+          Voir ma carte →
+        </Link>
 
         {!withGsc && (
           <div style={{ marginBottom: 14 }}>

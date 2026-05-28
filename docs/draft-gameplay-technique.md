@@ -2,7 +2,7 @@
 
 > **Statut : DRAFT** — document de travail, à challenger.
 > Projet : *WeBuild — Trading Authority Game*
-> Dernière maj : 2026-05-26 (enrichi)
+> Dernière maj : 2026-05-28 (enrichi)
 > Sources : [readme.txt](../readme.txt) + exploration charte (data→jeu, matériaux, shaders)
 > Voir aussi : [draft-charte-graphique.md](draft-charte-graphique.md)
 
@@ -61,6 +61,7 @@ C'est une **application web**. Le produit n'est pas un achat de liens mais un **
 - **Source des données = capture propre des sites déclarés** (pas seulement une API tierce).
 - **La carte est générée automatiquement** à partir du site (résumé + image + rareté dérivée de l'autorité).
 - **Mécanisme de confiance = preuve par capture** de la page contenant le backlink.
+- **Rescan carte** *(décidé 2026-05-28)* — fiche `/carte/[cardId]` : le membre peut relancer Firecrawl + re-score **1×/semaine** par site (`Site.lastRescanAt`). Les **admins** (`WEBUILD_ADMIN_EMAILS`, serveur) bypassent le quota et peuvent ouvrir n'importe quelle fiche.
 
 ### 2.5 Décision — Axe de conformité **B** : partenariats éditoriaux assistés par IA *(décidé 2026-05-26)*
 

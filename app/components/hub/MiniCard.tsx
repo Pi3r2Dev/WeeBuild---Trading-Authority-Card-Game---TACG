@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import type { CardData, CardState } from "../card/types";
 import { Card } from "../card/Card";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
@@ -76,9 +76,17 @@ export function MiniCardTCG({
   );
 }
 
-/** Les sites possédés en éventail TCG ; la carte sélectionnée se soulève. */
-export function MyHand({ sites, fan = true }: { sites: CardData[]; fan?: boolean }) {
-  const [selectedId, setSelectedId] = useState(sites[0]?.id);
+/** Les sites possédés en éventail TCG ; clic → fiche `/carte/[id]`. */
+export function MyHand({
+  sites,
+  fan = true,
+  rescanBadges = {},
+}: {
+  sites: CardData[];
+  fan?: boolean;
+  /** Libellé cooldown rescan par `cardId` (ex. « Rescan dans 3 j »). */
+  rescanBadges?: Record<string, string>;
+}) {
   const scale = 0.34;
   const cardW = CARD_W * scale;
   const cardH = CARD_H * scale;
@@ -99,21 +107,21 @@ export function MyHand({ sites, fan = true }: { sites: CardData[]; fan?: boolean
         const offset = i - (n - 1) / 2;
         const rot = fan ? offset * 6 : 0;
         const tY = fan ? Math.abs(offset) * 6 : 0;
-        const selected = site.id === selectedId;
+        const rescanBadge = rescanBadges[site.id];
         return (
-          <div
+          <Link
             key={site.id}
-            onClick={() => setSelectedId(site.id)}
+            href={`/carte/${site.id}`}
+            aria-label={`Voir la carte ${site.domain}`}
             style={{
               marginLeft: i === 0 ? 0 : -overlap,
-              transform: `rotateZ(${rot}deg) translateY(${tY}px)${selected ? " translateY(-12px)" : ""}`,
+              transform: `rotateZ(${rot}deg) translateY(${tY}px)`,
               transformOrigin: "center bottom",
               transition: "transform 0.3s cubic-bezier(.2,.7,.2,1)",
               cursor: "pointer",
-              zIndex: selected ? 20 : i,
-              filter: selected
-                ? `drop-shadow(0 14px 22px ${ACCENT_VIOLET}88)`
-                : "drop-shadow(0 8px 16px rgba(0,0,0,0.5))",
+              zIndex: i,
+              filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.5))",
+              textDecoration: "none",
             }}
           >
             <div style={{ width: cardW, height: cardH, position: "relative" }}>
@@ -129,8 +137,32 @@ export function MyHand({ sites, fan = true }: { sites: CardData[]; fan?: boolean
               >
                 <Card data={site} level={site.level} state="dispo" interactive={false} />
               </div>
+              {rescanBadge && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 4,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    padding: "3px 8px",
+                    background: "rgba(15,23,42,0.92)",
+                    border: "1px solid rgba(251,191,36,0.45)",
+                    color: "#fcd34d",
+                    fontFamily: "var(--font-pixel-display)",
+                    fontSize: 6,
+                    letterSpacing: 0.6,
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.45)",
+                    zIndex: 2,
+                  }}
+                >
+                  {rescanBadge}
+                </div>
+              )}
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>
