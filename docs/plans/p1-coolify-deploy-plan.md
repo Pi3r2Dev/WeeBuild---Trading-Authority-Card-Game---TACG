@@ -13,14 +13,14 @@
 - **Prisma 7 build** : `lib/generated/` gitignoré → **`prisma generate` obligatoire au build**. `pg` tiré transitivement par `@prisma/adapter-pg` (non déclaré en direct). `next.config.ts` n'a **pas** `output: standalone` aujourd'hui.
 
 ## Plan
-1. **Pré-requis** : client GCP OAuth dédié ([ADR-002](../decisions/002-client-google-oauth-dedie.md)) ; prune disque (~41 Go) ; secrets prêts (`BETTER_AUTH_SECRET`, mdp `webuild`, `LITELLM_API_KEY`, `GOOGLE_CLIENT_*`) ; choix du domaine prod (ex. `webuild.augmenter.pro`).
+1. **Pré-requis** : client GCP OAuth dédié ([ADR-002](../decisions/002-client-google-oauth-dedie.md)) ; prune disque (~41 Go) ; secrets prêts (`BETTER_AUTH_SECRET`, mdp `webuild`, `LITELLM_API_KEY`, `GOOGLE_CLIENT_*`) ; **domaine prod = `weebuildtacg.augmenter.pro`** (enregistrement DNS A → IP serveur Coolify requis pour le cert Let's Encrypt).
 2. **Service Coolify** : Application, source repo (`main`), **build pack Dockerfile** (recommandé — maîtrise `prisma generate` + standalone). Dockerfile multi-stage : build (`npm ci` → `npx prisma generate` → `next build`) + runtime (standalone + `lib/generated/prisma` + `prisma/` + deps migrate). Port **3000**, healthcheck comme observé (viser `/login`, public).
 3. **Réseau** : activer **Connect to Predefined Network = `coolify`**. Alors `shared_postgres:5432` / `litellm:4000` résolus + Firecrawl `10.10.0.1:3002` joignable. Rien d'autre.
 4. **Env prod (UI Coolify)** :
    - `DATABASE_URL=postgresql://webuild:<PWD>@shared_postgres:5432/webuild_db` *(host/port confirmés)*
    - `FIRECRAWL_API_URL=http://10.10.0.1:3002` *(confirmé joignable)* · `FIRECRAWL_API_KEY=` *(vide)*
    - `LITELLM_BASE_URL=https://litellm.augmenter.pro` (ou `http://litellm:4000`) · `LITELLM_API_KEY=<à fournir>`
-   - `BETTER_AUTH_SECRET=<32+ octets>` · `BETTER_AUTH_URL=https://<domaine>` · `NEXT_PUBLIC_APP_URL=https://<domaine>`
+   - `BETTER_AUTH_SECRET=<32+ octets>` · `BETTER_AUTH_URL=https://weebuildtacg.augmenter.pro` · `NEXT_PUBLIC_APP_URL=https://weebuildtacg.augmenter.pro` (⚠ build-time → cocher « Build Variable » dans Coolify)
    - `GOOGLE_CLIENT_ID/SECRET=<client GCP dédié>` · `NODE_ENV=production`
 5. **Migrations** : `prisma migrate deploy` **uniquement** (jamais `migrate dev` — rôle non-superuser, pas de shadow DB) en **pre-deployment command** (ou start command `migrate deploy && exec node server.js`). Idempotent. Toute future migration **doit éviter** `CREATE EXTENSION`/`CREATE DATABASE`/DDL superuser. **Seed = dev only**, ne pas lancer en prod. Rollback = forward-only + `pg_dump` avant migration risquée.
 6. **Checklist post-déploiement** : conteneur healthy + Traefik https ; migrate appliquée ; DB joignable ; Firecrawl 200 ; LiteLLM /health 401 ; login Google (post-4a) ; capture→`Site/Card/AuthoritySnapshot` en DB.

@@ -45,7 +45,7 @@ Particularité WeBuild : on demande dès l'OAuth le scope **`https://www.googlea
 
 ## Plan d'implémentation
 - [ ] Créer un client OAuth dans la console GCP (type « Web application »).
-- [ ] Redirect URI : `https://<domaine-prod>/api/auth/callback/google` (+ `http://localhost:3000/...` pour le dev).
+- [ ] Redirect URI : `https://weebuildtacg.augmenter.pro/api/auth/callback/google` (+ `http://localhost:3000/api/auth/callback/google` pour le dev). **Domaine prod décidé (2026-05-28) : `weebuildtacg.augmenter.pro`** (requiert un enregistrement DNS A → IP serveur Coolify).
 - [ ] Déclarer le scope `webmasters.readonly` dans l'écran de consentement OAuth.
 - [ ] Renseigner `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` dans `.env.local` et Coolify.
 - [ ] Configurer `socialProviders.google.scope` dans `lib/auth.ts`.

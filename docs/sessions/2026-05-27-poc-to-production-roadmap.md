@@ -114,11 +114,12 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 1. **Élaguer le disque** Coolify avant tout chargement d'embeddings : `ssh coolify "docker image prune -f && docker builder prune -f"` (≈50 Go récupérables). — ⏳ à faire (pas bloquant pour la migration de schéma, requis avant volume d'embeddings).
 2. ✅ **FAIT (2026-05-27)** : `webuild_db` créée sur `shared_postgres-okokkgg8o0sgcssw48so88s0` + `CREATE EXTENSION vector` (pgvector 0.8.2). **Rôle dédié `webuild`** (non-superuser) créé, owner base + schéma `public` (smoke-test `CREATE TABLE …vector(1536)` OK). Connexion : dev via tunnel `ssh -N -L 5433:127.0.0.1:5432 coolify` → `localhost:5433` ; prod via alias `shared_postgres:5432` (réseau `coolify`). Mot de passe `webuild` stocké hors-repo par le user (visible dans les logs de session #poc-to-production-roadmap, à roter si besoin). PgBouncer dispo en `:6432`. → **gate migration Prisma levé côté infra** ; reste à écrire `prisma/schema.prisma` (impl).
 3. **Entrée PgBouncer** pour `webuild_db` (cohérent avec le pooling existant). — ⏳
-4. **Créer le client GCP OAuth dédié** WeBuild : redirect URI `…/api/auth/callback/google` + scope `webmasters.readonly` ; récupérer `GOOGLE_CLIENT_ID/SECRET`. — ⏳
-5. **Committer D1+D3** (P0) avant de démarrer l'impl. — ⏳
+4. ✅ **FAIT (2026-05-28)** : client GCP OAuth dédié créé (dev), `.env.local` configuré. **Domaine prod = `weebuildtacg.augmenter.pro`** → reste à ajouter côté GCP la redirect URI prod `https://weebuildtacg.augmenter.pro/api/auth/callback/google` + l'origine, et un **enregistrement DNS A** `weebuildtacg.augmenter.pro` → IP serveur Coolify.
+5. ✅ **FAIT (2026-05-28)** : tous les lots P1 committés sur `main` (HEAD `e453b42`, arbre propre).
+6. **Déploiement Coolify (user, en cours)** : Build Pack **Dockerfile**, *Connect to Predefined Network* `coolify`, port `3000`, healthcheck `/login`, FQDN `https://weebuildtacg.augmenter.pro`, env du [deploy plan](../plans/p1-coolify-deploy-plan.md) (⚠ `NEXT_PUBLIC_APP_URL` à cocher « Build Variable »). Prune disque avant un gros build.
 
 ## How to resume
 1. Lire ce doc (Status + sous-tâches + findings) + [blueprint P1](../plans/p1-prod-foundation-blueprint.md) (réalité Prisma 7) + [deploy plan](../plans/p1-coolify-deploy-plan.md).
-2. **Pré-requis user** : créer le client GCP OAuth (ADR-002), committer les 4 lots verts, connecter le repo à Coolify + secrets, prune disque.
+2. **Reste user** : connecter le repo à Coolify + déployer (Build Pack Dockerfile, réseau `coolify`, env, FQDN `weebuildtacg.augmenter.pro`), DNS A, redirect URI prod GCP, test login Google. *(GCP client dev créé, commits faits.)*
 3. `/flow resume` → reprend au Step O3. Sous-tâches restantes à déléguer : **4a** (impl auth — câbler sur `lib/db.ts`/Prisma 7 + brancher `requireSession()` sur les `// TODO(4a)` posés en 4b) puis **exécution déploiement** (build image + service Coolify selon le deploy plan).
 4. Tunnel dev DB : `ssh -N -L 5433:127.0.0.1:5432 coolify` (un tunnel a été laissé actif durant la session).
