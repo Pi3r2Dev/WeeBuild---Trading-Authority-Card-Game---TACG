@@ -11,7 +11,12 @@ tags: [roadmap, production, architecture, orchestration]
 # Roadmap POC → production — cadrage phasé (jalons + dépendances)
 
 ## Status
-open — **P1 quasi code-complet** (2026-05-27). Faits : infra DB live, schéma+migration, couche données DB + capture persistée (4b), plan + artefacts de déploiement (Dockerfile/standalone). L'app persiste de bout en bout. **Reste P1** : (a) **4a auth Better Auth** — gaté sur création client GCP OAuth (user) ; (b) **exécution déploiement** — gaté sur repo↔Coolify + secrets + build image (user). **4 lots verts NON committés** (D1+D3, Prisma, 4b, Dockerfile). Phases P2/P3/P4 = design fait (P3) ou à venir, à n'attaquer qu'après P1 déployé+committé.
+open — **P1 CODE-COMPLET** (2026-05-28). Tranche verticale entière en code : Google login (Better Auth + scope GSC) → déclarer/capturer un site → `Site/Card/AuthoritySnapshot` persistés → deck lu depuis la DB ; routes protégées par middleware. `tsc` + `next build` (15 routes) verts ; OAuth vérifié jusqu'à l'écran Google. **Reste P1, gaté sur le user** : (a) **test manuel du login Google réel** (compte test-user GCP) ; (b) **exécution déploiement** (créer le service Coolify + repo↔Coolify + secrets + domaine prod + build image). **5 lots verts NON committés** (D1+D3, Prisma, 4b, Dockerfile, 4a) — commit très en retard. Phases P2/P3/P4 à n'attaquer qu'après P1 déployé+committé+testé.
+
+## Items ouverts pour P2 (notés, non bloquants)
+- **Chiffrement au repos des tokens GSC** (`Account.accessToken`/`refreshToken`) — à trancher avant d'exploiter GSC en P2.
+- **Consent screen GCP en mode "Testing"** : le scope sensible `webmasters.readonly` exigera une **vérification Google** avant ouverture publique (OK en Testing avec test-users d'ici là).
+- Warnings build `jose`/`DecompressionStream` (Edge middleware via `better-auth/cookies`) — non bloquants.
 
 ## Pourquoi ce doc
 Les deux sessions ouvertes ([product-concept-foundations](2026-05-26-product-concept-foundations.md), [voie-a-refactor-couches](2026-05-27-voie-a-refactor-couches.md)) pointent toutes deux sur *« calibrer la métrique d'autorité »*. Mais le code dit la vérité ([lib/authority/score.ts](../../lib/authority/score.ts) l.5-9) : la v1 on-page existe **pour faire tourner la boucle et découvrir ce dont la métrique a besoin**. Calibrer sans vrais sites ni données GSC = chiffres arbitraires. Or toute prod exige de toute façon **auth + persistance + déploiement** (chemin critique incompressible), et c'est exactement ce qui fait couler les données réelles dont la métrique a besoin. Ce doc absorbe la priorité « métrique » des deux sessions et la repositionne dans une séquence honnête.
@@ -76,7 +81,7 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 | R | P1 | **Recon SSH** : état instance PG16 partagée pour trancher Q1 | `general-purpose` (SSH read-only) | **done** | findings ci-dessous |
 | 1 | P0 | Committer D1+D3 (suggestion, exécution user) | user (jamais auto-commit) | pending | — |
 | 2 | P1 | Blueprint archi socle prod (auth+schéma Prisma+persistance+deploy) | `feature-dev:code-architect` | **done** | [p1-prod-foundation-blueprint.md](../plans/p1-prod-foundation-blueprint.md) |
-| 3 | P1 | Impl auth Better Auth + Google (pattern app.augmenter.pro) — étape 4a, après migration | `feature-dev:feature-dev` | pending | — |
+| 3 | P1 | Impl auth Better Auth + Google (étape 4a) + branchement des `// TODO(4a)` | impl `general-purpose` | **done** | [auth-better-auth-4a handoff](2026-05-28-auth-better-auth-4a.md) |
 | 4 | P1 | Schéma Prisma + pgvector + migration (étape 3, gate) | `general-purpose` | **done** | [prisma-schema-init handoff](2026-05-27-prisma-schema-init.md) |
 | 4b | P1 | **Repointage `lib/data` DB + persist capture** | impl `general-purpose` | **done** | [data-layer-db-4b handoff](2026-05-27-data-layer-db-4b.md) · [plan](../plans/p1-4b-data-layer-refactor.md) |
 | ADR | P1 | Formaliser décisions Q1 (Postgres) + Q2 (OAuth) | `/adr` (rédigé par orchestrateur) | **done** | [ADR-001](../decisions/001-postgres-base-dediee-instance-partagee.md), [ADR-002](../decisions/002-client-google-oauth-dedie.md) |
