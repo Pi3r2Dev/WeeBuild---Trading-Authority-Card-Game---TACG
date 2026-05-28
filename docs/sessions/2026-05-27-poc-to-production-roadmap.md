@@ -15,6 +15,7 @@ open — **P1 CODE-COMPLET** (2026-05-28). Tranche verticale entière en code : 
 
 ## Items ouverts pour P2 (notés, non bloquants)
 - **Chiffrement au repos des tokens GSC** (`Account.accessToken`/`refreshToken`) — à trancher avant d'exploiter GSC en P2.
+- **`LITELLM_API_KEY` = master key en prod (2026-05-28)** : fonctionne mais répand le secret global de l'écosystème augmenter.pro → **remplacer par une virtual key dédiée `sk-webuild`** (API LiteLLM `POST /key/generate`). Sécurité, non bloquant.
 - **Consent screen GCP en mode "Testing"** : le scope sensible `webmasters.readonly` exigera une **vérification Google** avant ouverture publique (OK en Testing avec test-users d'ici là).
 - Warnings build `jose`/`DecompressionStream` (Edge middleware via `better-auth/cookies`) — non bloquants.
 
