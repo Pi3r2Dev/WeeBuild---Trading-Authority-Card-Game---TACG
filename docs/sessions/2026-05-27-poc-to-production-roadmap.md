@@ -126,11 +126,12 @@ P1 est le **gate** de tout (P2/P3/P4 en dépendent). P2 et P3 sont parallélisab
 4. ✅ **FAIT (2026-05-28)** : client GCP OAuth dédié créé (dev), `.env.local` configuré. **Domaine prod = `weebuildtacg.augmenter.pro`** → reste à ajouter côté GCP la redirect URI prod `https://weebuildtacg.augmenter.pro/api/auth/callback/google` + l'origine, et un **enregistrement DNS A** `weebuildtacg.augmenter.pro` → IP serveur Coolify.
 5. ✅ **FAIT (2026-05-28)** : tous les lots P1 committés sur `main` (HEAD `e453b42`, arbre propre).
 6. ✅ **FAIT (2026-05-28)** : déployé sur Coolify (Dockerfile, réseau `coolify`, port 3000), live sur `https://weebuildtacg.augmenter.pro` (TLS OK, healthy, deps vérifiées). Env Coolify toutes **runtime-only** (le build utilise des placeholders ; `NEXT_PUBLIC_APP_URL` via build-arg).
-7. **Redirect URI prod GCP** : ajouter `https://weebuildtacg.augmenter.pro/api/auth/callback/google` + origine `https://weebuildtacg.augmenter.pro` dans le client OAuth → débloque le login Google en prod. — ⏳
-8. **Test login Google prod** (compte test-user GCP) → vérifier session + `Account.scope` GSC + redirect deck. — ⏳
+7. ✅ **FAIT (2026-05-28)** : redirect URI prod GCP ajoutée + **login Google prod testé OK** (1 vrai user, scope GSC + refresh token captés).
 
-## How to resume
-1. Lire ce doc (Status + sous-tâches + findings) + [blueprint P1](../plans/p1-prod-foundation-blueprint.md) (réalité Prisma 7) + [deploy plan](../plans/p1-coolify-deploy-plan.md).
-2. **Reste user** : connecter le repo à Coolify + déployer (Build Pack Dockerfile, réseau `coolify`, env, FQDN `weebuildtacg.augmenter.pro`), DNS A, redirect URI prod GCP, test login Google. *(GCP client dev créé, commits faits.)*
-3. `/flow resume` → reprend au Step O3. Sous-tâches restantes à déléguer : **4a** (impl auth — câbler sur `lib/db.ts`/Prisma 7 + brancher `requireSession()` sur les `// TODO(4a)` posés en 4b) puis **exécution déploiement** (build image + service Coolify selon le deploy plan).
-4. Tunnel dev DB : `ssh -N -L 5433:127.0.0.1:5432 coolify` (un tunnel a été laissé actif durant la session).
+## How to resume (P1 terminé — prochaine phase P2 ou P3)
+1. Lire ce doc (Status = **P1 terminé & vérifié en prod**). P1 est live sur `https://weebuildtacg.augmenter.pro` ; déploiement auto au push sur `main` (Coolify). Dev DB via tunnel `ssh -N -L 5433:127.0.0.1:5432 coolify` → `localhost:5433`.
+2. `/flow resume` → choisir la phase, décomposer au Step O2/O3 :
+   - **P2** — GSC first-party (refresh token déjà capté) + calibrage `WEIGHTS`/`BANDS`. Lire [draft-metrique-autorite.md](../draft-metrique-autorite.md) + [draft-vision-geo.md](../draft-vision-geo.md). ⚠ Le calibrage gagne à avoir d'abord plusieurs **vrais sites capturés** (sinon données trop maigres).
+   - **P3** — boucle de jeu (matching pgvector + crédits/donateur + suggestions). Design prêt → [p3-game-loop-data-model.md](../plans/p3-game-loop-data-model.md) ; migration additive (schéma P1 a déjà anticipé `Site.element`/`thematique`).
+3. **Avant ouverture publique** (cf. *Items ouverts P2*) : nettoyer le seed dev de `webuild_db` (dev/prod partagés) ; remplacer la master key LiteLLM par une virtual key `sk-webuild` ; chiffrer les tokens GSC au repos ; passer le consent screen GCP de Testing → Production (vérif Google du scope sensible).
+4. ⚠ Tables Postgres en **snake_case** (`user/account/session/site/card/authority_snapshot/verification`) — quoter `"user"` (mot réservé) en SQL brut.
