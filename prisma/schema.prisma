@@ -46,6 +46,13 @@ model User {
   sites    Site[]
   cards    Card[]
 
+  // ── Boucle de jeu P3 (relations inverses ; additif, n'altère pas le SQL `user`) ──
+  creditLedgerEntries CreditLedgerEntry[]
+  donatedLinks        EditorialLink[]    @relation("LinkDonor")
+  receivedLinks       EditorialLink[]    @relation("LinkBeneficiary")
+  promotions          Promotion[]
+  matchingSessions    MatchingSession[]
+
   @@map("user")
 }
 
@@ -144,6 +151,16 @@ model Site {
   card      Card?
   snapshots AuthoritySnapshot[]
 
+  // ── P2 : historique GSC first-party (insert-only) ──
+  gscSnapshots GscSnapshot[]
+
+  // ── P3 : liens éditoriaux où ce site est donneur / bénéficiaire ──
+  linksDonated  EditorialLink[]      @relation("DonorSite")
+  linksReceived EditorialLink[]      @relation("BeneficiarySite")
+  suggestionsFrom EditorialSuggestion[] @relation("SuggestionSource")
+  suggestionsTo   EditorialSuggestion[] @relation("SuggestionTarget")
+  clusterAmortizations DonorClusterAmortization[]
+
   @@unique([userId, domain])
   @@index([userId])
   @@index([element])
@@ -217,4 +234,377 @@ model AuthoritySnapshot {
 
   @@index([siteId, createdAt(sort: Desc)])
   @@map("authority_snapshot")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// P2 — Google Search Console first-party (SEO Tier 2)
+// ────────────────────────────────────────────────────────────────────────────
+
+/// Source d'un snapshot GSC : `OAUTH` (API webmasters.readonly, infalsifiable,
+/// preuve de propriété) vs `SCREENSHOT` (fallback gemma4-vision, forgeable →
+/// poids plafonné / anti-fraude). cf. docs/draft-metrique-autorite.md §2.
+enum GscSource {
+  OAUTH
+  SCREENSHOT
+}
+
+/// Historique insert-only des données Search Console d'un site (jamais
+/// d'UPDATE/DELETE), miroir d'AuthoritySnapshot. Alimente le sous-score S_seo
+/// Tier 2 (impressions/position réelles, fort poids si OAUTH). La période GSC
+/// est fenêtrée (startDate→endDate) ; les agrégats sont des moyennes/sommes sur
+/// la fenêtre ; `rawJson` conserve le payload brut (rows GSC / lecture vision)
+/// pour recalcul sans re-fetch. cf. docs/draft-metrique-autorite.md §2 (Tier 2).
+model GscSnapshot {
+  id     String @id @default(uuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  source GscSource @default(OAUTH)
+
+  // Fenêtre temporelle couverte par les données GSC (date-only côté GSC).
+  startDate DateTime
+  endDate   DateTime
+
+  // Agrégats sur la fenêtre (clics/impressions = sommes ; ctr/position =
+  // moyennes pondérées). `indexedPages` = nb de pages indexées (Coverage),
+  // nullable car non fourni par l'API Search Analytics seule.
+  clicks       Int
+  impressions  Int
+  ctr          Float
+  position     Float
+  queryCount   Int?
+  indexedPages Int?
+
+  // Payload brut (rows Search Analytics API ou extraction vision du screenshot)
+  // → recalcul du score sans re-fetch, et audit anti-fraude du fallback.
+  rawJson Json
+
+  fetchedAt DateTime @default(now())
+
+  @@index([siteId, fetchedAt(sort: Desc)])
+  @@map("gsc_snapshot")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// P3 — Boucle de jeu (liens éditoriaux, crédits, promotions, matching,
+// anti-footprint). 100 % additif : nouvelles tables + FK vers user/site/card.
+// Modèles repris de docs/plans/p3-game-loop-data-model.md §2.
+// Principe : flux UNIDIRECTIONNEL non-réciproque — aucune FK Promotion→Link,
+// aucun couplage donneur↔bénéficiaire (lien = propriété émergente du graphe).
+// Solde crédits = SUM(amount) du ledger, jamais dénormalisé.
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Nature du lien obtenu. `MENTION` (sans href) est valorisée pour le GEO
+/// (citation > link juice). cf. doctrine éditoriale + draft-vision-geo.
+enum LinkNature {
+  DOFOLLOW
+  NOFOLLOW
+  SPONSORED
+  UGC
+  MENTION
+}
+
+/// Cycle de vie d'un lien éditorial. Frappe des crédits À LA VÉRIFICATION SEULE
+/// (VERIFIED) ; BROKEN/REJECTED déclenchent un clawback (transaction inverse).
+enum LinkStatus {
+  PROPOSED
+  HUMAN_VALIDATED
+  PUBLISHED
+  PROOF_PENDING
+  VERIFIED
+  BROKEN
+  REJECTED
+}
+
+/// Type d'ancre — quota de diversité anti-footprint (pas que de l'exact-match).
+enum AnchorType {
+  EXACT
+  PARTIAL
+  BRANDED
+  NAKED_URL
+  GENERIC
+  IMAGE
+}
+
+/// Raison d'un mouvement de crédits dans le ledger (registre de mouvements).
+enum CreditTxReason {
+  LINK_VERIFIED
+  LINK_CLAWBACK
+  PROMOTION_SPEND
+  PROMOTION_REFUND
+  BONUS
+  ADJUSTMENT
+}
+
+/// Cycle de vie d'une promotion (visibilité achetée dans le matching).
+enum PromotionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+/// Cycle de vie d'une suggestion IA (édition humaine obligatoire avant lien).
+enum SuggestionStatus {
+  GENERATED
+  HUMAN_EDITED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+/// État de la preuve de publication d'un lien (capture Firecrawl).
+enum ProofStatus {
+  PENDING
+  CONFIRMED
+  NOT_FOUND
+  ERROR
+}
+
+/// Registre de mouvements de crédits (ledger). SOURCE UNIQUE du solde :
+/// `Me.credits = SUM(amount)`. `amount` signé (+ frappe / − dépense ou clawback).
+/// FK nullables vers le lien/promotion à l'origine du mouvement (traçabilité).
+model CreditLedgerEntry {
+  id     String         @id @default(uuid())
+  userId String
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount Int
+  reason CreditTxReason
+
+  editorialLinkId String?
+  editorialLink   EditorialLink? @relation(fields: [editorialLinkId], references: [id])
+  promotionId     String?
+  promotion       Promotion?     @relation(fields: [promotionId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([editorialLinkId])
+  @@index([promotionId])
+  @@map("credit_ledger_entry")
+}
+
+/// Un lien éditorial donné. DONNEUR (donorSite/donorUser) ≠ BÉNÉFICIAIRE
+/// (beneficiarySite/beneficiaryUser) : décorrélation stricte (pas de réciprocité
+/// modélisée). Scoring figé au calcul (relevance/quality/amortization →
+/// creditsComputed). Cycle de vie horodaté. `suggestionId` nullable (don
+/// spontané possible). Index anti-cycle [donorSiteId, beneficiarySiteId].
+model EditorialLink {
+  id String @id @default(uuid())
+
+  // Donneur (gagne des crédits à la vérification).
+  donorSiteId String
+  donorSite   Site   @relation("DonorSite", fields: [donorSiteId], references: [id], onDelete: Cascade)
+  donorUserId String
+  donorUser   User   @relation("LinkDonor", fields: [donorUserId], references: [id], onDelete: Cascade)
+
+  // Bénéficiaire (reçoit le lien). Aucun couplage de transaction avec le donneur.
+  beneficiarySiteId String
+  beneficiarySite   Site   @relation("BeneficiarySite", fields: [beneficiarySiteId], references: [id], onDelete: Cascade)
+  beneficiaryUserId String
+  beneficiaryUser   User   @relation("LinkBeneficiary", fields: [beneficiaryUserId], references: [id], onDelete: Cascade)
+
+  // Contenu du lien.
+  targetUrl   String
+  anchorText  String
+  anchorType  AnchorType
+  nature      LinkNature @default(DOFOLLOW)
+  context     String?    @db.Text
+  publishedUrl String?
+
+  // Scoring figé au moment du calcul de crédits.
+  relevanceScore    Float?
+  qualityScore      Float?
+  amortizationFactor Float?
+  creditsComputed   Int?
+
+  status LinkStatus @default(PROPOSED)
+
+  // Provenance IA (nullable : don spontané hors suggestion).
+  suggestionId String?              @unique
+  suggestion   EditorialSuggestion? @relation(fields: [suggestionId], references: [id])
+
+  // Cycle de vie horodaté.
+  proposedAt  DateTime  @default(now())
+  validatedAt DateTime?
+  publishedAt DateTime?
+  verifiedAt  DateTime?
+  brokenAt    DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  proof         LinkProof?
+  ledgerEntries CreditLedgerEntry[]
+
+  @@index([donorSiteId, beneficiarySiteId])
+  @@index([donorUserId])
+  @@index([beneficiaryUserId])
+  @@index([status])
+  @@map("editorial_link")
+}
+
+/// Preuve de publication d'un lien (1-1). Capture Firecrawl de la page publiée :
+/// lien/mention détecté, attribut rel réel, position dans la page ; re-captures
+/// (lastCheckedAt/checkCount) pour le job de clawback P4.
+model LinkProof {
+  id              String        @id @default(uuid())
+  editorialLinkId String        @unique
+  editorialLink   EditorialLink @relation(fields: [editorialLinkId], references: [id], onDelete: Cascade)
+
+  status          ProofStatus @default(PENDING)
+  linkDetected    Boolean     @default(false)
+  mentionDetected Boolean     @default(false)
+  rel             String?
+  positionInPage  Int?
+
+  // Payload brut de la capture (markdown/HTML Firecrawl) pour audit.
+  captureJson Json?
+
+  lastCheckedAt DateTime @default(now())
+  checkCount    Int      @default(1)
+  createdAt     DateTime @default(now())
+
+  @@map("link_proof")
+}
+
+/// Dépense de crédits pour de la VISIBILITÉ dans le matching (ciblage par
+/// niveau/élément/durée). AUCUNE FK vers un EditorialLink : la promotion achète
+/// une visibilité, pas un lien (décorrélation stricte du flux unidirectionnel).
+model Promotion {
+  id     String          @id @default(uuid())
+  userId String
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteId String?
+  status PromotionStatus @default(ACTIVE)
+
+  // Ciblage de l'audience promue.
+  targetLevel      Int?
+  targetElement    String?
+  targetThematique String?
+
+  creditsSpent Int
+
+  startsAt  DateTime  @default(now())
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ledgerEntries CreditLedgerEntry[]
+
+  @@index([userId])
+  @@index([status, expiresAt])
+  @@index([targetElement])
+  @@map("promotion")
+}
+
+/// Une session de matching IA (trace) : un membre cherche des partenaires.
+/// Regroupe les EditorialSuggestion produites (pgvector 3× + rerank + filtres).
+model MatchingSession {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Paramètres / trace de la requête (filtres appliqués, modèle, etc.).
+  paramsJson Json?
+
+  createdAt DateTime @default(now())
+
+  suggestions EditorialSuggestion[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("matching_session")
+}
+
+/// Une suggestion IA (source → cible) : sujet d'article + ancre proposés.
+/// `embedding` (vector 1536d) pour la dédup sémantique anti-footprint.
+/// `naturalScore` = score de naturalité ; `humanEdited*` = version validée
+/// (édition humaine OBLIGATOIRE avant de créer un EditorialLink).
+model EditorialSuggestion {
+  id                String          @id @default(uuid())
+  matchingSessionId String
+  matchingSession   MatchingSession @relation(fields: [matchingSessionId], references: [id], onDelete: Cascade)
+
+  sourceSiteId String
+  sourceSite   Site   @relation("SuggestionSource", fields: [sourceSiteId], references: [id], onDelete: Cascade)
+  targetSiteId String
+  targetSite   Site   @relation("SuggestionTarget", fields: [targetSiteId], references: [id], onDelete: Cascade)
+
+  // Contenu généré.
+  articleTopic       String  @db.Text
+  proposedAnchor     String
+  proposedAnchorType AnchorType?
+  rationale          String? @db.Text
+
+  // Dédup sémantique anti-footprint (1536d, gte-qwen2-local). Unsupported.
+  embedding Unsupported("vector(1536)")?
+
+  // Scores de garde-fous.
+  relevanceScore Float?
+  naturalScore   Float?
+
+  status SuggestionStatus @default(GENERATED)
+
+  // Version éditée par l'humain (traçabilité IA vs humain).
+  humanEditedTopic  String? @db.Text
+  humanEditedAnchor String?
+  editedAt          DateTime?
+
+  createdAt DateTime @default(now())
+
+  link EditorialLink?
+
+  @@index([matchingSessionId])
+  @@index([sourceSiteId])
+  @@index([targetSiteId])
+  @@index([status])
+  @@map("editorial_suggestion")
+}
+
+/// Snapshot anti-footprint à l'échelle plateforme (ou cluster) : diversité des
+/// ancres/angles, densité du graphe de liens, vélocité de création → score de
+/// naturalité agrégé. Insert-only (série temporelle d'observabilité).
+model NaturalnessSnapshot {
+  id String @id @default(uuid())
+
+  // Portée du snapshot : NULL = plateforme entière, sinon une clé de cluster
+  // (élément / thématique). Pas de FK : portée logique, pas une entité.
+  scopeKey String?
+
+  anchorDiversity Float?
+  angleDiversity  Float?
+  graphDensity    Float?
+  velocity        Float?
+  naturalnessScore Float?
+
+  // Détail des métriques calculées (histogrammes ancres/angles, etc.).
+  metricsJson Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([scopeKey, createdAt(sort: Desc)])
+  @@map("naturalness_snapshot")
+}
+
+/// Amortissement par cluster de donneur en fenêtre glissante : 2ᵉ filet
+/// orthogonal à l'anti-cycle (réduit les crédits frappés si un site/cluster
+/// donne trop de liens dans une fenêtre → décroissance économique).
+/// `clusterKey` = granularité à calibrer (siteId / élément / cluster pgvector,
+/// Q-P3-1). Insert-only ; le facteur courant = dernière entrée de la fenêtre.
+model DonorClusterAmortization {
+  id String @id @default(uuid())
+
+  donorSiteId String
+  donorSite   Site   @relation(fields: [donorSiteId], references: [id], onDelete: Cascade)
+  clusterKey  String
+
+  windowStart DateTime
+  windowEnd   DateTime
+  linkCount   Int     @default(0)
+  amortizationFactor Float
+
+  createdAt DateTime @default(now())
+
+  @@index([donorSiteId, createdAt(sort: Desc)])
+  @@index([clusterKey])
+  @@map("donor_cluster_amortization")
 }
