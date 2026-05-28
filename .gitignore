@@ -46,3 +46,6 @@ next-env.d.ts
 
 # prisma — client généré (régénéré via `prisma generate`)
 /lib/generated/
+
+# Claude Code — worktrees d'agents (transitoires, jamais versionnés)
+.claude/worktrees/
