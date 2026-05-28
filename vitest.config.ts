@@ -8,7 +8,11 @@ export default defineConfig({
     environment: "node",
     include: ["lib/**/*.test.ts"],
     // Valeur par défaut pour les tests ; surchargée par test au besoin.
-    env: { FIRECRAWL_API_URL: "http://firecrawl.test" },
+    env: {
+      FIRECRAWL_API_URL: "http://firecrawl.test",
+      // Placeholder : certains modules (ex. gsc.ts) importent lib/db au chargement.
+      DATABASE_URL: "postgresql://test:test@127.0.0.1:5432/test?schema=public",
+    },
   },
   resolve: {
     alias: { "@": fileURLToPath(new URL(".", import.meta.url)) },

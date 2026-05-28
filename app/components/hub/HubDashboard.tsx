@@ -20,13 +20,13 @@ import { icons } from "./icons";
  */
 export async function HubDashboard() {
   const userId = (await requireSession()).user.id;
-  const [ME, MY_SITES, NAV_DECK] = await Promise.all([
+  const [ME, MY_SITES, NAV_DECK, AI_SUGGESTIONS, RECENT_ACTIVITY] = await Promise.all([
     getMe(userId),
     getMyDeck(userId),
     getNavDeck(),
+    GAME_LOOP_ENABLED ? getSuggestions(userId) : Promise.resolve([]),
+    GAME_LOOP_ENABLED ? getRecentActivity(userId) : Promise.resolve([]),
   ]);
-  const AI_SUGGESTIONS = GAME_LOOP_ENABLED ? getSuggestions() : []; // P3 — fixtures
-  const RECENT_ACTIVITY = GAME_LOOP_ENABLED ? getRecentActivity() : []; // P3 — fixtures
   const firstName = ME.name.split(" ")[0];
   const hasCards = MY_SITES.length > 0;
 
@@ -38,7 +38,9 @@ export async function HubDashboard() {
           title={`Salut, ${firstName}`}
           subtitle={
             GAME_LOOP_ENABLED
-              ? "3 suggestions de l'IA aujourd'hui"
+              ? AI_SUGGESTIONS.length > 0
+                ? `${AI_SUGGESTIONS.length} suggestion${AI_SUGGESTIONS.length > 1 ? "s" : ""} de l'IA`
+                : "Lancez un matching pour des suggestions éditoriales"
               : hasCards
                 ? "Votre collection de cartes d'autorité"
                 : "Déclarez votre premier site pour commencer"
@@ -118,17 +120,31 @@ export async function HubDashboard() {
         {GAME_LOOP_ENABLED && (
           <>
             <SectionLabel>SUGGESTIONS DE L&apos;IA</SectionLabel>
-            {AI_SUGGESTIONS.map((s) => {
-              const domain = s.target.split(" →")[0].trim();
-              const mySite = MY_SITES.find((c) => c.domain === domain);
-              const targetCard = s.kind === "donate" ? NAV_DECK.find((c) => s.target.includes(c.domain)) : undefined;
-              return <AISuggestionTCG key={s.id} s={s} mySite={mySite} targetCard={targetCard} />;
-            })}
+            {AI_SUGGESTIONS.length === 0 ? (
+              <p style={{ fontSize: 12, color: "var(--hub-fg-soft)", lineHeight: 1.45, margin: "4px 0 0" }}>
+                Aucune suggestion pour l&apos;instant. Capturez un site puis lancez le matching depuis{" "}
+                <Link href="/capturer" style={{ color: ACCENT_VIOLET, fontWeight: 700, textDecoration: "none" }}>
+                  Capturer
+                </Link>{" "}
+                ou le flux{" "}
+                <Link href="/donner" style={{ color: ACCENT_VIOLET, fontWeight: 700, textDecoration: "none" }}>
+                  Donner
+                </Link>
+                .
+              </p>
+            ) : (
+              AI_SUGGESTIONS.map((s) => {
+                const domain = s.target.split(" →")[0].trim();
+                const mySite = MY_SITES.find((c) => c.domain === domain);
+                const targetDomain = s.target.split("→")[1]?.trim();
+                const targetCard = targetDomain ? NAV_DECK.find((c) => c.domain === targetDomain) : undefined;
+                return <AISuggestionTCG key={s.id} s={s} mySite={mySite} targetCard={targetCard} />;
+              })
+            )}
           </>
         )}
 
-        {/* Activité — flux crédits (P3) → masqué tant que GAME_LOOP off. */}
-        {GAME_LOOP_ENABLED && (
+        {GAME_LOOP_ENABLED && RECENT_ACTIVITY.length > 0 && (
           <>
             <SectionLabel>ACTIVITÉ RÉCENTE</SectionLabel>
             {RECENT_ACTIVITY.map((a, i) => (

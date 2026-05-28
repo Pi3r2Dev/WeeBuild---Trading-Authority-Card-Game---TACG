@@ -78,6 +78,14 @@ AS = w_seo · S_seo  +  w_geo · S_geo
 
 ## 7. Implémentation (infra existante)
 
+### POC P2 branché (2026-05-28) *(cf. [sessions/2026-05-28-p2-gsc-integration.md](sessions/2026-05-28-p2-gsc-integration.md))*
+
+- **Score v1** (`metricVersion: v1-onpage`) : heuristiques Firecrawl — inchangé, utilisé sans snapshot GSC.
+- **Score v2** (`metricVersion: v2-gsc`) : blend v1 + signaux GSC normalisés (`lib/authority/score-v2.ts`) — **poids non calibrés** 🚧.
+- **Flux `/capturer`** : première capture → v1 ; si `GscSnapshot` déjà lié au domaine → v2 direct ; bouton **« Enrichir avec Google Search Console »** → `captureGscAction` + re-score v2.
+- **Persistance** : `GscSnapshot` + `AuthoritySnapshot` ; carte mise à jour via `apply-authority`.
+- **Tests unitaires** : agrégation GSC (`gsc.test.ts`), blend v2 (`score-v2.test.ts`).
+
 - **Google OAuth** + scope `webmasters.readonly` (Better Auth) → pull GSC API.
 - **gemma4-vision** → lecture des screenshots GSC (fallback).
 - **Perplexity Sonar API** (nouveau secret) appelée depuis un **worker Celery**, échantillonnée, mise en cache.

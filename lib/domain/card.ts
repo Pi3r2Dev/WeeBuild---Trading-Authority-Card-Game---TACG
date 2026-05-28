@@ -27,6 +27,8 @@ export const STATE_LABEL: Record<CardState, string> = {
 
 export interface CardData {
   id: string;
+  /** Site source (clé matching P3). Distinct de `id` (carte). */
+  siteId: string;
   level: Level;
   domain: string;
   url: string;

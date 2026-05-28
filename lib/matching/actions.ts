@@ -5,15 +5,13 @@
  * `MatchingSession` + `EditorialSuggestion`. Protégée par `requireSession()`
  * (le site doit appartenir au user connecté).
  *
- * Pas d'UI ici : c'est le point d'entrée serveur que l'UI matching (autre
- * sous-tâche, masquée tant que GAME_LOOP_ENABLED=false) appellera. La génération
- * du texte éditorial reste à venir (les suggestions naissent en placeholder).
+ * Pas d'UI ici : point d'entrée serveur pour l'UI matching (Donner, post-capture).
+ * `generate: true` enchaîne la génération éditoriale FR (gracieuse si LLM down).
  */
 
 import { requireSession } from "@/lib/auth-session";
 import { db } from "@/lib/db";
-import { runMatching } from "./run";
-import type { FindPartnersOptions } from "./match";
+import { runMatching, type RunMatchingOptions } from "./run";
 
 export interface TriggerMatchingSuccess {
   ok: true;
@@ -32,7 +30,7 @@ export type TriggerMatchingResult = TriggerMatchingSuccess | TriggerMatchingFail
  */
 export async function triggerMatching(
   siteId: string,
-  opts: FindPartnersOptions = {},
+  opts: RunMatchingOptions = {},
 ): Promise<TriggerMatchingResult> {
   try {
     const userId = (await requireSession()).user.id;

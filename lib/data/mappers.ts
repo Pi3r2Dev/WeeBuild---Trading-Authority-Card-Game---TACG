@@ -1,5 +1,7 @@
 import type { CardData, NavCard, ElementKind, LinkType, CardState } from "@/lib/domain";
 import type { Level } from "@/lib/levels";
+import type { Partner, Suggestion, Topic } from "@/lib/domain";
+import { estimateLinkCredits } from "@/lib/credits/estimate";
 
 /**
  * Mappers PURS rangée Prisma → type domaine consommé par l'UI (D3).
@@ -17,6 +19,7 @@ import type { Level } from "@/lib/levels";
 /** Forme minimale d'une rangée `Card` jointe à son `Site` (pour `domain`/`url`). */
 export interface DbCardWithSite {
   id: string;
+  siteId: string;
   level: number;
   hp: number;
   atk: number;
@@ -45,6 +48,7 @@ function displayUrl(url: string): string {
 export function dbCardToCardData(card: DbCardWithSite): CardData {
   return {
     id: card.id,
+    siteId: card.siteId,
     level: card.level as Level,
     domain: card.site.domain,
     url: displayUrl(card.site.url),
@@ -79,10 +83,86 @@ export function dbCardToNavCard(card: DbCardWithSite): NavCard {
   };
 }
 
-/** `element` jeu → libellé de biome écosystème (cf. fixtures NAV_DECK). */
 const BIOME_BY_ELEMENT: Record<string, string> = {
   tech: "tech",
   media: "presse",
   finance: "finance",
   sante: "cuisine",
 };
+
+/** Marqueur placeholder posé par run.ts avant génération éditoriale. */
+const PLACEHOLDER_PREFIX = "[À GÉNÉRER]";
+
+/** Rangée Prisma `EditorialSuggestion` + sites/carte cible (lecture matching UI). */
+export interface DbEditorialSuggestionRow {
+  id: string;
+  articleTopic: string;
+  proposedAnchor: string;
+  rationale: string | null;
+  relevanceScore: number | null;
+  naturalScore: number | null;
+  sourceSite: { domain: string };
+  targetSite: {
+    domain: string;
+    card: DbCardWithSite | null;
+  };
+}
+
+function creditsForSuggestion(row: DbEditorialSuggestionRow): number {
+  const level = row.targetSite.card?.level ?? 1;
+  return estimateLinkCredits(row.relevanceScore ?? 0, level, row.naturalScore);
+}
+
+/** Titre affichable depuis un `articleTopic` (placeholder ou angle généré). */
+function topicTitle(articleTopic: string): string {
+  if (articleTopic.startsWith(PLACEHOLDER_PREFIX)) {
+    return "Sujet en cours de génération…";
+  }
+  const firstLine = articleTopic.split("\n")[0]?.trim() ?? articleTopic;
+  return firstLine.length > 120 ? `${firstLine.slice(0, 117)}…` : firstLine;
+}
+
+/**
+ * `EditorialSuggestion` → `Partner` (flux Donner, étape 2). Pur.
+ * Retourne `null` si la cible n'a pas de carte (donnée incohérente).
+ */
+export function editorialSuggestionToPartner(row: DbEditorialSuggestionRow): Partner | null {
+  const cardRow = row.targetSite.card;
+  if (!cardRow) return null;
+  return {
+    id: row.id,
+    card: dbCardToNavCard(cardRow),
+    relevance: row.relevanceScore ?? 0,
+    credits: creditsForSuggestion(row),
+    reason: row.rationale ?? `Pertinence éditoriale ${row.sourceSite.domain} → ${row.targetSite.domain}.`,
+  };
+}
+
+/**
+ * `EditorialSuggestion` → `Topic` (flux Donner, étape 3). Pur.
+ */
+export function editorialSuggestionToTopic(row: DbEditorialSuggestionRow): Topic {
+  return {
+    id: row.id,
+    title: topicTitle(row.articleTopic),
+    angle: row.rationale ?? row.proposedAnchor,
+    fit: row.relevanceScore ?? 0,
+    credits: creditsForSuggestion(row),
+  };
+}
+
+/**
+ * `EditorialSuggestion` → `Suggestion` (tuile Hub). Pur.
+ */
+export function editorialSuggestionToSuggestion(row: DbEditorialSuggestionRow): Suggestion {
+  const owner = row.targetSite.card?.user?.name ?? row.targetSite.domain;
+  return {
+    id: row.id,
+    kind: "donate",
+    title: `${owner} — partenaire suggéré`,
+    target: `${row.sourceSite.domain} → ${row.targetSite.domain}`,
+    relevance: row.relevanceScore ?? 0,
+    credits: creditsForSuggestion(row),
+    note: row.rationale ?? topicTitle(row.articleTopic),
+  };
+}

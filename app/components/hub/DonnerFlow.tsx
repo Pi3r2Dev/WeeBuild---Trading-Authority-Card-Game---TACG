@@ -9,11 +9,23 @@ import { MiniCardTCG, PlayLink } from "./MiniCard";
 import { icons } from "./icons";
 import { GAME_LOOP_ENABLED } from "../app/flags";
 import { ComingSoon } from "./ComingSoon";
+import { MatchingTrigger } from "./MatchingTrigger";
 
 const TOTAL = 4;
 
 /** Flux « Donner » — composant CLIENT (stepper), données en props. */
-export function DonnerFlow({ mySites, partners, topics }: { mySites: CardData[]; partners: Partner[]; topics: Topic[] }) {
+export function DonnerFlow({
+  mySites,
+  partners,
+  topics,
+  sourceSiteId,
+}: {
+  mySites: CardData[];
+  partners: Partner[];
+  topics: Topic[];
+  /** Site source pour le matching (1re carte par défaut). */
+  sourceSiteId?: string;
+}) {
   const MY_SITES = mySites;
   const PARTNERS_SUGGESTED = partners;
   const AI_TOPICS = topics;
@@ -40,21 +52,46 @@ export function DonnerFlow({ mySites, partners, topics }: { mySites: CardData[];
   const next = () => setStep((s) => (s >= TOTAL ? 1 : s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
 
+  const activeSiteId = sourceSiteId ?? MY_SITES[0]?.siteId;
+  const hasPartners = PARTNERS_SUGGESTED.length > 0;
+
   return (
     <>
       <StatusBar />
       <Body>
         <StepHeader step={step} title={STEP_META[step].title} subtitle={STEP_META[step].subtitle} onBack={step > 1 ? prev : undefined} />
+        {!hasPartners && step === 1 && activeSiteId && (
+          <div
+            style={{
+              marginTop: 8,
+              marginBottom: 12,
+              padding: 14,
+              background: "rgba(138,43,226,0.08)",
+              border: "1px dashed rgba(138,43,226,0.45)",
+              borderRadius: 10,
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--hub-fg)", marginBottom: 6 }}>
+              Aucun partenaire suggéré
+            </div>
+            <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--hub-fg-soft)", lineHeight: 1.45 }}>
+              Lancez le matching IA sur une carte de votre main pour découvrir des sites éditorialement pertinents.
+            </p>
+            <MatchingTrigger siteId={activeSiteId} fullWidth redirectToDonner />
+          </div>
+        )}
         {step === 1 && <Step1 MY_SITES={MY_SITES} />}
-        {step === 2 && <Step2 MY_SITES={MY_SITES} PARTNERS_SUGGESTED={PARTNERS_SUGGESTED} />}
-        {step === 3 && <Step3 MY_SITES={MY_SITES} PARTNERS_SUGGESTED={PARTNERS_SUGGESTED} AI_TOPICS={AI_TOPICS} />}
-        {step === 4 && <Step4 MY_SITES={MY_SITES} />}
-        <StepCTA
-          primary={STEP_META[step].cta}
-          onClick={next}
-          accent={step === 4 ? ACCENT_GREEN : ACCENT_VIOLET}
-          primaryColor={step === 4 ? "#0f172a" : "#fff"}
-        />
+        {step === 2 && hasPartners && <Step2 MY_SITES={MY_SITES} PARTNERS_SUGGESTED={PARTNERS_SUGGESTED} />}
+        {step === 3 && hasPartners && <Step3 MY_SITES={MY_SITES} PARTNERS_SUGGESTED={PARTNERS_SUGGESTED} AI_TOPICS={AI_TOPICS} />}
+        {step === 4 && hasPartners && <Step4 MY_SITES={MY_SITES} PARTNERS_SUGGESTED={PARTNERS_SUGGESTED} AI_TOPICS={AI_TOPICS} />}
+        {hasPartners && (
+          <StepCTA
+            primary={STEP_META[step].cta}
+            onClick={next}
+            accent={step === 4 ? ACCENT_GREEN : ACCENT_VIOLET}
+            primaryColor={step === 4 ? "#0f172a" : "#fff"}
+          />
+        )}
       </Body>
       <BottomNav />
     </>
@@ -252,8 +289,17 @@ function Step3({ MY_SITES, PARTNERS_SUGGESTED, AI_TOPICS }: { MY_SITES: CardData
 }
 
 // ── Étape 4 — jouer la carte + capture ──
-function Step4({ MY_SITES }: { MY_SITES: CardData[] }) {
+function Step4({
+  MY_SITES,
+  PARTNERS_SUGGESTED,
+  AI_TOPICS,
+}: {
+  MY_SITES: CardData[];
+  PARTNERS_SUGGESTED: Partner[];
+  AI_TOPICS: Topic[];
+}) {
   const myCard = MY_SITES[0];
+  const credits = PARTNERS_SUGGESTED[0]?.credits ?? AI_TOPICS[0]?.credits ?? 0;
   return (
     <>
       <div
@@ -322,7 +368,7 @@ function Step4({ MY_SITES }: { MY_SITES: CardData[] }) {
           <div style={{ fontFamily: "var(--font-pixel-display)", fontSize: 7, color: ACCENT_GREEN, letterSpacing: 1.5 }}>RÉCOMPENSE À DÉBLOQUER</div>
           <div style={{ fontSize: 12, color: "var(--hub-fg)", marginTop: 4 }}>Crédités après vérification du lien</div>
         </div>
-        <CreditsBadge value="+12" size="lg" tone="gain" />
+        <CreditsBadge value={`+${credits}`} size="lg" tone="gain" />
       </div>
     </>
   );

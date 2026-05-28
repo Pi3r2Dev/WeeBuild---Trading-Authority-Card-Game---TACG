@@ -1,16 +1,24 @@
 /**
- * Drapeaux de fonctionnalité — peau honnête P1.5 (cf.
- * docs/plans/p1-5-productization-transition.md §5, §9 D5).
+ * Drapeaux de fonctionnalité — peau honnête P1.5 → P3 matching (2026-05-28).
  *
- * `GAME_LOOP_ENABLED` masque toute l'économie de jeu NON CONSTRUITE (P3) :
- * crédits, niveau « Donneur », barre de progression, et la section
- * « SUGGESTIONS DE L'IA » (fausses personnes). On MASQUE, on ne supprime pas :
- * passer à `true` rebranche les fixtures telles quelles le jour de P3.
+ * `GAME_LOOP_ENABLED` active l'économie de jeu CÂBLÉE :
+ *   - crédits réels (SUM ledger, 0 si vide) ;
+ *   - suggestions/partenaires depuis `EditorialSuggestion` (lib/matching) ;
+ *   - flux Donner + tuiles Hub (plus de fixtures « fausses personnes »).
  *
- * Note D4 : ce flag ne touche PAS les cartes/alliés seedés (vraie donnée DB,
- * pas une fixture factice) — l'écosystème et la main restent affichés.
+ * Reste masqué / vide tant que non implémenté :
+ *   - preuves (`LinkProof`, B4) → écran « bientôt » ou liste vide ;
+ *   - promotions spendables (B5) → UI visible, pas encore persistée.
+ *
+ * Note D4 : les cartes/alliés seedés restent de la vraie donnée DB.
  */
-export const GAME_LOOP_ENABLED = false;
+export const GAME_LOOP_ENABLED = true;
+
+/**
+ * Pipeline de preuves (capture lien → sceau). B4 — désactivé : `/preuves` reste
+ * en ComingSoon même si GAME_LOOP est actif.
+ */
+export const PROOFS_PIPELINE_ENABLED = false;
 
 /**
  * Routes R&D (`/rnd /chateau-cartes /cards /transitions`) + `DevNav` :

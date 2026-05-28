@@ -5,13 +5,26 @@ import { DonnerFlow } from "./DonnerFlow";
 /**
  * Loader SERVER pour DonnerFlow.
  *
- * `mySites` vient de la DB (réel P1) ; `partners`/`topics` restent sur fixtures
- * (suggestions IA = boucle de jeu P3, sync — appelés sans `await`).
+ * `mySites` = DB (P1) ; `partners`/`topics` = `EditorialSuggestion` (P3).
+ * `sourceSiteId` optionnel via query `?site=` (post-capture / matching).
  */
-export async function DonnerFlowLoader() {
+export async function DonnerFlowLoader({ sourceSiteId }: { sourceSiteId?: string }) {
   const userId = (await requireSession()).user.id;
   const mySites = await getMyDeck(userId);
-  const partners = getPartners(); // P3 — fixtures
-  const topics = getTopics(); // P3 — fixtures
-  return <DonnerFlow mySites={mySites} partners={partners} topics={topics} />;
+  const siteId =
+    sourceSiteId && mySites.some((c) => c.siteId === sourceSiteId)
+      ? sourceSiteId
+      : undefined;
+  const [partners, topics] = await Promise.all([
+    getPartners(userId, siteId),
+    getTopics(userId, siteId),
+  ]);
+  return (
+    <DonnerFlow
+      mySites={mySites}
+      partners={partners}
+      topics={topics}
+      sourceSiteId={siteId ?? mySites[0]?.siteId}
+    />
+  );
 }

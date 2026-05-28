@@ -2,6 +2,14 @@ import type { CardData, NavCard, Me, Suggestion, Activity, Partner, Topic, Proof
 import { db } from "@/lib/db";
 import { dbCardToCardData, dbCardToNavCard } from "./mappers";
 import * as fx from "./fixtures";
+import { getDonorProfile } from "@/lib/credits/balance";
+import {
+  fetchPartnersForSite,
+  fetchSuggestionsForUser,
+  fetchTopicsForSite,
+  resolveDefaultSourceSiteId,
+} from "@/lib/matching/read";
+import { fetchRecentActivity } from "@/lib/activity/recent";
 
 /**
  * Frontière d'accès aux données (D3). Les écrans appellent **uniquement** ces
@@ -9,23 +17,15 @@ import * as fx from "./fixtures";
  *
  * Deux groupes (cf. docs/plans/p1-4b-data-layer-refactor.md) :
  *  - GROUPE A (réel P1) : getMe / getMyDeck / getNavDeck / getDemoCards — `async`,
- *    lisent Postgres via lib/db.ts + mappers purs. Les `Date` sont converties en
- *    string ISO DANS le mapper (jamais de `Date` brut à la frontière RSC).
+ *    lisent Postgres via lib/db.ts + mappers purs.
  *  - GROUPE B (P3) : getSuggestions / getPartners / getTopics / getProofs /
- *    getRecentActivity + getNavCard (transitions) — restent SYNC sur fixtures
- *    (boucle de jeu / R&D non encore branchée). Annotés `// TODO: P3`.
+ *    getRecentActivity — `async`, DB réelle quand GAME_LOOP_ENABLED (cf. flags.ts).
+ *    getNavCard (transitions R&D) reste fixture sync.
  *
  * Pas de fallback silencieux fixtures si la DB manque : la garde vit dans
- * lib/db.ts (exception explicite), pas ici — sinon une erreur de config serait
- * masquée par les mocks.
- *
- * Les accesseurs « par utilisateur » prennent `userId` en argument (découplé de
- * l'auth). Depuis 4a, les écrans/Loaders fournissent cet id via
- * `(await requireSession()).user.id` (cf. lib/auth-session.ts) ; `DEMO_USER_ID`
- * ne sert plus qu'au seed (prisma/seed.ts).
+ * lib/db.ts (exception explicite), pas ici.
  */
 
-// Sélection Prisma partagée : carte + son site (domain/url) + propriétaire (name).
 const CARD_WITH_SITE = {
   site: { select: { domain: true, url: true } },
   user: { select: { name: true } },
@@ -33,27 +33,24 @@ const CARD_WITH_SITE = {
 
 // ──────────────────────────── GROUPE A (réel P1) ────────────────────────────
 
-/**
- * Cartes de démo (une par niveau) — vitrine `/cards`, `/rnd`, `/chateau-cartes`.
- * R&D : reste sur fixtures (cf. plan, recommandation R&D), mais `async` pour une
- * frontière homogène et un repointage DB trivial plus tard.
- */
+/** Cartes de démo (une par niveau) — vitrine `/cards`, `/rnd`, `/chateau-cartes`. */
 export async function getDemoCards(): Promise<CardData[]> {
   return fx.DEMO_CARDS;
 }
 
-/** Le joueur courant (profil). Lit le User en base, dérive les initiales. */
+/** Le joueur courant (profil + solde ledger P3). */
 export async function getMe(userId: string): Promise<Me> {
-  const user = await db.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true } });
+  const [user, profile] = await Promise.all([
+    db.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true } }),
+    getDonorProfile(userId),
+  ]);
   const initials = user.name
     .split(/\s+/)
     .filter(Boolean)
     .map((w) => w[0]?.toUpperCase() ?? "")
     .slice(0, 2)
     .join("");
-  // credits / level / levelProgress = économie de crédits → boucle de jeu P3,
-  // pas encore en base (placeholders assumés ; cf. schema P1 STRICT).
-  return { name: user.name, initials, credits: 47, level: 2, levelProgress: 0.62 };
+  return { name: user.name, initials, ...profile };
 }
 
 /** « Ma main » : les cartes des sites déclarés par le joueur `userId`. */
@@ -66,10 +63,7 @@ export async function getMyDeck(userId: string): Promise<CardData[]> {
   return cards.map(dbCardToCardData);
 }
 
-/**
- * Cartes des sites alliés (navigation / écosystème). Global en P1 (toutes les
- * cartes, cf. plan Q3) — le filtrage par permissions viendra en P3.
- */
+/** Cartes des sites alliés (navigation / écosystème). Global en P1. */
 export async function getNavDeck(): Promise<NavCard[]> {
   const cards = await db.card.findMany({
     include: CARD_WITH_SITE,
@@ -79,46 +73,54 @@ export async function getNavDeck(): Promise<NavCard[]> {
 }
 
 // ──────────────────────────── GROUPE B (P3) ─────────────────────────────────
-// Boucle de jeu / R&D non branchée : restent SYNC sur fixtures. Appelés sans
-// `await` dans un composant/Loader async = valide.
 
-/** Une carte alliée par id. TODO: P3 — transitions R&D, reste sur fixtures. */
+/** Une carte alliée par id — transitions R&D ; reste fixture sync. */
 export function getNavCard(id: string): NavCard | undefined {
   return fx.NAV_DECK.find((c) => c.id === id);
 }
 
-/**
- * Suggestions IA (donner / promouvoir). TODO: P3.
- * La donnée réelle existe désormais : `EditorialSuggestion` est peuplée par
- * lib/matching (triggerMatching → runMatching). Reste fixtures tant que
- * GAME_LOOP_ENABLED=false ET que le mapping EditorialSuggestion → Suggestion
- * front (qui exige les crédits, hors périmètre matching) n'est pas tranché.
- */
-export function getSuggestions(): Suggestion[] {
-  return fx.AI_SUGGESTIONS;
+/** Suggestions IA (Hub) — `EditorialSuggestion` persistées par lib/matching. */
+export async function getSuggestions(userId: string): Promise<Suggestion[]> {
+  return fetchSuggestionsForUser(userId);
 }
 
-/** Flux d'activité crédits. TODO: P3. */
-export function getRecentActivity(): Activity[] {
-  return fx.RECENT_ACTIVITY;
+/** Flux d'activité crédits — ledger (vide si aucun mouvement). */
+export async function getRecentActivity(userId: string): Promise<Activity[]> {
+  return fetchRecentActivity(userId);
 }
 
 /**
- * Partenaires éditoriaux suggérés (flux « Donner »). TODO: P3.
- * Source réelle = lib/matching `findPartners`/`EditorialSuggestion`. Reste
- * fixtures : le type front `Partner` embarque une `NavCard` complète + des
- * crédits (hors périmètre matching) → mapping à faire avec l'UI/crédits P3.
+ * Partenaires éditoriaux (flux « Donner »). Si `sourceSiteId` omis, résout le
+ * site par défaut (dernière session ou 1re carte de la main).
  */
-export function getPartners(): Partner[] {
-  return fx.PARTNERS_SUGGESTED;
+export async function getPartners(userId: string, sourceSiteId?: string): Promise<Partner[]> {
+  let siteId = sourceSiteId;
+  if (!siteId) {
+    const deck = await getMyDeck(userId);
+    siteId = await resolveDefaultSourceSiteId(
+      userId,
+      deck.map((c) => c.siteId),
+    );
+  }
+  if (!siteId) return [];
+  return fetchPartnersForSite(userId, siteId);
 }
 
-/** Sujets d'articles proposés par l'IA. TODO: P3. */
-export function getTopics(): Topic[] {
-  return fx.AI_TOPICS;
+/** Sujets d'articles — alignés sur les suggestions du site source. */
+export async function getTopics(userId: string, sourceSiteId?: string): Promise<Topic[]> {
+  let siteId = sourceSiteId;
+  if (!siteId) {
+    const deck = await getMyDeck(userId);
+    siteId = await resolveDefaultSourceSiteId(
+      userId,
+      deck.map((c) => c.siteId),
+    );
+  }
+  if (!siteId) return [];
+  return fetchTopicsForSite(userId, siteId);
 }
 
-/** Sceaux de preuve émis. TODO: P3. */
-export function getProofs(): Proof[] {
-  return fx.PROOF_LIST;
+/** Sceaux de preuve — B4 (pipeline LinkProof) ; liste vide tant que non branché. */
+export async function getProofs(): Promise<Proof[]> {
+  return [];
 }

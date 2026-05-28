@@ -7,7 +7,7 @@ import { Body, ScreenHeader, SectionLabel, StatusBar, CreditsBadge } from "./pri
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG, PlayLink } from "./MiniCard";
 import { icons } from "./icons";
-import { GAME_LOOP_ENABLED } from "../app/flags";
+import { GAME_LOOP_ENABLED, PROOFS_PIPELINE_ENABLED } from "../app/flags";
 import { ComingSoon } from "./ComingSoon";
 
 const STATUS_META: Record<ProofStatus, { color: string; label: string; icon: (s?: number) => React.ReactElement }> = {
@@ -25,10 +25,8 @@ export function PreuveScreen({ mySites, navDeck, proofs }: { mySites: CardData[]
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = detailId ? PROOF_LIST.find((p) => p.id === detailId) : null;
 
-  // Peau honnête (D5) : les sceaux de preuve dépendent de la détection de lien +
-  // de la boucle d'échange (P3) ; les fixtures référencent des cibles factices.
-  // Masqué derrière un état « bientôt » jusqu'à P3.
-  if (!GAME_LOOP_ENABLED) {
+  // Preuves = pipeline B4 (LinkProof). GAME_LOOP seul n'active pas les sceaux.
+  if (!GAME_LOOP_ENABLED || !PROOFS_PIPELINE_ENABLED) {
     return (
       <>
         <StatusBar />
