@@ -40,7 +40,14 @@ export interface GscScoreInput {
   ctr: number;
   /** Position moyenne (1 = top ; plus bas = mieux). */
   position: number;
+  /** Requêtes distinctes avec impressions (dimension `query`). */
   queryCount?: number | null;
+  /** URLs distinctes avec impressions (dimension `page`, fenêtre 28 j). */
+  pageCount?: number | null;
+  /** Pages indexées (API Sitemaps, somme `contents[].indexed` type web). */
+  indexedPages?: number | null;
+  /** Pages soumises via sitemap (API Sitemaps, somme `submitted`). */
+  sitemapSubmittedPages?: number | null;
 }
 
 /** Comme AuthorityResult v1, plus la version de métrique (transparence UI/historique). */
@@ -80,14 +87,18 @@ const GSC_BLEND = {
 
 /**
  * Poids internes du sous-score GSC (somme = 1). 🚧 NON CALIBRÉ.
- * - impressions : portée (reach / ATK).
- * - clicks      : trafic capté.
- * - position    : qualité du positionnement (trust / HP).
+ * - impressions / clicks / position : trafic réel (28 j).
+ * - indexedPages : couverture index (API Sitemaps — proxy « pages valides/indexées »).
+ * - pageCount    : URLs avec impressions (dimension `page`).
+ * - queryCount   : largeur topique (dimension `query`).
  */
 const GSC_SUBWEIGHTS = {
-  impressions: 0.4,
-  clicks: 0.3,
-  position: 0.3,
+  impressions: 0.28,
+  clicks: 0.22,
+  position: 0.2,
+  indexedPages: 0.15,
+  pageCount: 0.1,
+  queryCount: 0.05,
 } as const;
 
 /**
@@ -101,6 +112,12 @@ const GSC_NORMALIZERS = {
   clicksLog10Cap: 4, //      10^4 = 10k clics → sous-score 1
   /** Position au-delà de laquelle le sous-score position tombe à 0. */
   positionFloor: 30,
+  /** Pages indexées (sitemap) — site éditorial large. */
+  indexedPagesLog10Cap: 4, // 10^4 = 10k pages
+  /** URLs avec trafic GSC (dimension page). */
+  pageCountLog10Cap: 3.5, // ~3k URLs actives
+  /** Requêtes distinctes avec impressions. */
+  queryCountLog10Cap: 3, // ~1k requêtes
 } as const;
 
 /** log10(1 + x) normalisé par un plafond, borné [0,1]. */
@@ -122,6 +139,9 @@ interface GscNorms {
   impressions: number;
   clicks: number;
   position: number;
+  indexedPages: number;
+  pageCount: number;
+  queryCount: number;
   /** Sous-score GSC composite [0,1] (pondéré par GSC_SUBWEIGHTS). */
   composite: number;
 }
@@ -130,19 +150,66 @@ function gscNorms(g: GscScoreInput): GscNorms {
   const impressions = logNorm(g.impressions, GSC_NORMALIZERS.impressionsLog10Cap);
   const clicks = logNorm(g.clicks, GSC_NORMALIZERS.clicksLog10Cap);
   const position = positionNorm(g.position);
+  const indexedPages = logNorm(g.indexedPages ?? 0, GSC_NORMALIZERS.indexedPagesLog10Cap);
+  const pageCount = logNorm(g.pageCount ?? 0, GSC_NORMALIZERS.pageCountLog10Cap);
+  const queryCount = logNorm(g.queryCount ?? 0, GSC_NORMALIZERS.queryCountLog10Cap);
   const composite = clamp01(
     impressions * GSC_SUBWEIGHTS.impressions +
       clicks * GSC_SUBWEIGHTS.clicks +
-      position * GSC_SUBWEIGHTS.position,
+      position * GSC_SUBWEIGHTS.position +
+      indexedPages * GSC_SUBWEIGHTS.indexedPages +
+      pageCount * GSC_SUBWEIGHTS.pageCount +
+      queryCount * GSC_SUBWEIGHTS.queryCount,
   );
-  return { impressions, clicks, position, composite };
+  return { impressions, clicks, position, indexedPages, pageCount, queryCount, composite };
+}
+
+/** Clarifie les signaux on-page (1 URL Firecrawl) quand GSC apporte la vue site-wide. */
+function contextualizeOnPageSignals(
+  signals: AuthoritySignal[],
+  g: GscScoreInput,
+): AuthoritySignal[] {
+  const indexed = g.indexedPages ?? 0;
+  const pagesWithTraffic = g.pageCount ?? 0;
+  const siteHint =
+    indexed > 0
+      ? `${indexed.toLocaleString("fr-FR")} pages indexées GSC`
+      : pagesWithTraffic > 0
+        ? `${pagesWithTraffic.toLocaleString("fr-FR")} URLs avec trafic GSC`
+        : null;
+
+  return signals.map((sig) => {
+    if (!siteHint) return sig;
+    if (sig.key === "externalLinks") {
+      return {
+        ...sig,
+        detail: `${sig.detail} (homepage seule ; site : ${siteHint})`,
+      };
+    }
+    if (sig.key === "internalLinks") {
+      return {
+        ...sig,
+        detail: `${sig.detail} (page capturée ; site : ${siteHint})`,
+      };
+    }
+    if (sig.key === "content") {
+      return {
+        ...sig,
+        detail: `${sig.detail} (page d'accueil ; site : ${siteHint})`,
+      };
+    }
+    return sig;
+  });
+}
+
+function formatOptionalCount(value: number | null | undefined, suffix: string): string {
+  if (value == null || value <= 0) return "pas de donnée";
+  return `${value.toLocaleString("fr-FR")} ${suffix}`;
 }
 
 function gscSignals(g: GscScoreInput, n: GscNorms): AuthoritySignal[] {
-  // Les `max` sont exprimés sur l'échelle 0–100 du score final, pondérés par la
-  // part GSC du blend (cohérent avec l'affichage v1 où points/max ∈ score).
   const gscBudget = GSC_BLEND.gsc * 100;
-  return [
+  const signals: AuthoritySignal[] = [
     {
       key: "gsc_impressions",
       label: "Impressions GSC",
@@ -164,7 +231,30 @@ function gscSignals(g: GscScoreInput, n: GscNorms): AuthoritySignal[] {
       points: round(n.position * GSC_SUBWEIGHTS.position * gscBudget),
       max: round(GSC_SUBWEIGHTS.position * gscBudget),
     },
+    {
+      key: "gsc_indexed_pages",
+      label: "Pages indexées GSC",
+      detail: formatOptionalCount(g.indexedPages, "pages indexées (sitemap)"),
+      points: round(n.indexedPages * GSC_SUBWEIGHTS.indexedPages * gscBudget),
+      max: round(GSC_SUBWEIGHTS.indexedPages * gscBudget),
+    },
+    {
+      key: "gsc_pages_with_traffic",
+      label: "URLs avec trafic GSC",
+      detail: formatOptionalCount(g.pageCount, "URLs avec impressions (28 j)"),
+      points: round(n.pageCount * GSC_SUBWEIGHTS.pageCount * gscBudget),
+      max: round(GSC_SUBWEIGHTS.pageCount * gscBudget),
+    },
+    {
+      key: "gsc_query_count",
+      label: "Requêtes GSC",
+      detail: formatOptionalCount(g.queryCount, "requêtes distinctes (28 j)"),
+      points: round(n.queryCount * GSC_SUBWEIGHTS.queryCount * gscBudget),
+      max: round(GSC_SUBWEIGHTS.queryCount * gscBudget),
+    },
   ];
+
+  return signals.filter((sig) => sig.max > 0);
 }
 
 /**
@@ -208,10 +298,8 @@ export function computeAuthorityV2(site: CapturedSite, gsc?: GscScoreInput | nul
   // impressions/clics. On blende avec les stats v1 (en ratio 0–1) pour ne pas
   // perdre le socle on-page. 🚧 mêmes poids GSC_BLEND, non calibré.
   const hpRatio = clamp01(GSC_BLEND.onpage * (v1.stats.hp - 8) / 91 + GSC_BLEND.gsc * norms.position);
-  const atkRatio = clamp01(
-    GSC_BLEND.onpage * (v1.stats.atk - 8) / 91 +
-      GSC_BLEND.gsc * clamp01((norms.impressions + norms.clicks) / 2),
-  );
+  const reachGsc = clamp01((norms.impressions + norms.clicks + norms.indexedPages + norms.pageCount) / 4);
+  const atkRatio = clamp01(GSC_BLEND.onpage * (v1.stats.atk - 8) / 91 + GSC_BLEND.gsc * reachGsc);
   const stats: AuthorityStats = {
     hp: stat(hpRatio),
     atk: stat(atkRatio),
@@ -224,7 +312,7 @@ export function computeAuthorityV2(site: CapturedSite, gsc?: GscScoreInput | nul
     score,
     level,
     stats,
-    signals: [...v1.signals, ...gscSignals(gsc, norms)],
+    signals: [...contextualizeOnPageSignals(v1.signals, gsc), ...gscSignals(gsc, norms)],
     provisional: true,
     metricVersion: "v2-gsc",
     withGsc: true,

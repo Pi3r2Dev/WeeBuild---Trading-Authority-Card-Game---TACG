@@ -1,6 +1,6 @@
 # FAQ — Doctrine & vérité de référence
 
-> **Rôle de ce document** : source canonique du *pourquoi* et du *comment* de WeBuild. Sert de référence partagée pour l'équipe, de base au contenu public, et de **garde-fou de cohérence pour l'IA** (axe B) qui génère sujets et textes.
+> **Rôle de ce document** : source canonique du *pourquoi* et du *comment* de WeeBuild. Sert de référence partagée pour l'équipe, de base au contenu public, et de **garde-fou de cohérence pour l'IA** (axe B) qui génère sujets et textes.
 > Dernière maj : 2026-05-28 · Voir aussi : [draft-gameplay-technique.md](draft-gameplay-technique.md) · [draft-pipeline-ia.md](draft-pipeline-ia.md) · [draft-charte-graphique.md](draft-charte-graphique.md)
 
 ## Comment lire ce document
@@ -12,8 +12,11 @@
 
 ## 1. Le concept — le *pourquoi* et le novateur
 
-### C'est quoi WeBuild — Trading Authority Game ?
+### C'est quoi WeeBuild — Trading Authority Game ?
 Une web app qui transforme le netlinking SEO en **jeu de cartes à collectionner**. Chaque site que tu déclares devient une **carte** dont la rareté reflète son autorité réelle. Tu construis ta visibilité en participant à un réseau de liens **éditoriaux**, dans un univers rétro-gaming.
+
+### C'est quoi TACG ?
+**TACG** = **Trading Authority Card Game** — l'acronyme interne du produit (WeeBuild en est la marque éditrice). Un bandeau discret sur l'accueil le rappelle une fois ; l'utilisateur peut le masquer définitivement.
 
 ### En quoi le concept est-il novateur ?
 Il fusionne trois mondes que personne n'avait réunis :
@@ -97,7 +100,7 @@ De la **visibilité** auprès de sites pertinents, du **trafic de référence**,
 ### Pourquoi parler d'IA et de LLM ?
 La recherche se transforme : de plus en plus de réponses viennent d'**IA génératives** (AI Overviews, Perplexity, ChatGPT) qui **citent des sources** plutôt que d'afficher dix liens bleus. Être visible demain, c'est être **cité par ces moteurs** — c'est le **GEO** (*Generative Engine Optimization*).
 
-### En quoi WeBuild est-il taillé pour ça ?
+### En quoi WeeBuild est-il taillé pour ça ?
 Le GEO récompense exactement ce qu'on construit : des **mentions pertinentes et répétées** de ta marque, dans du **contenu éditorial de qualité**, sur des **sujets cohérents**. Là où le SEO classique courait après le lien dofollow, le GEO valorise la **mention et la citation** — ce qui rend notre approche éditoriale *naturellement alignée*.
 
 ### Le SEO est-il en train de mourir ?
@@ -115,6 +118,6 @@ Ces points sont **ouverts**. Tant qu'ils ne sont pas tranchés, ils ne font pas 
 
 - 🚧 **Calibrage de la métrique d'autorité** : l'architecture est actée (Authority Score = SEO hybride dont Search Console + GEO proxy/Sonar ; HP=trust / ATK=reach). Restent les **réglages** : poids SEO/GEO, seuils des niveaux, anti-fraude. *(détail [draft-metrique-autorite.md](draft-metrique-autorite.md))*
 - 🚧 **Calibrage des crédits** : la *forme* est actée (économie à monnaie conservative, gain hybride amorti = BASE·g(AS)·pertinence·qualité·amortissement, dépense = BASE·portée·durée, anti-abus + clawback). Restent les **chiffres** : BASE, seuils, barèmes, plafonds. *(détail [draft-gameplay-technique.md](draft-gameplay-technique.md) §2.7)*
-- 🚧 **Réglages d'image** : le *principe* est acté (import user ou auto + pipeline 2 chemins, filtre déterministe garant de la cohérence) ; restent les recettes de filtres par niveau, les LoRA génératifs, l'extraction **logo / hero / screenshot**, et la **persistance blob + cache** (aujourd'hui seulement des URLs tierces en DB — cf. [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §5.4–§5.5). *(charte §8)*
+- 🚧 **Réglages d'image** : principe acté (import user ou auto + pipeline 2 chemins + filtre par niveau). **Fait (2026-05-28)** : extraction logo/hero/screenshot, ingest blob (store local/memory), persistance `Site.*Url` + `visualProvenanceJson`. **Reste** : MinIO prod, mapper DB→UI, bascule `CardFront`→`SitePortrait`, filtres affinés, modération vision, import user, ComfyUI. Suivi détaillé → [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §12. *(charte §8)*
 - 🚧 **Contrat moral** : fréquence de re-capture et détection de triche (cloaking, lien JS, nofollow caché). *(gameplay §6 / pipeline §6)* — le **clawback** de crédits si retrait est, lui, **décidé** *(gameplay §2.7 D)*.
 - 🚧 **Progression / méta-jeu** : collection, montée en puissance, quêtes. *(gameplay §6)*

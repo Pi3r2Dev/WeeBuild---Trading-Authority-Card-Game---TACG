@@ -46,4 +46,9 @@ export const icons = {
       <path d="M9 7 L10 4 H14 L15 7" />
     </svg>
   ),
+  close: (s = 14) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+      <path d="M6 6 L18 18 M18 6 L6 18" />
+    </svg>
+  ),
 } satisfies Record<string, (s?: number) => ReactElement>;

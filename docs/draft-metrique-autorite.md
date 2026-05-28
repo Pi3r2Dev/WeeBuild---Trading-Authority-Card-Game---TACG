@@ -27,7 +27,7 @@ AS = w_seo · S_seo  +  w_geo · S_geo
 | Tier | Source | Coût | Robustesse |
 |------|--------|------|-----------|
 | 1 | **On-page / public** via Firecrawl : structure, schema.org, sitemap, fraîcheur, HTTPS, âge domaine | gratuit, toujours | moyenne (heuristique) |
-| 2 | **Google Search Console first-party** : impressions, clics, CTR, position moyenne, requêtes, pages indexées | gratuit, vérifié | **forte (donnée de Google)** |
+| 2 | **Google Search Console first-party** : impressions, clics, CTR, position moyenne, requêtes distinctes, **URLs avec trafic** (dimension `page`), **pages indexées** (API Sitemaps) | gratuit, vérifié | **forte (donnée de Google)** |
 | 3 | **API tierce** (Ahrefs/Moz/Majestic/DataForSEO) : backlinks/DR | payant, **ponctuel** | forte (calibration / premium) |
 
 **GSC — deux voies :**
@@ -86,7 +86,7 @@ AS = w_seo · S_seo  +  w_geo · S_geo
 - **Flux `/capturer`** : première capture → v1 ; si `GscSnapshot` déjà lié au domaine → v2 direct ; bouton **« Enrichir avec Google Search Console »** → `captureGscAction` + re-score v2 ; **import batch** (plusieurs propriétés owner) via file `GscImportBatch` + worker/cron.
 - **Persistance** : `GscSnapshot` + `AuthoritySnapshot` ; carte mise à jour via `apply-authority`.
 - **Tests unitaires** : agrégation GSC (`gsc.test.ts`), blend v2 (`score-v2.test.ts`).
-- **Client GSC** (`lib/services/gsc.ts`) : totaux sans dimension, sélection multi-propriétés (GET `/sites` + max impressions), pièges API documentés en tête de module *(cf. [sessions/2026-05-28-p2-gsc-integration.md](sessions/2026-05-28-p2-gsc-integration.md))*.
+- **Client GSC** (`lib/services/gsc.ts`) : totaux sans dimension, sélection multi-propriétés (GET `/sites` + max impressions), pagination dimensions `query`/`page`, API Sitemaps (pages indexées), pièges API documentés en tête de module *(cf. [sessions/2026-05-28-p2-gsc-integration.md](sessions/2026-05-28-p2-gsc-integration.md))*.
 
 - **Google OAuth** + scope `webmasters.readonly` (Better Auth) → pull GSC API.
 - **gemma4-vision** → lecture des screenshots GSC (fallback).

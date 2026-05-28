@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import Link from "next/link";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
 import type { CardData, Partner, Topic } from "@/lib/domain";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
@@ -19,12 +20,15 @@ export function DonnerFlow({
   partners,
   topics,
   sourceSiteId,
+  pendingValidationCount = 0,
 }: {
   mySites: CardData[];
   partners: Partner[];
   topics: Topic[];
   /** Site source pour le matching (1re carte par défaut). */
   sourceSiteId?: string;
+  /** Suggestions GENERATED en attente de validation (B3) — badge d'entrée. */
+  pendingValidationCount?: number;
 }) {
   const MY_SITES = mySites;
   const PARTNERS_SUGGESTED = partners;
@@ -59,6 +63,30 @@ export function DonnerFlow({
     <>
       <StatusBar />
       <Body>
+        {pendingValidationCount > 0 && (
+          <Link
+            href="/donner/valider"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 8,
+              marginTop: 10,
+              padding: "10px 14px",
+              background: "rgba(57,255,20,0.08)",
+              border: "1px solid rgba(57,255,20,0.45)",
+              borderRadius: 10,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--hub-fg)" }}>
+              {pendingValidationCount} suggestion{pendingValidationCount > 1 ? "s" : ""} à valider
+            </span>
+            <span style={{ fontFamily: "var(--font-pixel-display)", fontSize: 8, letterSpacing: 1, color: ACCENT_GREEN }}>
+              VALIDER →
+            </span>
+          </Link>
+        )}
         <StepHeader step={step} title={STEP_META[step].title} subtitle={STEP_META[step].subtitle} onBack={step > 1 ? prev : undefined} />
         {!hasPartners && step === 1 && activeSiteId && (
           <div

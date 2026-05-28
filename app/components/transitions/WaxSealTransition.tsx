@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "../hub/constants";
+import { SITE_WORDMARK } from "@/lib/brand/site";
 // R&D transition (cf. plan 4b, Q1) : reste sur fixtures. Import direct des
 // fixtures (composant "use client" → ne peut pas importer l'accesseur lib/data
 // devenu couplé à Prisma).
@@ -147,7 +148,7 @@ function WaxSeal() {
           <path id="seal-ring" d="M 50 50 m -38 0 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" />
         </defs>
         <text fontFamily="var(--font-pixel-display)" fontSize="6" fill="#052e16" letterSpacing="1.5">
-          <textPath href="#seal-ring" startOffset="0">· LIEN VÉRIFIÉ · WEBUILD · LIEN VÉRIFIÉ · WEBUILD ·</textPath>
+          <textPath href="#seal-ring" startOffset="0">{`· LIEN VÉRIFIÉ · ${SITE_WORDMARK} · LIEN VÉRIFIÉ · ${SITE_WORDMARK} ·`}</textPath>
         </text>
       </svg>
       <div

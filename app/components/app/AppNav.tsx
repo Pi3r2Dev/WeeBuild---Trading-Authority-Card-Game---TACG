@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SITE_WORDMARK } from "@/lib/brand/site";
 import { ACCENT_VIOLET } from "../hub/constants";
 
 /** Items de navigation produit — source unique pour les deux variantes. */
@@ -59,7 +60,7 @@ export function AppNav({
             textShadow: `0 0 12px ${ACCENT_VIOLET}88`,
           }}
         >
-          WEBUILD
+          {SITE_WORDMARK}
         </div>
 
         {NAV_ITEMS.map((it) => {

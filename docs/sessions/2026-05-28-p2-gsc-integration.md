@@ -30,6 +30,12 @@ tags: [p2, gsc, authority-score, search-console]
 - **Totaux GSC (2026-05-28)** : clics/impressions via requête API **sans dimension** (aligné dashboard GSC) ; si plusieurs propriétés vérifiées (préfixe URL + `sc-domain:`), on retient celle avec le **plus d'impressions** (évite un préfixe étroit sous-estimé). Fenêtre ~28 j avec lag 3 j (données consolidées) — peut différer légèrement du filtre « 28 jours » GSC qui inclut les jours récents.
 - **Review fetch (2026-05-28)** : GET `/sites` + `propertyCoversUrl` + variantes www/apex ; `queryCount` paginé **une seule fois** sur la propriété gagnante. Pièges documentés en tête de [lib/services/gsc.ts](../../lib/services/gsc.ts).
 - **Rescan (2026-05-28)** : « Rescanner la carte » tente **toujours** GSC (`tryCaptureGscForSite`), pas seulement si snapshot existant. Bouton **Enrichir GSC** sur `/carte/[id]` pour cartes v1. Import batch : carte créée même si GSC échoue (avertissement jaune).
+- **GSC étendu (2026-05-28)** : en plus des totaux 28 j, on collecte :
+  - `pageCount` — dimension `page` (URLs avec impressions, pagination) ;
+  - `indexedPages` + `sitemapSubmittedPages` — API **Sitemaps** (`GET /sites/{siteUrl}/sitemaps`, somme `contents[].indexed` / `submitted`, type web) ;
+  - `queryCount` — déjà persisté, exposé au score v2.
+  Les signaux on-page v1 (liens externes, maillage…) restent **homepage Firecrawl** ; l'UI contextualise (« homepage seule ; site : N pages indexées GSC »). Score v2 : 6 signaux `gsc_*` (impressions, clics, position, pages indexées, URLs avec trafic, requêtes). Module : [lib/services/gsc-sitemaps.ts](../../lib/services/gsc-sitemaps.ts).
+  **UI (2026-05-28)** : [AuthoritySignalsPanel.tsx](../../app/components/authority/AuthoritySignalsPanel.tsx) — sections « On-page · page capturée » vs « Search Console · site entier », sous-totaux par section, puces couverture GSC, détail sur ligne dédiée (longs textes lisibles).
 
 ### Pièges API (ne pas régresser)
 
@@ -39,6 +45,7 @@ tags: [p2, gsc, authority-score, search-console]
 | Première propriété qui répond | Préfixe étroit vs `sc-domain:` | `pickBestGscProperty` (max impressions) |
 | Forme exacte de propriété | 403/404 | GET `/sites` + heuristiques www/apex/`sc-domain:` |
 | Pagination query sur tous les candidats | Latence / quota API | Pagination uniquement sur la propriété retenue |
+| On-page = 1 URL vs site entier | 0 liens externes sur gros sites multi-pages | Signaux GSC site-wide + note UI sur signaux v1 |
 | UI « 28 j » vs notre fenêtre | Léger écart | `GSC_DATA_LAG_DAYS = 3` documenté |
 
 ## Questions en cours 🚧

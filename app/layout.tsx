@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Orbitron, Press_Start_2P, VT323 } from "next/font/google";
+import { PRODUCT_TITLE } from "@/lib/brand/site";
 import "./globals.css";
 import "./styles/tokens.css";
 
@@ -28,7 +29,7 @@ const vt323 = VT323({
 });
 
 export const metadata: Metadata = {
-  title: "WeBuild — Trading Authority Game",
+  title: PRODUCT_TITLE,
   description:
     "Le link-building SEO transformé en jeu de cartes. Chaque site déclaré devient une carte dont la rareté reflète son autorité.",
 };

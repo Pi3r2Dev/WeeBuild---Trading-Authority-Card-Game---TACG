@@ -1,7 +1,7 @@
 # Draft — Gameplay & Technique
 
 > **Statut : DRAFT** — document de travail, à challenger.
-> Projet : *WeBuild — Trading Authority Game*
+> Projet : *WeeBuild — Trading Authority Game*
 > Dernière maj : 2026-05-28 (enrichi)
 > Sources : [readme.txt](../readme.txt) + exploration charte (data→jeu, matériaux, shaders)
 > Voir aussi : [draft-charte-graphique.md](draft-charte-graphique.md)

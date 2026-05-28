@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition, type CSSProperties } from "react";
 import { Card } from "@/app/components/card/Card";
+import { AuthorityMetricBanner, AuthoritySignalsPanel } from "@/app/components/authority/AuthoritySignalsPanel";
 import { ERA_LABEL } from "@/lib/levels";
 import { captureCard, type CaptureResult } from "./actions";
 import { enrichWithGscAction, type EnrichGscResult } from "./gsc-actions";
@@ -222,55 +223,8 @@ function Result({
           </div>
         )}
 
-        <div
-          style={{
-            padding: "10px 14px",
-            marginBottom: 18,
-            background: withGsc ? "rgba(57,255,20,0.06)" : "rgba(251,191,36,0.08)",
-            border: `1px solid ${withGsc ? "rgba(57,255,20,0.35)" : "rgba(251,191,36,0.3)"}`,
-            borderRadius: 8,
-            color: withGsc ? "#86efac" : "#fcd34d",
-            fontSize: 12.5,
-            lineHeight: 1.5,
-          }}
-        >
-          {withGsc ? (
-            <>
-              Score <strong>indicatif v2</strong> — blend <strong>on-page + Search Console</strong> (28 j). Pas encore
-              de backlinks payants ni GEO. Indicateur de jeu, pas une promesse de classement. Calibrage des poids 🚧.
-            </>
-          ) : (
-            <>
-              Score <strong>indicatif v1</strong> — signaux <strong>on-page uniquement</strong>. Ajoute Search Console
-              pour le Tier 2 (impressions, clics, position). Pas de GEO ni backlinks. Indicateur de jeu, pas une
-              promesse de classement.
-            </>
-          )}
-        </div>
-
-        <div style={{ ...PIXEL, fontSize: 10, color: "var(--hub-fg-soft)", marginBottom: 10 }}>DÉTAIL DU SCORE</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {authority.signals.map((s) => (
-            <div key={s.key}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}>
-                <span style={{ color: "var(--hub-fg)" }}>{s.label}</span>
-                <span style={{ color: "var(--hub-fg-soft)" }}>
-                  {s.detail} · <strong style={{ color: "var(--hub-fg)" }}>{s.points}</strong>/{s.max}
-                </span>
-              </div>
-              <div style={{ height: 6, background: "var(--hub-bg-2)", borderRadius: 999, overflow: "hidden" }}>
-                <div
-                  style={{
-                    width: `${s.max > 0 ? (s.points / s.max) * 100 : 0}%`,
-                    height: "100%",
-                    background: s.key.startsWith("gsc_") ? "var(--hub-accent-2)" : "var(--hub-accent)",
-                    borderRadius: 999,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <AuthorityMetricBanner withGsc={withGsc} />
+        <AuthoritySignalsPanel authority={authority} />
 
         {GAME_LOOP_ENABLED && (
           <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--hub-line)" }}>

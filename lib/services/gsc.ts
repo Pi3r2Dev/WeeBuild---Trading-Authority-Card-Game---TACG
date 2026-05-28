@@ -7,8 +7,8 @@
  * → `listVerifiedSites` (GET /sites — propriétés vérifiées du compte)
  * → `resolveGscPropertyCandidates` (filtre celles qui couvrent l'URL capturée)
  * → `fetchPropertyTotals` (POST searchAnalytics/query **sans dimension** — totaux site-wide)
+ * → `fetchExtendedPropertyMetrics` (totaux + query/page counts + sitemaps)
  * → `pickBestGscProperty` (retient la propriété à plus forte couverture)
- * → `fetchDistinctQueryCount` (pagination dimension `query`, uniquement sur la gagnante)
  * → `captureGsc` (insère un `GscSnapshot` source=OAUTH).
  *
  * ## Pièges API découverts en POC (2026-05-28)
@@ -34,8 +34,12 @@
  *
  * 5. **Type de recherche** : on force `type: "web"` (aligné filtre « Web » du dashboard).
  *
- * 6. **Pagination queryCount** : coûteuse (N appels API) — exécutée **une seule fois**
- *    sur la propriété retenue, pas sur chaque candidat.
+ * 6. **Pagination query/page** : coûteuse (N appels API) — exécutée **une seule fois**
+ *    sur la propriété retenue. `pageCount` = URLs avec impressions (28 j) ;
+ *    `indexedPages` = API Sitemaps (`contents[].indexed`, proxy « pages valides/indexées »).
+ *
+ * 7. **Capture on-page vs site-wide** : Firecrawl ne scrape qu'une URL — les signaux
+ *    v1 (liens externes/internes) restent homepage ; GSC apporte la vue site entier.
  *
  * Le fallback SCREENSHOT (gemma4-vision) est HORS PÉRIMÈTRE ici (`GscSource.SCREENSHOT`
  * prévu en schéma Prisma, non implémenté).
@@ -44,6 +48,7 @@
  */
 
 import { db } from "@/lib/db";
+import { fetchSitemapStats, type SitemapStats } from "@/lib/services/gsc-sitemaps";
 
 /** Erreur GSC — message FR destiné à l'UI (jamais un crash brut). */
 export class GscError extends Error {}
@@ -112,13 +117,25 @@ export interface GscAggregate {
   ctr: number;
   /** Position moyenne (1 = top), telle que renvoyée par l'API sur la row sans dimension. */
   position: number;
-  /** Requêtes distinctes avec impressions (dimension `query`, pagination complète). */
+  /** Requêtes distinctes avec impressions (dimension `query`, pagination). */
   queryCount: number;
+  /** URLs distinctes avec impressions (dimension `page`, pagination, 28 j). */
+  pageCount: number;
+  /** Pages indexées selon GSC (API Sitemaps, somme `indexed` type web). */
+  indexedPages: number | null;
+  /** Pages soumises via sitemap (API Sitemaps, somme `submitted` type web). */
+  sitemapSubmittedPages: number | null;
   /** Fenêtre couverte (date-only, ISO `YYYY-MM-DD`). */
   startDate: string;
   endDate: string;
   /** Payload brut — audit et recalcul sans re-fetch. */
-  raw: { totalsRow: SearchAnalyticsRow | null; queryCount: number };
+  raw: {
+    totalsRow: SearchAnalyticsRow | null;
+    queryCount: number;
+    pageCount: number;
+    pageCountCapped?: boolean;
+    sitemap: SitemapStats | null;
+  };
 }
 
 // ── env helpers ───────────────────────────────────────────────────────────────
@@ -434,24 +451,26 @@ async function fetchPropertyTotals(
 }
 
 /**
- * Compte les requêtes distinctes (dimension `query`) via pagination API.
+ * Compte les lignes distinctes pour une dimension Search Analytics (`query`, `page`…).
  *
- * N'alimente que `queryCount` — les clics/impressions viennent de {@link fetchPropertyTotals}.
+ * @returns `{ count, capped }` — `capped=true` si plafond API (25k rows/page).
  */
-async function fetchDistinctQueryCount(
+async function fetchDistinctDimensionCount(
   accessToken: string,
   siteUrl: string,
   startDate: string,
   endDate: string,
-): Promise<number> {
+  dimension: "query" | "page",
+): Promise<{ count: number; capped: boolean }> {
   let count = 0;
   let startRow = 0;
+  let capped = false;
 
   while (true) {
     const json = await postSearchAnalyticsQuery(accessToken, siteUrl, {
       startDate,
       endDate,
-      dimensions: ["query"],
+      dimensions: [dimension],
       rowLimit: GSC_ROW_LIMIT,
       startRow,
     });
@@ -459,10 +478,48 @@ async function fetchDistinctQueryCount(
     if (batch.length === 0) break;
     count += batch.length;
     if (batch.length < GSC_ROW_LIMIT) break;
+    capped = true;
     startRow += batch.length;
   }
 
-  return count;
+  return { count, capped };
+}
+
+/** Métriques étendues sur une propriété retenue (totaux + dimensions + sitemaps). */
+async function fetchExtendedPropertyMetrics(
+  accessToken: string,
+  siteUrl: string,
+  startDate: string,
+  endDate: string,
+  totalsRow?: SearchAnalyticsRow,
+): Promise<GscAggregate> {
+  const totals = totalsRow ?? (await fetchPropertyTotals(accessToken, siteUrl, startDate, endDate));
+  const metrics = metricsFromTotalsRow(totals);
+
+  const [queries, pages, sitemap] = await Promise.all([
+    fetchDistinctDimensionCount(accessToken, siteUrl, startDate, endDate, "query"),
+    fetchDistinctDimensionCount(accessToken, siteUrl, startDate, endDate, "page"),
+    fetchSitemapStats(accessToken, siteUrl, (url, init) =>
+      fetchWithTimeout(url, init ?? {}, QUERY_TIMEOUT_MS, "Search Console (sitemaps)"),
+    ).catch(() => null),
+  ]);
+
+  return {
+    ...metrics,
+    queryCount: queries.count,
+    pageCount: pages.count,
+    indexedPages: sitemap?.indexedPages ?? null,
+    sitemapSubmittedPages: sitemap?.submittedPages ?? null,
+    startDate,
+    endDate,
+    raw: {
+      totalsRow: totals ?? null,
+      queryCount: queries.count,
+      pageCount: pages.count,
+      pageCountCapped: pages.capped || undefined,
+      sitemap,
+    },
+  };
 }
 
 /** Extrait les métriques principales d'une row totaux (sans dimension). */
@@ -490,17 +547,7 @@ export async function fetchSearchAnalytics(
   startDate: string,
   endDate: string,
 ): Promise<GscAggregate> {
-  const totalsRow = await fetchPropertyTotals(accessToken, siteUrl, startDate, endDate);
-  const queryCount = await fetchDistinctQueryCount(accessToken, siteUrl, startDate, endDate);
-  const metrics = metricsFromTotalsRow(totalsRow);
-
-  return {
-    ...metrics,
-    queryCount,
-    startDate,
-    endDate,
-    raw: { totalsRow: totalsRow ?? null, queryCount },
-  };
+  return fetchExtendedPropertyMetrics(accessToken, siteUrl, startDate, endDate);
 }
 
 /**
@@ -578,16 +625,12 @@ export async function captureGsc(
 
   if (options?.matchedProperty) {
     const matchedProperty = options.matchedProperty;
-    const totalsRow = await fetchPropertyTotals(accessToken, matchedProperty, startDate, endDate);
-    const queryCount = await fetchDistinctQueryCount(accessToken, matchedProperty, startDate, endDate);
-    const metrics = metricsFromTotalsRow(totalsRow);
-    const aggregate: GscAggregate = {
-      ...metrics,
-      queryCount,
+    const aggregate = await fetchExtendedPropertyMetrics(
+      accessToken,
+      matchedProperty,
       startDate,
       endDate,
-      raw: { totalsRow: totalsRow ?? null, queryCount },
-    };
+    );
     return persistGscSnapshot(site.id, matchedProperty, aggregate);
   }
 
@@ -630,18 +673,14 @@ export async function captureGsc(
     );
   }
 
-  // Phase 2 — queryCount une seule fois sur la propriété retenue.
-  const queryCount = await fetchDistinctQueryCount(accessToken, best.property, startDate, endDate);
-  const metrics = metricsFromTotalsRow(best.totalsRow);
-  const aggregate: GscAggregate = {
-    ...metrics,
-    queryCount,
+  const matchedProperty = best.property;
+  const aggregate = await fetchExtendedPropertyMetrics(
+    accessToken,
+    matchedProperty,
     startDate,
     endDate,
-    raw: { totalsRow: best.totalsRow ?? null, queryCount },
-  };
-
-  const matchedProperty = best.property;
+    best.totalsRow,
+  );
 
   return persistGscSnapshot(site.id, matchedProperty, aggregate);
 }
@@ -662,7 +701,9 @@ async function persistGscSnapshot(
       ctr: aggregate.ctr,
       position: aggregate.position,
       queryCount: aggregate.queryCount,
-      indexedPages: null,
+      pageCount: aggregate.pageCount,
+      indexedPages: aggregate.indexedPages,
+      sitemapSubmittedPages: aggregate.sitemapSubmittedPages,
       rawJson: JSON.parse(JSON.stringify({ property: matchedProperty, ...aggregate.raw })),
     },
     select: { id: true },

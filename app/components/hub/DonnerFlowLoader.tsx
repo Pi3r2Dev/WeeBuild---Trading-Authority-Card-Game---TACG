@@ -1,5 +1,6 @@
 import { getMyDeck, getPartners, getTopics } from "@/lib/data";
 import { requireSession } from "@/lib/auth-session";
+import { getValidationQueueCount } from "@/lib/links/read";
 import { DonnerFlow } from "./DonnerFlow";
 
 /**
@@ -15,9 +16,10 @@ export async function DonnerFlowLoader({ sourceSiteId }: { sourceSiteId?: string
     sourceSiteId && mySites.some((c) => c.siteId === sourceSiteId)
       ? sourceSiteId
       : undefined;
-  const [partners, topics] = await Promise.all([
+  const [partners, topics, pendingValidationCount] = await Promise.all([
     getPartners(userId, siteId),
     getTopics(userId, siteId),
+    getValidationQueueCount(userId),
   ]);
   return (
     <DonnerFlow
@@ -25,6 +27,7 @@ export async function DonnerFlowLoader({ sourceSiteId }: { sourceSiteId?: string
       partners={partners}
       topics={topics}
       sourceSiteId={siteId ?? mySites[0]?.siteId}
+      pendingValidationCount={pendingValidationCount}
     />
   );
 }

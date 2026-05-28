@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SITE_WORDMARK } from "@/lib/brand/site";
 import { icons } from "./icons";
 
 /** Cadre téléphone 390×844 (présentation mobile-first sur desktop). */
@@ -85,7 +86,7 @@ export function CreditsBadge({
 /**
  * Bandeau de tête d'écran (hauteur 44px — `Body` s'ancre à `top:44`).
  * Productisé : remplace l'ancienne fausse status bar iPhone (« 9:41 » +
- * batterie) par un wordmark WeBuild discret. Sur desktop le rail porte déjà
+ * batterie) par un wordmark WeeBuild discret. Sur desktop le rail porte déjà
  * l'identité → on masque ce bandeau via `.app-screen-topbar` (cf. globals.css).
  */
 export function StatusBar() {
@@ -105,7 +106,7 @@ export function StatusBar() {
         textShadow: "0 0 12px rgba(138,43,226,0.5)",
       }}
     >
-      <span>WEBUILD</span>
+      <span>{SITE_WORDMARK}</span>
     </div>
   );
 }

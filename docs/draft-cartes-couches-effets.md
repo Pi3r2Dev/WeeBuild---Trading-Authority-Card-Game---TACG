@@ -1,7 +1,9 @@
 # Draft — Couches & effets des cartes (parité CSS ↔ R3F)
 
 > **Statut : SPEC DE COMPOSITING** (2026-05-27). Registre canonique des couches, niveaux Z, blend modes, opacités et animations de la carte — pour **synchroniser** la version R3F sur la version CSS validée.
-> Voir aussi : [draft-rendu-3d.md](draft-rendu-3d.md) §7 · §10 (château DOM→texture) · §11 · [draft-charte-graphique.md](draft-charte-graphique.md) §8 · composants : [Card.tsx](../app/components/card/Card.tsx) · [CardFront.tsx](../app/components/card/CardFront.tsx) · [SiteShot.tsx](../app/components/card/SiteShot.tsx) · [HoloCardR3F.tsx](../app/components/r3f/HoloCardR3F.tsx) · tokens : [tokens.css](../app/styles/tokens.css)
+> Voir aussi : [draft-rendu-3d.md](draft-rendu-3d.md) §7 · §10 (château DOM→texture) · §11 · [draft-charte-graphique.md](draft-charte-graphique.md) §8 · [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §12 · composants : [Card.tsx](../app/components/card/Card.tsx) · [CardFront.tsx](../app/components/card/CardFront.tsx) · [SiteShot.tsx](../app/components/card/SiteShot.tsx) · [SitePortrait.tsx](../app/components/card/SitePortrait.tsx) · tokens : [tokens.css](../app/styles/tokens.css)
+
+> **Portrait (2026-05-28)** : couche z1 « portrait » passe de SVG générique (`SiteShot`) vers images crawlées (`SitePortrait`) — **prod pas encore basculée** ; parité château bake à revérifier après bascule.
 
 ---
 

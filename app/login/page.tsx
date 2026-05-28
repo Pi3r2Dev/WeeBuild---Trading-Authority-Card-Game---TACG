@@ -6,6 +6,7 @@
 
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
+import { SITE_WORDMARK } from "@/lib/brand/site";
 import { LoginButton } from "./LoginClient";
 
 const ACCENT = "#8a2be2";
@@ -49,7 +50,7 @@ export default async function LoginPage() {
             textShadow: `0 0 12px ${ACCENT}88`,
           }}
         >
-          WEBUILD
+          {SITE_WORDMARK}
         </div>
         <h1
           style={{

@@ -1,9 +1,11 @@
 # Draft — Personnalisation visuelle des cartes (assets crawlés × charte)
 
-> **Statut : DRAFT — doc de suivi** (2026-05-28)
+> **Statut : DRAFT — doc de suivi** (2026-05-28, maj ingest blob)
 > Projet : *WeBuild — Trading Authority Game*
 > Objectif : faire évoluer le **portrait central** de chaque carte (aujourd'hui un SVG générique dans [SiteShot.tsx](../app/components/card/SiteShot.tsx)) vers une **vraie identité du site crawlé**, habillée par la **charte graphique WeBuild** (4 niveaux N1→N4).
-> Voir aussi : [draft-charte-graphique.md](draft-charte-graphique.md) §7–§8 · [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) · [draft-pipeline-ia.md](draft-pipeline-ia.md) §3 · [draft-gameplay-technique.md](draft-gameplay-technique.md) §2.4 · composants : [CardFront.tsx](../app/components/card/CardFront.tsx) · [SiteShot.tsx](../app/components/card/SiteShot.tsx) · capture : [capture.ts](../lib/services/capture.ts) · [firecrawl.ts](../lib/services/firecrawl.ts)
+> Voir aussi : [draft-charte-graphique.md](draft-charte-graphique.md) §7–§8 · [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) · [draft-pipeline-ia.md](draft-pipeline-ia.md) §3 · [draft-gameplay-technique.md](draft-gameplay-technique.md) §2.4
+
+**Index rapide** : [État implémenté §3](#3-état-actuel--implémenté-vs-restant) · [Reste à faire §12](#12-reste-à-faire-priorisé) · [Checklist §8](#8-plan-de-phases--checklist-de-suivi)
 
 ---
 
@@ -11,385 +13,264 @@
 
 Chaque carte TCG doit **ressembler au site qu'elle représente** tout en **respectant l'habillage rétro par niveau d'autorité** (Game Boy → SNES → PS2 → Holo). La personnalisation n'est pas un collage libre : c'est une **recomposition guidée** dans le gabarit D « Badge tactique » ([CardFront.tsx](../app/components/card/CardFront.tsx)), avec le portrait carré comme zone d'expression principale.
 
-**Trois sources visuelles complémentaires**, extraites au **Tier 1** (pendant ou juste après la capture Firecrawl — pas de worker lourd obligatoire pour le MVP) :
+**Trois sources visuelles complémentaires**, extraites au **Tier 1** (pendant ou juste après la capture Firecrawl) :
 
 | Asset | Rôle dans la carte | Priorité fallback |
 |-------|-------------------|-------------------|
-| **Logo** | Badge discret (topbar ou coin portrait) — ancrage de marque | favicon → `apple-touch-icon` → `<img>` header/nav → initiales domaine |
-| **Image hero** | Fond ou sujet principal du portrait (og:image, bannière above-the-fold) | plus grande `<img>` above-the-fold → screenshot recadré |
-| **Screenshot homepage** | Texture « site réel » dans le portrait (viewport, pas full-page) | placeholder SVG actuel ([SiteShot.tsx](../app/components/card/SiteShot.tsx)) |
+| **Logo** | Badge discret (coin portrait) — ancrage de marque | favicon → `apple-touch-icon` → `<img>` header → initiales domaine |
+| **Image hero** | Fond ou sujet principal du portrait | og:image → twitter:image → plus grande `<img>` DOM → screenshot recadré |
+| **Screenshot homepage** | Texture « site réel » dans le portrait (viewport) | placeholder SVG ([SiteShot.tsx](../app/components/card/SiteShot.tsx)) |
 
-**Puis** : passe **filtre déterministe par niveau** (chemin A, défaut) et option **remaster génératif** (chemin B, opt-in) — principe déjà acté en [draft-charte-graphique.md](draft-charte-graphique.md) §8. **Le filtre garantit la cohérence de marque WeBuild ; les assets garantissent la reconnaissance du site.**
+**Puis** : passe **filtre déterministe par niveau** (chemin A, défaut) et option **remaster génératif** (chemin B, opt-in) — [draft-charte-graphique.md](draft-charte-graphique.md) §8.
 
 ---
 
 ## 2. Ce que l'on sait (déjà acté)
 
-- **Gabarit unique** : zones d'info fixes sur les 4 niveaux ; seul l'habillage change *(charte §7 — layout Gabarit D implémenté côté POC)*.
-- **Portrait = zone centrale** : `<SiteShot level={n} />` dans le carré 1:1 du recto *(cf. [CardFront.tsx](../app/components/card/CardFront.tsx) L137–153)*.
-- **Image de carte = import user OU auto depuis la capture** → modération gemma4-vision → chemin A (filtres) ou B (ComfyUI) → **passe filtre finale obligatoire** *(charte §8, pipeline §3 étape 3, FAQ 🚧 réglages d'image)*.
-- **Moteur de crawl unique = Firecrawl v3** (markdown + html + metadata ; rendu JS) *(pipeline §3 étape 1, [firecrawl.ts](../lib/services/firecrawl.ts))*.
-- **Métadonnées Firecrawl déjà typées** : `ogImage` dans `ScrapeMetadata` — **non propagées** aujourd'hui vers `CapturedSite`.
-- **Pile de rendu CSS = source de vérité** pour le contenu carte ; R3F = foil hero / château bake *(draft-cartes-couches-effets.md)*.
-- **Modération** avant publication publique de tout visuel importé ou auto-généré *(charte §8 garde-fous)*.
+- **Gabarit unique** : zones d'info fixes sur les 4 niveaux ; seul l'habillage change *(charte §7 — Gabarit D implémenté)*.
+- **Portrait = zone centrale** : carré 1:1 du recto ([CardFront.tsx](../app/components/card/CardFront.tsx)).
+- **Image de carte = import user OU auto depuis la capture** → modération gemma4-vision → chemin A ou B → **passe filtre finale obligatoire** *(charte §8, FAQ 🚧)*.
+- **Moteur de crawl unique = Firecrawl v3** *(pipeline §3 étape 1)*.
+- **Pile de rendu CSS = source de vérité** ; R3F = foil hero / château bake *(draft-cartes-couches-effets.md)*.
+- **Persistance blob** : principe `sourceUrl` (transient) → `storageKey` + `publicUrl` (durable) — cf. §5.
 
 ---
 
-## 3. État actuel — écart à combler
+## 3. État actuel — implémenté vs restant
 
-| Zone | Aujourd'hui | Cible |
-|------|-------------|-------|
-| **Capture** | `CapturedSite` + `visualAssets?` (extracteur Tier 1) | ✅ fait — pas encore séparé « URL source » / « blob WeBuild » |
-| **Persistance** | `Site.logoUrl` / `heroImageUrl` / `homepageScreenshotUrl` + `visualProvenanceJson` | ⚠️ **URLs tierces ou Firecrawl signées** — pas d'ingestion blob |
-| **Cache** | Aucun | Redis + CDN + dédup hash — à concevoir (§5.5) |
-| **Rendu portrait** | A/B `/ab/portrait` : `SiteShot` vs `SitePortrait` | `CardFront` reste sur placeholder |
-| **Firecrawl scrape** | `captureSiteWithVisuals` : markdown + html + screenshot, `onlyMainContent: false` | ✅ fait |
-| **Extraction logo/hero** | `extractSiteVisualAssets()` + tests | ✅ fait |
+| Zone | Statut | Détail |
+|------|--------|--------|
+| **Extracteur Tier 1** | ✅ | [extract-visual-assets.ts](../lib/capture/extract-visual-assets.ts) — logo / hero / screenshot URL |
+| **Capture enrichie** | ✅ | [captureSiteWithVisuals](../lib/services/capture.ts) — markdown + html + screenshot, `onlyMainContent: false` |
+| **Ingest blob** | ✅ | [ingest-visual-assets.ts](../lib/capture/ingest-visual-assets.ts) — fetch SSRF-safe, sha256, dédup |
+| **Store** | ✅ dev/test | `memory` (vitest) + `local` FS ([local-fs-visual-asset-store.ts](../lib/capture/local-fs-visual-asset-store.ts)) |
+| **Store prod** | 🚧 | **MinIO** — non implémenté |
+| **Serveur assets** | ✅ local | [GET /api/assets/visual/…](../app/api/assets/visual/[...path]/route.ts) — `Cache-Control: immutable` |
+| **DB Site** | ✅ | migration `20260528160000` — `*Url` = `publicUrl` post-ingest ; `visualProvenanceJson` complet |
+| **Câblage capture** | ✅ | [persist-capture.ts](../lib/capturer/persist-capture.ts), [rescan-site.ts](../lib/capturer/rescan-site.ts), import batch GSC |
+| **Rescan merge** | ✅ | slot précédent conservé si re-ingest échoue |
+| **Dédup contenu (L1)** | ✅ | index hash → storageKey dans le store local/memory |
+| **Cache Redis (L2)** | 🚧 | non implémenté |
+| **Rendu A/B** | ✅ R&D | [SitePortrait.tsx](../app/components/card/SitePortrait.tsx) vs placeholder — route `/ab/portrait` |
+| **Rendu prod** | 🚧 | [CardFront.tsx](../app/components/card/CardFront.tsx) utilise encore **SiteShot** (SVG) |
+| **Lecture DB → UI** | 🚧 | aucun mapper `Site.logoUrl` → carte affichée en deck / hub |
+| **Tests** | ✅ | 111 tests vitest (extract, ingest, store, fetch, capture) |
 
-**Constat POC** : [SiteShot.tsx](../app/components/card/SiteShot.tsx) documente explicitement qu'il s'agit d'un *« placeholder de la future image auto-générée »* — la charte et les couches sont prêtes ; **il manque la couche données + pipeline visuel**.
+**En prod Coolify aujourd'hui** : prévoir **volume Docker** sur `WEBUILD_VISUAL_STORAGE_PATH` (défaut `./storage/visual`) — les blobs ne survivent pas à un redeploy sans volume.
 
 ---
 
 ## 4. Assets cibles — définition & heuristiques
 
+*(Inchangé — cf. versions précédentes.)*
+
 ### 4.1 Logo
 
-**Sources (ordre de priorité)** :
-
 1. `<link rel="icon">` / `apple-touch-icon` (résolution la plus haute)
-2. `<img>` dans `<header>`, `[class*="logo"]`, `[id*="logo"]`, `alt` contenant le nom de marque
-3. **Fallback typographique** : initiales du domaine sur fond `--c-frame` (déjà compatible tokens N1–N4)
-
-**Normalisation** : URL absolue, SSRF guard sur fetch secondaire, taille min/max (ex. rejeter 1×1 tracking pixel), préférer PNG/SVG/WebP.
+2. `<img>` dans `<header>` avec `logo` / `brand` dans class/id/alt
+3. **Fallback UI** : initiales domaine ([SitePortrait.tsx](../app/components/card/SitePortrait.tsx))
 
 ### 4.2 Image hero
 
-**Sources (ordre de priorité)** :
+1. `metadata.ogImage` / `twitter:image`
+2. `<meta property="og:image">` parsé depuis HTML
+3. Première `<img>` large above-the-fold (score DOM)
+4. **Fallback** : screenshot recadré
 
-1. `metadata.ogImage` / `twitter:image` (Firecrawl metadata)
-2. `<meta property="og:image">` parsé depuis `html` si absent des metadata
-3. Première `<img>` « large » above-the-fold (surface DOM × ordre de lecture) — exclure icônes, pixels, pub
-4. **Fallback** : recadrage central du screenshot homepage
+### 4.3 Screenshot homepage
 
-**Usage carte** : remplit le portrait (object-fit cover) ; le logo peut se superposer (coin bas-gauche ou topbar).
+- Firecrawl format `screenshot` viewport (1280×800) — pas full-page
+- Origine Firecrawl : bypass SSRF via `FIRECRAWL_API_URL` ([fetch-remote-image.ts](../lib/capture/fetch-remote-image.ts))
+- Ingest **immédiat** post-capture → plus d'URL signée en DB
 
-### 4.3 Screenshot homepage (Tier 1)
-
-**Source** : Firecrawl format `screenshot` (viewport) — **pas** `screenshot@fullPage` pour le portrait carré.
-
-Paramètres proposés (à calibrer) :
-
-```json
-{
-  "type": "screenshot",
-  "fullPage": false,
-  "quality": 85,
-  "viewport": { "width": 1280, "height": 800 }
-}
-```
-
-**Contraintes infra** :
-
-- L'URL signée Firecrawl **expire (~24 h)** → **ré-ingérer** immédiatement vers stockage persistant (object storage ou `public/` versionné — à trancher §9).
-- `onlyMainContent: true` **coupe header/hero** → pour le screenshot et l'extraction logo, prévoir **`onlyMainContent: false`** sur la passe visuelle (double scrape ou formats combinés sur un seul appel si Firecrawl self-hosted le permet).
-- Coût box 4 Go : screenshot = Chromium supplémentaire → rester sérialisé ([firecrawl.ts](../lib/services/firecrawl.ts) `serialize()`).
-
-### 4.4 Matrice de composition par niveau (piste)
+### 4.4 Matrice de composition par niveau (piste — à valider handoff)
 
 | Niveau | Logo | Hero | Screenshot | Traitement filtre A |
 |--------|------|------|------------|---------------------|
-| **N1 GB** | pixelisé 4 verts | dither + scanlines sur hero | optionnel en fond très atténué | quantize 4 verts + Bayer |
-| **N2 SNES** | 16 couleurs | Mode-7 léger sur hero | bandeau screenshot en bas du portrait | quantize ~16 couleurs |
-| **N3 PS2** | chrome semi-transp. | hero + bloom bleuté | screenshot en overlay délavé | color grade + bloom |
-| **N4 Holo** | blanc/contour | hero full color | screenshot sous foil localisé (z2) | overlay foil + glitch strips |
-
-> Détail des recettes filtre : [draft-charte-graphique.md](draft-charte-graphique.md) §8. Détail des couches z : [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) §1.
+| **N1 GB** | pixelisé 4 verts | dither + scanlines | fond atténué | quantize 4 verts + Bayer |
+| **N2 SNES** | 16 couleurs | Mode-7 léger | bandeau bas | quantize ~16 couleurs |
+| **N3 PS2** | chrome semi-transp. | hero + bloom | overlay délavé | color grade + bloom |
+| **N4 Holo** | blanc/contour | full color | sous foil z2 | overlay foil + glitch |
 
 ---
 
-## 5. Modèle de données proposé
+## 5. Modèle de données & persistance
 
-### 5.1 Extension `CapturedSite` (TypeScript, transient)
+### 5.1 Transient — `SiteVisualAssets` ([visual-asset-types.ts](../lib/capture/visual-asset-types.ts))
 
-```typescript
-/** Assets visuels extraits au Tier 1 — matière première du portrait. */
-export interface SiteVisualAssets {
-  logoUrl: string | null;
-  heroImageUrl: string | null;
-  homepageScreenshotUrl: string | null;
-  /** Source de chaque asset pour debug / re-score confiance. */
-  provenance: {
-    logo: "favicon" | "header-img" | "fallback-initials";
-    hero: "og" | "twitter" | "dom-largest" | "screenshot-crop";
-    screenshot: "firecrawl-viewport" | null;
-  };
-}
-```
+URLs **sources** découvertes au crawl (avant ingest). Attaché à `CapturedSite.visualAssets`.
 
-### 5.2 Persistance Prisma (piste — migration future)
+### 5.2 Persisté — `Site` (Prisma, Option A)
 
-Option **A — champs aplatis sur `Site`** (simple, MVP) :
+| Colonne | Contenu actuel |
+|---------|----------------|
+| `logoUrl` | `publicUrl` blob logo (ex. `/api/assets/visual/{siteId}/logo/{hash}.png`) |
+| `heroImageUrl` | idem hero |
+| `homepageScreenshotUrl` | idem screenshot |
+| `visualProvenanceJson` | `VisualProvenanceDocument` — voir §5.3 |
 
-- `logoUrl`, `heroImageUrl`, `homepageScreenshotUrl` (String?, URLs persistantes)
-- `visualAssetsJson` (Json — provenance + dimensions + hash)
+Migration : `20260528160000_site_visual_assets`. **À appliquer** en prod : `npx prisma migrate deploy`.
 
-Option **B — table `SiteVisualAsset`** (1-n, historique rescan) :
-
-- `siteId`, `kind` (`LOGO` | `HERO` | `SCREENSHOT`), `storageKey`, `source`, `width`, `height`, `createdAt`
-
-**Recommandation doc** : Option A pour P4-MVP ; Option B si le rescan hebdomadaire doit garder l'historique visuel.
-
-### 5.3 `Card` — champs présentation (piste)
-
-- `portraitSource` : `auto` | `import` | `hybrid` (auto + retouche user)
-- `importImageUrl` : override user (chemin charte §8)
-- `filterPath` : `deterministic` | `generative` + `generativeSeed`
-
-*(Non bloquant pour le MVP portrait auto — l'import user reste phase ultérieure.)*
-
-### 5.4 État réel de la persistance (2026-05-28) — dette assumée
-
-Ce qui est **implémenté** aujourd'hui ([persist-capture.ts](../lib/capturer/persist-capture.ts), migration `20260528160000_site_visual_assets`) :
-
-| Couche | Comportement actuel | Problème |
-|--------|---------------------|----------|
-| **Extracteur** | URLs absolues logo/hero + URL screenshot Firecrawl | Correct en **transient** (`CapturedSite.visualAssets`) |
-| **DB `Site`** | 3 colonnes `*Url` + `visualProvenanceJson` (enum seulement) | On persiste des **liens**, pas des **blobs** |
-| **Screenshot** | URL signée Firecrawl copiée telle quelle | **Expire ~24 h** → portraits cassés après capture si pas ré-ingéré |
-| **Logo / hero** | URL du site crawlé (og:image, favicon…) | Liens **fragiles** (CDN, hotlink, 403, changement de page) |
-| **Rescan** | Écrase les 3 URLs à chaque rescan | Pas d'historique ; pas de « garder l'ancien visuel si inchangé » |
-| **Cache** | Aucun (ni Redis, ni HTTP, ni dédup) | Re-fetch implicite navigateur sur URLs tierces ; pas de contrôle |
-| **Abstraction stockage** | Aucune — Prisma couplé directement | Impossible de basculer MinIO ↔ filesystem sans refactor |
-
-**Verdict (2026-05-28)** : ingest blob **implémenté** (memory + local FS, dédup hash, merge rescan). Reste **MinIO prod**, table `SiteVisualAsset` (historique), cache Redis L2.
-
-### 5.5 Stratégie cible — cache + persistance flexible
-
-Principe : **séparer trois notions** que le code actuel mélange :
-
-```
-sourceUrl     URL découverte au crawl (og:image, favicon, Firecrawl signée) — éphémère / tierce
-storageKey    Clé objet dans notre backend (MinIO/S3) — durable, sous notre contrôle
-publicUrl     URL servie au front (CDN ou route `/api/assets/[key]`) — cacheable
-```
-
-#### Pipeline cible (3 étapes)
-
-```
-[Crawl] → SiteVisualAssets (sourceUrl only, transient)
-    │
-    ▼
-[Ingest] VisualAssetIngestor — fetch SSRF-safe → normalize (webp, max px) → put blob
-    │         dedup: sha256(content) — si hash existe, réutiliser storageKey
-    ▼
-[Persist] SiteVisualAssetRecord — storageKey + provenance + fetchedAt + contentHash
-    │
-    ▼
-[Serve]  publicUrl immuable par hash OU versionnée par captureId
-```
-
-#### Interface de persistance (flexibilité)
-
-Abstraction recommandée — **une seule porte d'entrée**, backends interchangeables :
+### 5.3 Document `visualProvenanceJson`
 
 ```typescript
-/** Contrat stockage blob — impl MinIO prod, filesystem dev, memory tests. */
-interface VisualAssetStore {
-  put(input: { bytes: Buffer; mime: string; siteId: string; kind: VisualAssetKind }): Promise<{ storageKey: string; contentHash: string }>;
-  getPublicUrl(storageKey: string): string;
-  exists(contentHash: string): Promise<string | null>; // dédup
+interface VisualProvenanceDocument {
+  ingestStatus: "complete" | "partial" | "failed" | "skipped";
+  fetchedAt: string; // ISO
+  logo: VisualAssetSlotMeta | null;
+  hero: VisualAssetSlotMeta | null;
+  screenshot: VisualAssetSlotMeta | null;
 }
 
-/** Orchestration post-crawl — remplace l'écriture directe des URLs en DB. */
-interface VisualAssetIngestor {
-  ingest(siteId: string, assets: SiteVisualAssets): Promise<PersistedVisualAssets>;
-}
-```
-
-| Backend | Quand | Flexibilité |
-|---------|-------|-------------|
-| **`MemoryVisualAssetStore`** | tests unitaires vitest | zéro réseau, zéro MinIO |
-| **`LocalFsVisualAssetStore`** | dev local | `./storage/visual/` + route statique |
-| **`MinioVisualAssetStore`** | prod Coolify | bucket partagé infra (même pattern preuves P4, cf. [draft-pipeline-ia.md](draft-pipeline-ia.md) §6) |
-
-La DB ne stocke **jamais** le binaire — seulement `storageKey`, `contentHash`, `mime`, `width`, `height`, `sourceUrl` (audit), `fetchedAt`.
-
-#### Cache (3 niveaux)
-
-| Niveau | Quoi | Où | TTL / invalidation |
-|--------|------|-----|-------------------|
-| **L1 — dédup contenu** | `contentHash → storageKey` | Postgres unique index ou Redis SET | permanent tant que blob existe |
-| **L2 — ingest en vol** | éviter double fetch logo/hero identiques entre sites | Redis `visual:hash:{sha256}` | 7 j (sites différents, même favicon CDN) |
-| **L3 — HTTP/CDN** | `publicUrl` servie au front | `Cache-Control: public, max-age=31536000, immutable` si URL hashée | invalidation = nouvelle capture → nouvelle clé |
-
-Pas de cache Redis sur le **rendu filtré par niveau** (N1→N4) en V1 — trop de combinaisons ; on cache les **sources** brutes, le filtre CSS reste côté client.
-
-#### Schéma Prisma recommandé (évolution Option A → B)
-
-**Phase 1.5 (minimal, avant MinIO)** — enrichir `visualProvenanceJson` :
-
-```json
-{
-  "logo": { "provenance": "apple-touch-icon", "sourceUrl": "…", "contentHash": null, "fetchedAt": null },
-  "hero": { … },
-  "screenshot": { … },
-  "ingestStatus": "pending" | "partial" | "complete" | "failed"
+interface VisualAssetSlotMeta {
+  provenance: string;
+  sourceUrl: string | null;   // URL crawl d'origine (audit)
+  storageKey: string;
+  contentHash: string;        // sha256
+  publicUrl: string;
+  mime: string;
+  bytes: number;
+  fetchedAt: string;
+  error?: string;             // si slot en échec sans précédent
 }
 ```
 
-**Phase 2 (flexible)** — table `SiteVisualAsset` :
+### 5.4 Pipeline ingest (implémenté 2026-05-28)
 
-| Colonne | Rôle |
-|---------|------|
-| `siteId`, `kind` | LOGO \| HERO \| SCREENSHOT |
-| `storageKey` | clé MinIO |
-| `contentHash` | sha256 — dédup + cache immutable URL |
-| `sourceUrl` | URL crawl d'origine (audit) |
-| `provenance` | enum extracteur |
-| `width`, `height`, `mime`, `bytes` | métadonnées |
-| `isActive` | un seul actif par (siteId, kind) ; rescan crée une ligne, bascule `isActive` |
-| `createdAt` | historique rescan |
+```
+captureSiteWithVisuals()
+    → extractSiteVisualAssets()     [URLs sources]
+    → persistCapture() upsert Site
+    → ingestAndUpdateSiteVisuals()  [fetch → hash → store → update Site]
+```
 
-Les colonnes aplatis `logoUrl` / `heroImageUrl` / `homepageScreenshotUrl` deviennent des **vues dénormalisées** (`publicUrl` de l'asset actif) — ou sont retirées une fois le front migré sur `storageKey`.
+| Module | Fichier | Statut |
+|--------|---------|--------|
+| Interface store | [visual-asset-store.ts](../lib/capture/visual-asset-store.ts) | ✅ |
+| Factory | [create-visual-asset-store.ts](../lib/capture/create-visual-asset-store.ts) | ✅ |
+| Memory store | [memory-visual-asset-store.ts](../lib/capture/memory-visual-asset-store.ts) | ✅ |
+| Local FS store | [local-fs-visual-asset-store.ts](../lib/capture/local-fs-visual-asset-store.ts) | ✅ |
+| Fetch SSRF-safe | [fetch-remote-image.ts](../lib/capture/fetch-remote-image.ts) | ✅ |
+| Ingestor | [ingest-visual-assets.ts](../lib/capture/ingest-visual-assets.ts) | ✅ |
+| Persist DB | [persist-visual-assets.ts](../lib/capture/persist-visual-assets.ts) | ✅ |
+| Route serve | [app/api/assets/visual/[...path]/route.ts](../app/api/assets/visual/[...path]/route.ts) | ✅ local |
+| **MinIO store** | `minio-visual-asset-store.ts` | 🚧 |
+| **Resize webp** | normalisation post-fetch | 🚧 |
+| **Table `SiteVisualAsset`** | historique rescan Option B | 🚧 |
 
-#### Politique rescan & import user
+### 5.5 Variables d'environnement
 
-| Événement | Comportement cible |
-|-----------|-------------------|
-| **Première capture** | ingest sync (bloquant UI) si ≤ 3 images ; sinon file Celery + `ingestStatus: pending` + placeholder SVG |
-| **Rescan hebdo** | re-extract ; ingest **seulement si** `contentHash` hero/logo/screenshot change |
-| **Import user** | `Card.portraitSource = import` → `storageKey` user upload ; crawl auto en fallback |
-| **Échec ingest** | garder dernier asset actif ; log + métrique ; ne pas effacer le portrait |
+| Variable | Défaut | Rôle |
+|----------|--------|------|
+| `WEBUILD_VISUAL_STORAGE` | `local` (`memory` en test) | Backend blob : `local` \| `memory` |
+| `WEBUILD_VISUAL_STORAGE_PATH` | `./storage/visual` | Racine FS (backend `local`) |
+| `WEBUILD_VISUAL_PUBLIC_BASE` | `/api/assets/visual` | Préfixe URL publique |
+| `FIRECRAWL_API_URL` | — | Bypass SSRF pour screenshots Firecrawl self-hosted |
 
-#### Fichiers code à créer (prochaine tranche)
+Cf. [lib/services/README.md](../lib/services/README.md).
 
-| Module | Rôle |
-|--------|------|
-| `lib/capture/visual-asset-store.ts` | interface + factory `createVisualAssetStore()` selon env |
-| `lib/capture/ingest-visual-assets.ts` | fetch SSRF-safe, resize webp, dédup hash, appel store |
-| `lib/capture/persist-visual-assets.ts` | écriture DB (découplée de `persist-capture.ts`) |
-| `app/api/assets/[key]/route.ts` *(option dev)* | sert les blobs filesystem local |
+### 5.6 Évolution schéma (Option B — non implémentée)
+
+Table `SiteVisualAsset` : historique rescan, `isActive` par kind, métadonnées width/height. Les colonnes aplatis `*Url` deviennent vues dénormalisées ou sont retirées.
+
+### 5.7 `Card` — champs futurs
+
+- `portraitSource` : `auto` | `import` | `hybrid`
+- `importImageUrl`, `filterPath`, `generativeSeed`
 
 ---
 
-## 6. Pipeline d'extraction (Tier 1)
+## 6. Pipeline bout-en-bout (état code)
 
 ```
 URL membre
     │
     ▼
-[Firecrawl scrape enrichi]
-    formats: markdown, html, screenshot(viewport)
-    onlyMainContent: false (passe visuelle)
-    waitFor: 1000–2000 ms (SPA)
+Firecrawl (markdown + html + screenshot)     ← captureSiteWithVisuals
     │
-    ├─► CapturedSite (existant — score, résumé)
-    │
-    └─► extractSiteVisualAssets(html, metadata, screenshotUrl)
-            ├─ logo  (heuristiques §4.1)
-            ├─ hero  (og/twitter/dom §4.2)
-            └─ screenshot → fetch → store persistant
+    ├─► CapturedSite (score, résumé)
+    └─► SiteVisualAssets (URLs sources)
     │
     ▼
-[Modération rapide] — dimensions, MIME, SSRF sur URLs images tierces
+persistCapture — upsert Site/Card
     │
     ▼
-[Persist Site + assets]
+ingestAndUpdateSiteVisuals                   ← fetch SSRF → sha256 → store → DB
     │
     ▼
-[Card render] SiteShot(data, level, assets) → filtres niveau
+Front : SitePortrait (A/B) / SiteShot (prod) ← mapper DB pas encore câblé
 ```
 
-**Emplacement code cible** :
-
-| Module | Rôle |
-|--------|------|
-| [lib/services/firecrawl.ts](../lib/services/firecrawl.ts) | Formats screenshot + parsing réponse |
-| `lib/capture/extract-visual-assets.ts` *(à créer)* | Heuristiques logo/hero depuis HTML |
-| `lib/capture/ingest-remote-image.ts` *(à créer)* | Fetch sécurisé + upload stockage |
-| [lib/services/capture.ts](../lib/services/capture.ts) | Orchestration scrape + extraction |
-| [lib/capturer/persist-capture.ts](../lib/capturer/persist-capture.ts) | Persistance assets |
-| [app/components/card/SiteShot.tsx](../app/components/card/SiteShot.tsx) | Rendu portrait avec vrais assets |
-
-**Tier 2 (optionnel, post-MVP)** : si heuristiques ambiguës → `gemma4-vision` choisit logo/hero parmi candidats DOM (coût GPU, async Celery).
+**Tier 2 (futur)** : `gemma4-vision` si heuristiques logo/hero ambiguës (Celery).
 
 ---
 
 ## 7. Pipeline de rendu (charte × niveau)
 
-### 7.1 Contrat composant `SiteShot`
+### 7.1 Composants
 
-Évolution proposée :
+| Composant | Rôle | Statut |
+|-----------|------|--------|
+| [SiteShot.tsx](../app/components/card/SiteShot.tsx) | SVG placeholder par niveau | prod actuelle |
+| [SitePortrait.tsx](../app/components/card/SitePortrait.tsx) | hero + logo + screenshot + filtres CSS MVP | A/B + futur prod |
+| [CardFront.tsx](../app/components/card/CardFront.tsx) | Gabarit D — appelle `SiteShot` | à migrer |
 
-```tsx
-export function SiteShot({
-  level,
-  assets,
-  domain,
-}: {
-  level: Level;
-  assets?: SiteVisualAssets | null;
-  domain: string;
-}) { /* … */ }
-```
+### 7.2 Chemin A — filtres déterministes
 
-- Si `assets` absent → **fallback SVG actuel** (rétrocompatibilité deck mock / seed).
-- Si présent → `<img>` / canvas filtré selon niveau + overlays CSS (`lcd-scanlines`, `holo-foil`, etc.).
+1. ✅ MVP CSS : `<img>` + logo + overlays N1/N4 ([SitePortrait.module.css](../app/components/card/SitePortrait.module.css))
+2. 🚧 Affinage N1/N2 : quantize/dither canvas
+3. 🚧 N3/N4 : screenshot texture + foil localisé (cf. draft-cartes-couches-effets §1 z2)
 
-### 7.2 Chemin A — filtres déterministes (défaut)
+### 7.3 Chemin B — ComfyUI
 
-Implémentation progressive :
-
-1. **Phase 1** : `<img src={hero}>` + logo superposé + `filter`/`mix-blend-mode` CSS par `.lvl-N`
-2. **Phase 2** : canvas/WebGL offscreen pour quantize/dither N1/N2 (fidélité charte §8)
-3. **Phase 3** : screenshot en fond texturé N3/N4
-
-### 7.3 Chemin B — remaster génératif (opt-in, plus tard)
-
-ComfyUI img2img par niveau → **toujours** clôturé par passe filtre A. Seed stocké sur `Card`. Hors scope immédiat.
+Hors scope immédiat.
 
 ---
 
 ## 8. Plan de phases & checklist de suivi
 
-### Phase 0 — Spec & doc *(en cours)*
+### Phase 0 — Spec & doc
 
-- [x] Créer ce document de suivi (2026-05-28)
-- [x] Architecture extracteur Tier 1 + tests unitaires (2026-05-28)
-- [x] Écran A/B `/ab/portrait` (R&D) — placeholder vs SitePortrait (2026-05-28)
-- [ ] Valider la matrice de composition §4.4 avec le handoff design (`design_handoff_webuild_tag/`)
-- [ ] Trancher stockage persistant des images (§9) — URLs Firecrawl expirantes
+- [x] Document de suivi (2026-05-28)
+- [x] Architecture extracteur + tests
+- [x] Écran A/B `/ab/portrait`
+- [ ] Valider matrice §4.4 avec handoff `design_handoff_webuild_tag/`
 
-### Phase 1 — Extraction Tier 1 (backend)
+### Phase 1 — Extraction + ingest (backend)
 
-- [x] Enrichir `ScrapeMetadata` / réponse Firecrawl (`screenshot`)
-- [x] `extractSiteVisualAssets()` — heuristiques logo + hero
-- [x] **`VisualAssetStore` + `ingest-visual-assets.ts`** — memory + local FS, dédup hash (§5.5)
-- [x] Enrichir `visualProvenanceJson` : `sourceUrl`, `contentHash`, `ingestStatus`, `fetchedAt`, slots détaillés
-- [x] Étendre `CapturedSite` + persistance `Site` — URLs **publiques** post-ingest (plus d'URLs Firecrawl brutes)
-- [x] Tests unitaires : HTML fixtures → assets attendus
-- [x] Brancher sur `/capturer` + rescan + import batch GSC (`captureSiteWithVisuals`)
+- [x] Firecrawl screenshot + extracteur logo/hero
+- [x] `VisualAssetStore` memory + local FS + dédup hash
+- [x] `visualProvenanceJson` enrichi
+- [x] Câblage `/capturer`, rescan, import batch GSC
+- [x] Tests unitaires (111)
+- [ ] **`prisma migrate deploy`** en prod (migration `20260528160000`)
+- [ ] **Volume Docker** `storage/visual` en Coolify
+- [ ] **MinioVisualAssetStore** prod
+- [ ] Normalisation **webp + resize** (max 800px) post-fetch
+- [ ] Ingest **async Celery** si latence capture > seuil (~5 s)
 
 ### Phase 2 — Rendu portrait (frontend)
 
-- [x] `SitePortrait` MVP — consomme `SiteVisualAssets` (filtres CSS par niveau)
-- [ ] Remplacer `SiteShot` dans `CardFront` quand B validé sur `/ab/portrait`
-- [ ] Filtres CSS N1/N2 affinés (quantize/dither canvas)
-- [ ] Composition N3/N4 (hero + screenshot + foil localisé)
-- [ ] Fallback gracieux (pas de hero → screenshot seul → SVG)
-- [ ] Vérifier parité château (bake DOM→texture inclut le nouveau portrait)
+- [x] `SitePortrait` MVP + A/B
+- [ ] **Mapper DB** : `Site.logoUrl/heroImageUrl/…` → `CardData` / deck / hub
+- [ ] Remplacer `SiteShot` dans `CardFront` après validation A/B
+- [ ] Filtres N1/N2 affinés (canvas quantize)
+- [ ] Composition N3/N4 + parité château (bake DOM→texture)
+- [ ] Fallback : hero → screenshot → SVG → initiales
 
 ### Phase 3 — Qualité & garde-fous
 
-- [ ] Modération gemma4-vision (NSFW, droits, image vide)
-- [ ] Cache / CDN headers pour assets
-- [ ] Métriques : taux de succès logo/hero/screenshot par capture
+- [ ] Modération gemma4-vision (NSFW, image vide)
+- [ ] Métriques : taux succès logo/hero/screenshot par capture
+- [ ] Rescan intelligent : skip ingest si `contentHash` inchangé
+- [ ] Cache Redis L2 (favicon partagés inter-sites)
 
 ### Phase 4 — Enrichissements
 
 - [ ] Import user override (charte §8)
+- [ ] Table `SiteVisualAsset` (historique)
 - [ ] Chemin B ComfyUI
-- [ ] Tier 2 vision pour sites SPA opaques
+- [ ] Tier 2 vision (SPA opaques)
 
 ---
 
@@ -397,42 +278,90 @@ ComfyUI img2img par niveau → **toujours** clôturé par passe filtre A. Seed s
 
 ### Extraction & infra
 
-- [ ] **Double scrape vs scrape unique** : un appel Firecrawl avec `markdown+html+screenshot` et `onlyMainContent:false`, ou deux appels (texte optimisé + visuel complet) ?
-- [~] **Stockage persistant** : architecture cible §5.5 (MinIO prod, filesystem dev, interface `VisualAssetStore`) — **à implémenter** ; Option A actuelle = URLs fragiles
-- [~] **Expiration URL Firecrawl** : ingest **sync** dans `captureSiteWithVisuals` (MVP) → **async Celery** si latence > 5 s (§5.5)
-- [ ] **SSRF sur images tierces** : même garde que scrape initial ? allowlist CDN connus ?
-- [ ] **Dédup inter-sites** : même favicon partagé (Google CDN) → un blob, N références ?
+- [x] Expiration URL Firecrawl — **mitigé** par ingest sync post-capture *(2026-05-28)*
+- [x] Stockage dev — **local FS** + route API *(2026-05-28)*
+- [x] SSRF images tierces — **assertFetchableAssetUrl** + garde Firecrawl trusted origin
+- [x] Dédup contenu — **sha256** dans store L1 *(inter-sites : même storageKey si hash identique)*
+- [ ] Double scrape vs scrape unique (`onlyMainContent` impacte score markdown ?)
+- [ ] MinIO : bucket name, credentials, alignement preuves P4
+- [ ] Ingest async vs sync en prod (latence `/capturer`)
 
 ### Produit & charte
 
-- [ ] **Logo dans topbar vs portrait** : le handoff Gabarit D prévoit-il un emplacement logo distinct ?
-- [ ] **Screenshot visible ou texture** : en N1/N2, montre-t-on le screenshot ou seulement hero stylisé ?
-- [ ] **Import user** : remplace hero, logo, ou les deux ? Priorité import > crawl ?
-- [ ] **Rescan** : regénérer le portrait à chaque rescan ou garder le visuel tant que le membre ne force pas ?
+- [ ] Logo topbar vs portrait (handoff)
+- [ ] Screenshot visible en N1/N2 ou texture seule
+- [ ] Import user : priorité sur crawl ?
+- [ ] Rescan : regénérer systématiquement ou si hash change seulement ? *(code : re-ingest always ; optimisation Phase 3)*
 
 ### Technique
 
-- [ ] **Format `images` Firecrawl** (liste d'URLs page) — utile pour hero candidats ?
-- [ ] **Self-hosted v3** : support exact des formats screenshot objet `{ type, viewport }` — à vérifier sur `10.10.0.1:3002` avant impl.
-- [ ] **Performance mobile** : poids max hero/screenshot (webp, max 800px) ?
+- [ ] Format Firecrawl `images` — candidats hero supplémentaires
+- [ ] Self-hosted v3 : format screenshot objet `{ type, viewport }` — vérifier sur `10.10.0.1:3002`
+- [ ] Poids mobile : resize webp avant store
 
 ---
 
-## 10. Dépendances & docs à tenir à jour
+## 10. Dépendances docs
 
-| Document | Mise à jour quand |
-|----------|-------------------|
-| [draft-charte-graphique.md](draft-charte-graphique.md) §8–§9 | Recettes filtre figées ; question « image auto » résolue |
-| [draft-pipeline-ia.md](draft-pipeline-ia.md) §3 étape 1–3 | Pipeline visuel Tier 1 documenté |
-| [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) | Portrait passe de SVG → img filtrée (z1) |
-| [faq.md](faq.md) | Item 🚧 réglages d'image — pointer ici |
-| [lib/services/README.md](../lib/services/README.md) | Formats Firecrawl enrichis |
+| Document | Statut |
+|----------|--------|
+| [draft-charte-graphique.md](draft-charte-graphique.md) §8 | image auto = logo+hero+screenshot — recettes filtre 🚧 |
+| [draft-pipeline-ia.md](draft-pipeline-ia.md) §3 | pipeline visuel Tier 1 ✅ documenté |
+| [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) | portrait SVG → img 🚧 |
+| [faq.md](faq.md) | 🚧 réglages d'image |
+| [lib/services/README.md](../lib/services/README.md) | env visuels ✅ |
 
 ---
 
 ## 11. Journal de suivi
 
-| Date | Auteur | Entrée |
-|------|--------|--------|
-| 2026-05-28 | — | Phase 1 architecture : extracteur + tests + `captureSiteWithVisuals` + migration Site + A/B `/ab/portrait`. |
-| 2026-05-28 | — | Ingest + `VisualAssetStore` (memory/local FS) + route `/api/assets/visual` + tests (111). |
+| Date | Entrée |
+|------|--------|
+| 2026-05-28 | Spec + extracteur Tier 1 + tests + `captureSiteWithVisuals` + migration Site + A/B `/ab/portrait`. |
+| 2026-05-28 | Ingest blob : `VisualAssetStore` (memory/local), route `/api/assets/visual`, 111 tests, câblage persist/rescan. |
+| 2026-05-28 | Doc refonte §3/§12 — état implémenté vs backlog prod/front. |
+
+---
+
+## 12. Reste à faire (priorisé)
+
+> **Prochaine session recommandée** : Phase 2 front (mapper DB → `SitePortrait` dans `CardFront`) en parallèle de l'itération visuelle sur `/ab/portrait`.
+
+### P0 — Bloquant prod (infra)
+
+1. **`npx prisma migrate deploy`** — migration `20260528160000_site_visual_assets` si pas encore appliquée.
+2. **Volume Docker Coolify** monté sur `WEBUILD_VISUAL_STORAGE_PATH` (sinon blobs perdus au redeploy).
+3. **Smoke test capture prod** : capturer un site → vérifier `Site.visualProvenanceJson.ingestStatus === "complete"` → URLs `/api/assets/visual/…` joignables.
+
+### P1 — Prod durable (backend)
+
+4. **`MinioVisualAssetStore`** — implémenter l'interface existante ; env `WEBUILD_VISUAL_STORAGE=minio` ; bucket partagé infra (aligner [draft-pipeline-ia.md](draft-pipeline-ia.md) preuves P4).
+5. **Normalisation images** — resize max ~800px + conversion webp avant `store.put()` (réduire poids mobile + disque).
+6. **Rescan skip** — comparer `contentHash` avant re-fetch ; n'ingérer que les slots modifiés.
+
+### P2 — Produit visible (frontend)
+
+7. **Mapper données** — lire `Site.logoUrl`, `heroImageUrl`, `homepageScreenshotUrl` dans `lib/data/mappers` ou `CardData` ; exposer au deck / `/carte/[cardId]`.
+8. **Basculer `CardFront`** — remplacer `<SiteShot>` par `<SitePortrait>` quand assets présents ; fallback SVG sinon.
+9. **Itérer filtres** sur `/ab/portrait` (N1→N4) jusqu'à validation design ; puis figer CSS.
+10. **Parité château** — vérifier bake `html-to-image` inclut le nouveau portrait ([CardCastle.tsx](../app/components/r3f/CardCastle.tsx)).
+
+### P3 — Qualité & scale
+
+11. **Modération gemma4-vision** avant affichage public (NSFW, image vide).
+12. **Cache Redis L2** — index `visual:hash:{sha256}` pour éviter re-fetch favicons CDN communes.
+13. **Table `SiteVisualAsset`** — historique rescan, audit, rollback visuel.
+14. **Ingest async Celery** si latence sync > 5 s (UX `/capturer` + `ingestStatus: pending` + placeholder).
+15. **Métriques** — taux succès/échec par slot, durée ingest, taille blobs.
+
+### P4 — Plus tard
+
+16. Import user override (charte §8).
+17. Chemin B ComfyUI + seed sur `Card`.
+18. Tier 2 vision (`gemma4-vision`) pour sites SPA sans og:image fiable.
+19. CDN devant `publicUrl` (Cloudflare / MinIO public) en remplacement de la route Next.
+
+### Dette doc / design
+
+20. Valider matrice §4.4 avec handoff hi-fi.
+21. Trancher logo topbar vs portrait ; visibilité screenshot N1/N2.

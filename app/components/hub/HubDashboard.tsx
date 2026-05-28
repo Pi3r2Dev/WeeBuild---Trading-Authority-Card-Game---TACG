@@ -4,6 +4,7 @@ import { getSuggestions, getMe, getMyDeck, getNavDeck, getRecentActivity } from 
 import { getMyDeckRescanBadges } from "@/lib/data/card-detail";
 import { requireSession } from "@/lib/auth-session";
 import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
+import { TacgAcronymBanner } from "./TacgAcronymBanner";
 import { BottomNav } from "./BottomNav";
 import { MyHand } from "./MiniCard";
 import { AISuggestionTCG, ActivityRow } from "./HubWidgets";
@@ -37,6 +38,7 @@ export async function HubDashboard() {
     <>
       <StatusBar />
       <Body>
+        <TacgAcronymBanner />
         <ScreenHeader
           title={`Salut, ${firstName}`}
           subtitle={

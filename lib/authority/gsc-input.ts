@@ -28,6 +28,9 @@ export function gscSnapshotToInput(row: {
   ctr: number;
   position: number;
   queryCount: number | null;
+  pageCount?: number | null;
+  indexedPages?: number | null;
+  sitemapSubmittedPages?: number | null;
 }): GscScoreInput {
   return {
     clicks: row.clicks,
@@ -35,6 +38,9 @@ export function gscSnapshotToInput(row: {
     ctr: row.ctr,
     position: row.position,
     queryCount: row.queryCount,
+    pageCount: row.pageCount ?? null,
+    indexedPages: row.indexedPages ?? null,
+    sitemapSubmittedPages: row.sitemapSubmittedPages ?? null,
   };
 }
 
@@ -45,7 +51,16 @@ export async function getLatestGscInputForSite(siteId: string): Promise<GscScore
   const snap = await db.gscSnapshot.findFirst({
     where: { siteId },
     orderBy: { fetchedAt: "desc" },
-    select: { clicks: true, impressions: true, ctr: true, position: true, queryCount: true },
+    select: {
+      clicks: true,
+      impressions: true,
+      ctr: true,
+      position: true,
+      queryCount: true,
+      pageCount: true,
+      indexedPages: true,
+      sitemapSubmittedPages: true,
+    },
   });
   return snap ? gscSnapshotToInput(snap) : null;
 }

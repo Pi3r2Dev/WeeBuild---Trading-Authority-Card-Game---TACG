@@ -1,8 +1,8 @@
 # Draft — Couche IA & Pipeline
 
 > **Statut : DRAFT** — document de travail, à challenger.
-> Projet : *WeBuild — Trading Authority Game*
-> Dernière maj : 2026-05-28 (lien assets visuels carte)
+> Projet : *WeeBuild — Trading Authority Game*
+> Dernière maj : 2026-05-28 (pipeline visuel Tier 1 + ingest implémentés)
 > Sources : [readme.txt](../readme.txt) + infra existante `unified-infrastructure` / `app.augmenter.pro` (explorée le 2026-05-26)
 > Voir aussi : [draft-gameplay-technique.md](draft-gameplay-technique.md) · [draft-charte-graphique.md](draft-charte-graphique.md)
 
@@ -58,7 +58,7 @@ Le pipeline réutilise l'infra partagée de l'écosystème `augmenter.pro` (dép
 
 ### Étape 1 — Capture *(Firecrawl)*
 - Appel `POST /v1/scrape` (formats `markdown` + `html`, `onlyMainContent`, `waitFor` pour les SPA) → `lib/services/firecrawl.ts`.
-- **Extension prévue (P4)** : même passe ou scrape visuel dédié avec `screenshot` viewport + extraction **logo / hero / screenshot** → portrait carte. Suivi : [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §4–§6.
+- **P4 portrait carte (2026-05-28, implémenté)** : `captureSiteWithVisuals()` ajoute `screenshot` viewport + extraction **logo / hero / screenshot** ([lib/capture/extract-visual-assets.ts](../lib/capture/extract-visual-assets.ts)) → ingest blob ([lib/capture/ingest-visual-assets.ts](../lib/capture/ingest-visual-assets.ts)) → `Site.logoUrl` / `heroImageUrl` / `homepageScreenshotUrl` + `visualProvenanceJson`. Store dev : local FS ; prod : **MinIO 🚧**. Suivi : [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §12.
 - Robustesse côté client : garde **SSRF** (refus IP internes), timeout, appels sérialisés + 1 retry/backoff (doux pour la box). *(Crawl4AI et son CrawlService NestJS sont retirés — moteur unique.)*
 - **Deux usages distincts** :
   - *Capture du site du membre* → matière première de la carte.
@@ -74,7 +74,8 @@ Réutilise le pattern de traitement par tiers existant :
 ### Étape 3 — Score d'autorité → carte
 - **Métrique d'autorité** (⚠️ question ouverte : API tierce DR/DA/TF vs **score maison** calculé depuis la capture — voir §6).
 - Dérivation **niveau/rareté (1–4)** + **stats HP/ATK** (règles de mapping → gameplay §4-5).
-- **Image de carte** *(décidé)* : **import user** (ou auto depuis la capture) → **modération** (gemma4-vision) → **chemin A** filtres déterministes par niveau (WebGL, défaut) **ou chemin B** remaster génératif (**ComfyUI** GPU 0, orchestré Celery, opt-in) → **passe filtre finale** garante de la cohérence ; **seed** stocké. Détail → charte §8.
+- **Image de carte** *(décidé)* : **import user** (ou auto depuis la capture) → **modération** (gemma4-vision) → **chemin A** filtres déterministes par niveau **ou chemin B** remaster génératif (**ComfyUI**, opt-in) → **passe filtre finale** ; **seed** stocké. Détail → charte §8.
+- **Portrait auto (2026-05-28)** : crawl → extract → **ingest blob** → URLs publiques en DB ; rendu front **🚧** ([SitePortrait](../app/components/card/SitePortrait.tsx) en A/B, prod encore [SiteShot](../app/components/card/SiteShot.tsx)). Reste → [draft-personnalisation-carte.md](draft-personnalisation-carte.md) §12.
 
 ### Étape 4 — Matching de partenaires *(le cœur de l'axe B)*
 Réutilise le pattern RAG (`rag.service.ts`) :

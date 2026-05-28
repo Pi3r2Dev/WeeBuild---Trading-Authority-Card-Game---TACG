@@ -1,6 +1,6 @@
 <div align="center">
 
-# WeBuild — Trading Authority Game
+# WeeBuild — Trading Authority Game
 
 ### Le netlinking SEO transformé en jeu de cartes à collectionner.
 
@@ -12,7 +12,7 @@ Cap nord long terme : le **GEO** *(Generative Engine Optimization)* — être **
 
 **🇫🇷 Français** · [🇬🇧 English](#english)
 
-![Hub — tableau de bord WeBuild : solde de crédits, main de cartes, suggestions IA](docs/assets/hub.webp)
+![Hub — tableau de bord WeeBuild : solde de crédits, main de cartes, suggestions IA](docs/assets/hub.webp)
 
 </div>
 
@@ -38,7 +38,7 @@ Cap nord long terme : le **GEO** *(Generative Engine Optimization)* — être **
 
 ## En une phrase
 
-**WeBuild — Trading Authority Game** est une web app qui transforme la construction de liens SEO (*backlink building*) en **jeu de cartes à collectionner (TCG)**. Les membres se connectent avec Google, déclarent leurs sites ; la plateforme **capture et résume** chaque site et génère une **carte** dont la **rareté visuelle est indexée sur l'autorité réelle** du site. Les membres construisent ensuite des liens **éditoriaux** entre eux — sans achat de liens, sans échange réciproque, sans ferme de liens.
+**WeeBuild — Trading Authority Game** est une web app qui transforme la construction de liens SEO (*backlink building*) en **jeu de cartes à collectionner (TCG)**. Les membres se connectent avec Google, déclarent leurs sites ; la plateforme **capture et résume** chaque site et génère une **carte** dont la **rareté visuelle est indexée sur l'autorité réelle** du site. Les membres construisent ensuite des liens **éditoriaux** entre eux — sans achat de liens, sans échange réciproque, sans ferme de liens.
 
 > C'est **du link-building éditorial entre propriétaires de sites**, pas une marketplace de liens.
 
@@ -46,7 +46,7 @@ Cap nord long terme : le **GEO** *(Generative Engine Optimization)* — être **
 
 ## Pourquoi c'est nouveau
 
-Le netlinking est aride, opaque, souvent assimilé à du spam. WeBuild le rend **lisible et motivant** en fusionnant trois mondes que personne n'avait réunis :
+Le netlinking est aride, opaque, souvent assimilé à du spam. WeeBuild le rend **lisible et motivant** en fusionnant trois mondes que personne n'avait réunis :
 
 1. **le SEO** — déjà un jeu de stratégie en soi ;
 2. **les codes du TCG** — rareté, collection, cartes, stats ;
@@ -162,7 +162,7 @@ Le produit est conçu pour **s'aligner sur ce que Google récompense** — des l
 
 La recherche se transforme : de plus en plus de réponses viennent d'**IA génératives** qui **citent des sources** plutôt que d'afficher dix liens bleus. Être visible demain, c'est être **cité par ces moteurs** — c'est le **GEO** *(Generative Engine Optimization)*.
 
-WeBuild est taillé pour ça : le GEO récompense exactement ce qu'on construit — des **mentions pertinentes et répétées** d'une marque, dans du **contenu éditorial de qualité**, sur des **sujets cohérents**. Là où le SEO classique courait après le lien dofollow, le GEO valorise la **mention et la citation**, ce qui rend l'approche éditoriale *naturellement alignée*.
+WeeBuild est taillé pour ça : le GEO récompense exactement ce qu'on construit — des **mentions pertinentes et répétées** d'une marque, dans du **contenu éditorial de qualité**, sur des **sujets cohérents**. Là où le SEO classique courait après le lien dofollow, le GEO valorise la **mention et la citation**, ce qui rend l'approche éditoriale *naturellement alignée*.
 
 > **Le SEO ne meurt pas, il converge.** On parle de **convergence SEO → GEO** : on élargit la surface de visibilité, on ne parie pas sur la disparition de l'un au profit de l'autre. Les *hard problems* restent la **métrique d'autorité** et l'**attribution** (prouver les citations LLM).
 
@@ -290,7 +290,7 @@ POC front-end **fonctionnel** (UI hi-fi + capture→carte de bout en bout). Poin
 
 <div align="center">
 
-*WeBuild — Trading Authority Game.* Construis ton autorité **proprement et durablement**.
+*WeeBuild — Trading Authority Game.* Construis ton autorité **proprement et durablement**.
 Le SEO comme un jeu ; la visibilité comme une collection ; le GEO comme horizon.
 
 </div>
@@ -312,9 +312,9 @@ Long-term north star: **GEO** *(Generative Engine Optimization)* — being **cit
 
 `SEO` · `GEO` · `Generative Engine Optimization` · `link building` · `backlinks` · `trading card game` · `gamification` · `Next.js 15` · `React 19` · `TypeScript` · `React Three Fiber` · `WebGL`
 
-[🇫🇷 Français](#webuild--trading-authority-game) · **🇬🇧 English**
+[🇫🇷 Français](#weebuild--trading-authority-game) · **🇬🇧 English**
 
-![WeBuild hub dashboard: credit balance, hand of cards, AI suggestions](docs/assets/hub.webp)
+![WeeBuild hub dashboard: credit balance, hand of cards, AI suggestions](docs/assets/hub.webp)
 
 </div>
 
@@ -340,7 +340,7 @@ Long-term north star: **GEO** *(Generative Engine Optimization)* — being **cit
 
 ## In one sentence
 
-**WeBuild — Trading Authority Game** is a web app that turns SEO link building (*backlink building*) into a **collectible trading card game (TCG)**. Members sign in with Google, declare their websites; the platform **captures and summarizes** each site and generates a **card** whose **visual rarity is indexed to the site's real authority**. Members then build **editorial** links with each other — no link buying, no reciprocal swaps, no link farms.
+**WeeBuild — Trading Authority Game** is a web app that turns SEO link building (*backlink building*) into a **collectible trading card game (TCG)**. Members sign in with Google, declare their websites; the platform **captures and summarizes** each site and generates a **card** whose **visual rarity is indexed to the site's real authority**. Members then build **editorial** links with each other — no link buying, no reciprocal swaps, no link farms.
 
 > It's **editorial link building between site owners**, not a link marketplace.
 
@@ -348,7 +348,7 @@ Long-term north star: **GEO** *(Generative Engine Optimization)* — being **cit
 
 ## Why it's new
 
-Link building is dry, opaque, and often equated with spam. WeBuild makes it **legible and motivating** by fusing three worlds nobody had brought together:
+Link building is dry, opaque, and often equated with spam. WeeBuild makes it **legible and motivating** by fusing three worlds nobody had brought together:
 
 1. **SEO** — already a strategy game in itself;
 2. **the codes of the TCG** — rarity, collection, cards, stats;
@@ -464,7 +464,7 @@ The product is designed to **align with what Google rewards** — editorial, rel
 
 Search is changing: more and more answers come from **generative AI** that **cites sources** rather than showing ten blue links. Being visible tomorrow means being **cited by these engines** — that's **GEO** *(Generative Engine Optimization)*.
 
-WeBuild is built for that: GEO rewards exactly what we build — **relevant, repeated mentions** of a brand, in **quality editorial content**, on **coherent topics**. Where classic SEO chased the dofollow link, GEO values the **mention and the citation**, which makes the editorial approach *naturally aligned*.
+WeeBuild is built for that: GEO rewards exactly what we build — **relevant, repeated mentions** of a brand, in **quality editorial content**, on **coherent topics**. Where classic SEO chased the dofollow link, GEO values the **mention and the citation**, which makes the editorial approach *naturally aligned*.
 
 > **SEO isn't dying, it's converging.** We talk about **SEO → GEO convergence**: we widen the visibility surface, we don't bet on one disappearing for the other. The hard problems remain the **authority metric** and **attribution** (proving LLM citations).
 
@@ -592,7 +592,7 @@ A **working** front-end POC (hi-fi UI + end-to-end capture→card). Still **open
 
 <div align="center">
 
-*WeBuild — Trading Authority Game.* Build your authority **cleanly and durably**.
+*WeeBuild — Trading Authority Game.* Build your authority **cleanly and durably**.
 SEO as a game; visibility as a collection; GEO as the horizon.
 
 </div>

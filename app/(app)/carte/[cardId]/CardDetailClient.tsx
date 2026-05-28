@@ -3,6 +3,7 @@
 import { useState, useTransition, type CSSProperties } from "react";
 import Link from "next/link";
 import { Card } from "@/app/components/card/Card";
+import { AuthorityMetricBanner, AuthoritySignalsPanel } from "@/app/components/authority/AuthoritySignalsPanel";
 import { ERA_LABEL } from "@/lib/levels";
 import { rescanCardAction, enrichGscCardAction, type RescanCardResult } from "./actions";
 import type { CardData } from "@/lib/domain";
@@ -139,7 +140,7 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
                 ? "Mode admin : pas de limite hebdomadaire."
                 : canRescan
                   ? withGsc
-                    ? "1 rescan / semaine · Firecrawl + Search Console (28 j) recalculés."
+                    ? "1 rescan / semaine · Firecrawl + Search Console (trafic, index, couverture) recalculés."
                     : "1 rescan par semaine · Firecrawl recapture le site et recalcule le score."
                   : nextRescanAt
                     ? `Prochain rescan possible le ${new Date(nextRescanAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}.`
@@ -177,7 +178,7 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
           {(pending || gscPending) && (
             <p style={{ color: "var(--hub-fg-soft)", fontSize: 13, marginBottom: 12 }}>
               {gscPending
-                ? "Interrogation Search Console (28 j) et recalcul du score v2…"
+                ? "Interrogation Search Console (site entier, ~28 j) et recalcul du score v2…"
                 : withGsc
                   ? "Firecrawl + Search Console en cours, puis mise à jour du score…"
                   : "Firecrawl recapture la page, puis on met à jour le résumé et le score…"}
@@ -217,54 +218,8 @@ export function CardDetailClient({ initial }: { initial: CardDetailView }) {
             </div>
           )}
 
-          <div
-            style={{
-              padding: "10px 14px",
-              marginBottom: 18,
-              background: withGsc ? "rgba(57,255,20,0.06)" : "rgba(251,191,36,0.08)",
-              border: `1px solid ${withGsc ? "rgba(57,255,20,0.35)" : "rgba(251,191,36,0.3)"}`,
-              borderRadius: 8,
-              color: withGsc ? "#86efac" : "#fcd34d",
-              fontSize: 12.5,
-              lineHeight: 1.5,
-            }}
-          >
-            {withGsc ? (
-              <>
-                Score <strong>indicatif v2</strong> — blend on-page + Search Console (28 j). Indicateur de jeu, pas
-                une promesse de classement.
-              </>
-            ) : (
-              <>
-                Score <strong>indicatif v1</strong> — signaux on-page uniquement. Utilise le bouton Search Console
-                ci-dessus pour passer en métrique v2 (impressions, clics, position).
-              </>
-            )}
-          </div>
-
-          <div style={{ ...PIXEL, fontSize: 10, color: "var(--hub-fg-soft)", marginBottom: 10 }}>DÉTAIL DU SCORE</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {authority.signals.map((s) => (
-              <div key={s.key}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}>
-                  <span style={{ color: "var(--hub-fg)" }}>{s.label}</span>
-                  <span style={{ color: "var(--hub-fg-soft)" }}>
-                    {s.detail} · <strong style={{ color: "var(--hub-fg)" }}>{s.points}</strong>/{s.max}
-                  </span>
-                </div>
-                <div style={{ height: 6, background: "var(--hub-bg-2)", borderRadius: 999, overflow: "hidden" }}>
-                  <div
-                    style={{
-                      width: `${s.max > 0 ? (s.points / s.max) * 100 : 0}%`,
-                      height: "100%",
-                      background: s.key.startsWith("gsc_") ? "var(--hub-accent-2)" : "var(--hub-accent)",
-                      borderRadius: 999,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <AuthorityMetricBanner withGsc={withGsc} />
+          <AuthoritySignalsPanel authority={authority} />
         </div>
       </div>
     </div>

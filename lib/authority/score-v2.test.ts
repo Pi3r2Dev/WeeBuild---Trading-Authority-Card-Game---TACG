@@ -26,6 +26,9 @@ const strongGsc: GscScoreInput = {
   ctr: 0.089,
   position: 4.2,
   queryCount: 320,
+  pageCount: 850,
+  indexedPages: 4200,
+  sitemapSubmittedPages: 5000,
 };
 
 describe("computeAuthorityV2 — sans GSC", () => {
@@ -63,6 +66,9 @@ describe("computeAuthorityV2 — avec GSC", () => {
     expect(keys).toContain("gsc_impressions");
     expect(keys).toContain("gsc_clicks");
     expect(keys).toContain("gsc_position");
+    expect(keys).toContain("gsc_indexed_pages");
+    expect(keys).toContain("gsc_pages_with_traffic");
+    expect(keys).toContain("gsc_query_count");
     // Les signaux v1 sont conservés.
     expect(keys).toContain("content");
     expect(keys).toContain("https");
@@ -95,6 +101,24 @@ describe("computeAuthorityV2 — avec GSC", () => {
     expect(v2.score).toBeGreaterThanOrEqual(0);
     expect(v2.score).toBeLessThanOrEqual(100);
     expect([1, 2, 3, 4]).toContain(v2.level);
+  });
+
+  it("un site multi-pages GSC rehausse le score vs homepage seule (0 liens externes)", () => {
+    const homepageOnly = site({ externalLinks: 0, internalLinks: 6 });
+    const v1 = computeAuthority(homepageOnly);
+    const v2 = computeAuthorityV2(homepageOnly, {
+      clicks: 322,
+      impressions: 14949,
+      ctr: 0.021,
+      position: 10.5,
+      queryCount: 1200,
+      pageCount: 890,
+      indexedPages: 3500,
+    });
+    expect(v2.score).toBeGreaterThan(v1.score);
+    const ext = v2.signals.find((s) => s.key === "externalLinks");
+    expect(ext?.detail).toContain("homepage seule");
+    expect(ext?.detail).toContain("pages indexées GSC");
   });
 
   it("position GSC excellente rehausse HP (trust) ; gros trafic rehausse ATK (reach)", () => {

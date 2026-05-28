@@ -115,3 +115,28 @@ Chaque étape laisse `tsc --noEmit` + `next build` verts.
 Exigence user : l'écran doit **expliquer très pédagogiquement** *pourquoi* on force l'édition d'ancre (l'anti-footprint est contre-intuitif : « pourquoi je ne peux pas juste reprendre la suggestion ? »). Direction : **au plus simple et beau possible**, idée à explorer = **une carte qui « parle » façon assistant** (le produit est un TCG → la mascotte/carte guide est on-brand) qui contextualise chaque garde-fou au moment où il se déclenche (ex : sur blocage d'égalité d'ancre, la carte explique le naturel du profil de liens plutôt qu'un message d'erreur sec).
 
 Contraintes : rester sobre (pas de friction inutile), réutiliser les tokens/composants carte existants, le ton FR tutoiement de la ligne éditoriale ([docs/editorial-twitter.md](../editorial-twitter.md)). Le feedback anti-footprint live de `LinkEditorClient` (§4/§5) est le point d'ancrage naturel de cette voix assistant. **À cadrer par l'impl** : forme exacte (carte flottante persistante vs bulles contextuelles), niveau d'animation.
+
+## 9. Alignement schéma réel + décisions complémentaires (vérifié 2026-05-28)
+
+Croisement du blueprint avec [schema.prisma](../../prisma/schema.prisma) (modèles l.480-650) + moteur matching ([lib/matching/read.ts](../../lib/matching/read.ts), [run.ts](../../lib/matching/run.ts)). **Cette section fait autorité** sur les §1/§3 ci-dessus là où ils divergent (rédigés avant vérif schéma).
+
+**Corrections de nommage (périmé → réel) :**
+- ❌ `EditorialSuggestion: PENDING` → ✅ **`GENERATED`** (enum `SuggestionStatus { GENERATED, HUMAN_EDITED, ACCEPTED, REJECTED, EXPIRED }`, défaut `GENERATED`). Il n'y a **pas** de `PENDING`. Gardes de statut : `validate`/`reject` exigent `GENERATED`.
+- ❌ `suggestion.donorSite` → ✅ **`suggestion.sourceSite`**. Vérifié : **`sourceSite` = donneur, `targetSite` = bénéficiaire**. La file de validation appartient au propriétaire du site **source** — mirror exact de `ownedByUser(userId) = { sourceSite: { userId } }` ([lib/matching/read.ts:32](../../lib/matching/read.ts#L32)). `getValidationQueue(userId)` filtre `sourceSite: { userId }, status: "GENERATED"`.
+
+**Décision 8 — Traçabilité de l'édition (user, 2026-05-28).** À la validation, copier l'ancre éditée **à la fois** sur `EditorialLink.anchorText` **et** sur `EditorialSuggestion.humanEditedAnchor` + `editedAt` (idem `humanEditedTopic` si l'angle est édité). Statut suggestion `GENERATED → ACCEPTED`. Conserve la preuve IA-vs-humain que le schéma prévoit explicitement pour l'anti-footprint. (Le statut `HUMAN_EDITED` reste réservé à un futur flux « édité mais pas encore validé » — non utilisé en B3.)
+
+**Décision 9 — `targetUrl` (user, 2026-05-28).** `EditorialLink.targetUrl` est **requis** mais absent de la suggestion. Défaut = **URL racine du bénéficiaire (`targetSite.url`), pré-rempli et éditable** par le donneur dans `LinkEditorClient`. À distinguer de `publishedUrl` (URL chez le donneur, nullable, validée même-domaine que `sourceSite` — §7.6).
+
+**Mapping de création `createLinkFromSuggestion` (champs requis du modèle `EditorialLink`) :**
+| Champ lien | Source |
+|------------|--------|
+| `donorSiteId` / `donorUserId` | `suggestion.sourceSiteId` / `sourceSite.userId` |
+| `beneficiarySiteId` / `beneficiaryUserId` | `suggestion.targetSiteId` / `targetSite.userId` |
+| `targetUrl` | `targetSite.url` (défaut éditable, Décision 9) |
+| `anchorText` | ancre éditée par l'humain (jamais la suggestion brute) |
+| `anchorType` | calculé par `anchor-policy` (requis, enum `AnchorType`) |
+| `nature` | défaut `DOFOLLOW` |
+| `status` | inséré directement à **`HUMAN_VALIDATED`** (le défaut `PROPOSED` est réservé au don spontané hors-suggestion) |
+| `suggestionId` | `suggestion.id` (`@unique` → court-circuite la double-création) |
+| `validatedAt` | `now()` |

@@ -284,7 +284,12 @@ model GscSnapshot {
   ctr          Float
   position     Float
   queryCount   Int?
+  /** URLs distinctes avec impressions (Search Analytics, dimension `page`, fenêtre). */
+  pageCount    Int?
+  /** Pages indexées (API Sitemaps `contents[].indexed`, type web). */
   indexedPages Int?
+  /** Pages soumises via sitemap (API Sitemaps `contents[].submitted`). */
+  sitemapSubmittedPages Int?
 
   // Payload brut (rows Search Analytics API ou extraction vision du screenshot)
   // → recalcul du score sans re-fetch, et audit anti-fraude du fallback.

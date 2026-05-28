@@ -24,4 +24,20 @@ test.describe("Hub", () => {
     // CreditsBadge : icône diamant + valeur (0 si ledger vide).
     await expect(page.getByText(/^0$/).first()).toBeVisible();
   });
+
+  test("bandeau TACG masquable", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => localStorage.removeItem("webuild_tacg_banner_dismissed"));
+
+    const banner = page.getByTestId("tacg-acronym-banner");
+    await expect(banner).toBeVisible();
+    await expect(banner.getByText("TACG")).toBeVisible();
+    await expect(banner.getByText("Trading Authority Card Game")).toBeVisible();
+
+    await page.getByTestId("tacg-acronym-banner-dismiss").click();
+    await expect(banner).toHaveCount(0);
+
+    await page.reload();
+    await expect(banner).toHaveCount(0);
+  });
 });
