@@ -82,35 +82,30 @@ export function CreditsBadge({
   );
 }
 
+/**
+ * Bandeau de tête d'écran (hauteur 44px — `Body` s'ancre à `top:44`).
+ * Productisé : remplace l'ancienne fausse status bar iPhone (« 9:41 » +
+ * batterie) par un wordmark WeBuild discret. Sur desktop le rail porte déjà
+ * l'identité → on masque ce bandeau via `.app-screen-topbar` (cf. globals.css).
+ */
 export function StatusBar() {
   return (
     <div
+      className="app-screen-topbar"
       style={{
         height: 44,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 22px",
-        fontFamily: "var(--font-hub)",
-        fontSize: 14,
-        fontWeight: 600,
-        color: "var(--hub-fg)",
+        padding: "0 16px",
+        fontFamily: "var(--font-pixel-display)",
+        fontSize: 9,
+        letterSpacing: 2,
+        color: "var(--hub-accent)",
+        textShadow: "0 0 12px rgba(138,43,226,0.5)",
       }}
     >
-      <span style={{ marginTop: 4 }}>9:41</span>
-      <span style={{ marginTop: 4, display: "flex", gap: 5, alignItems: "center" }}>
-        <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor">
-          <rect x="0" y="7" width="3" height="4" rx="0.5" />
-          <rect x="4" y="5" width="3" height="6" rx="0.5" />
-          <rect x="8" y="3" width="3" height="8" rx="0.5" />
-          <rect x="12" y="0" width="3" height="11" rx="0.5" />
-        </svg>
-        <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" strokeWidth="1">
-          <rect x="0.5" y="0.5" width="18" height="10" rx="2" />
-          <rect x="2" y="2" width="13" height="7" fill="currentColor" rx="1" />
-          <rect x="19.5" y="3.5" width="2" height="4" fill="currentColor" />
-        </svg>
-      </span>
+      <span>WEBUILD</span>
     </div>
   );
 }
@@ -118,6 +113,7 @@ export function StatusBar() {
 export function Body({ children, pad = 16, bottom = 72 }: { children: ReactNode; pad?: number; bottom?: number }) {
   return (
     <div
+      className="hub-body"
       style={{
         position: "absolute",
         top: 44,

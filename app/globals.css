@@ -17,3 +17,153 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   AppShell — coque produit responsive (remplace PhoneShell).
+   Deux régimes, bascule à --bp-shell (≈900px), 100% CSS (SSR-safe,
+   aucune détection JS). Le rail desktop ↔ la BottomNav mobile via
+   media queries ; le contenu garde un conteneur positionné pour que
+   les écrans (Body/BottomNav en position:absolute) s'ancrent comme
+   dans l'ancien PhoneFrame.
+   ───────────────────────────────────────────────────────────── */
+
+.app-shell {
+  min-height: 100dvh;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Atmosphère de fond : pas un #0B0C10 plat — léger bloom violet + grain
+   pixel + scanlines très discrètes (identité console). Fixe, derrière tout. */
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 70% at 18% -5%, rgba(138, 43, 226, 0.14) 0%, transparent 55%),
+    radial-gradient(70% 60% at 100% 100%, rgba(57, 255, 20, 0.06) 0%, transparent 55%),
+    linear-gradient(180deg, #0c0d14 0%, var(--hub-bg-0) 60%);
+}
+.app-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.018) 0px,
+    rgba(255, 255, 255, 0.018) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Rail latéral (desktop only). Masqué par défaut (mobile-first). */
+.app-rail {
+  display: none;
+}
+
+/* Conteneur de contenu : positionné + clippé → les enfants en
+   position:absolute (Body, BottomNav, drawers) s'ancrent dessus.
+   Mobile = plein écran ; safe-area insets. */
+.app-canvas {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  height: 100dvh;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Reveal en cascade au chargement (un seul moment fort, via delay). */
+@media (prefers-reduced-motion: no-preference) {
+  .app-canvas > * {
+    animation: appReveal 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+@keyframes appReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── DESKTOP (>900px) : console à deux écrans ── */
+@media (min-width: 901px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    min-height: 100dvh;
+  }
+
+  .app-rail {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    border-right: 1px solid var(--hub-line);
+    background: rgba(13, 14, 21, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+  }
+
+  /* Le canvas respire et exploite la largeur (max ~1100px, centré).
+     Hauteur fixée = la fenêtre, clippée → l'écran (Body en position:absolute
+     top:44 bottom:72) s'ancre dessus et scrolle en interne, exactement comme
+     dans l'ancien PhoneFrame, mais plein écran et large. */
+  .app-canvas {
+    height: 100dvh;
+    overflow: hidden;
+    padding: 0 28px;
+  }
+  .app-canvas-inner {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+    height: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  /* Plus de BottomNav en desktop → on récupère les 72px réservés en bas
+     pour que Body descende jusqu'en bas du canvas. */
+  .app-canvas-inner :where(.hub-body) {
+    bottom: 0 !important;
+  }
+
+  /* La BottomNav rendue par les écrans est masquée : le rail la remplace. */
+  .app-screen-bottomnav {
+    display: none;
+  }
+
+  /* Le wordmark de tête d'écran est redondant avec le rail → masqué.
+     `!important` car StatusBar porte un style inline display:flex. */
+  .app-screen-topbar {
+    display: none !important;
+  }
+
+  /* En desktop le contenu d'écran (Body en position:absolute top:44 bottom:72)
+     doit remplir la hauteur du canvas — on neutralise l'offset bottom de 72px
+     réservé à la BottomNav (absente ici). */
+  .app-canvas-inner > * {
+    --screen-bottom-inset: 0px;
+  }
+}
+
+/* Sur mobile, l'inner est transparent (pass-through plein écran). */
+@media (max-width: 900px) {
+  .app-canvas-inner {
+    position: absolute;
+    inset: 0;
+  }
+}

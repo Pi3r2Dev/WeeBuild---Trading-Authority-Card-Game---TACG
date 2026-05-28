@@ -1,10 +1,13 @@
 import type { ReactNode } from "react";
+import { notFound } from "next/navigation";
 import { DevNav } from "../components/DevNav";
+import { RND_ENABLED } from "../components/app/flags";
 import { CardFlight } from "../components/transitions/CardFlight";
 import { CreditRain } from "../components/transitions/CreditRain";
 import { WaxSealTransition } from "../components/transitions/WaxSealTransition";
 
 export default function TransitionsPage() {
+  if (!RND_ENABLED) notFound();
   return (
     <main style={{ minHeight: "100dvh", padding: "56px 16px 64px", maxWidth: 1400, margin: "0 auto" }}>
       <DevNav />

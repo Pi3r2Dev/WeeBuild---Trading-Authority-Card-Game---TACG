@@ -3,10 +3,12 @@
 import { useState, type CSSProperties } from "react";
 import { ACCENT_GREEN, ACCENT_VIOLET } from "./constants";
 import type { CardData, Partner, Topic } from "@/lib/domain";
-import { Body, CreditsBadge, SectionLabel, StatusBar } from "./primitives";
+import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG, PlayLink } from "./MiniCard";
 import { icons } from "./icons";
+import { GAME_LOOP_ENABLED } from "../app/flags";
+import { ComingSoon } from "./ComingSoon";
 
 const TOTAL = 4;
 
@@ -16,6 +18,25 @@ export function DonnerFlow({ mySites, partners, topics }: { mySites: CardData[];
   const PARTNERS_SUGGESTED = partners;
   const AI_TOPICS = topics;
   const [step, setStep] = useState(1);
+
+  // Peau honnête (D5) : tout le flux « Donner » repose sur l'IA de matching +
+  // l'économie de crédits (P3, non construite, partenaires = fixtures « fausses
+  // personnes »). On masque derrière un état « bientôt » jusqu'à P3.
+  if (!GAME_LOOP_ENABLED) {
+    return (
+      <>
+        <StatusBar />
+        <Body>
+          <ScreenHeader title="Donner un lien" subtitle="Gagnez des crédits en offrant un lien éditorial." />
+          <ComingSoon
+            title="L’échange éditorial arrive bientôt"
+            body="Le flux Donner (suggestions IA de partenaires, sujets d’articles, ancres contextualisées, crédits) s’ouvrira avec le moteur de matching. D’ici là, déclarez vos sites et explorez l’écosystème."
+          />
+        </Body>
+        <BottomNav />
+      </>
+    );
+  }
   const next = () => setStep((s) => (s >= TOTAL ? 1 : s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
 

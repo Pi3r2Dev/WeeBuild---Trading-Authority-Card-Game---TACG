@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, type CSSProperties } from "react";
-import { Card } from "../components/card/Card";
+import { Card } from "@/app/components/card/Card";
 import { ERA_LABEL } from "@/lib/levels";
 import { captureCard, type CaptureResult } from "./actions";
 

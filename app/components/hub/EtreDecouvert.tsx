@@ -5,6 +5,7 @@ import { Body, CreditsBadge, ScreenHeader, SectionLabel, StatusBar } from "./pri
 import { BottomNav } from "./BottomNav";
 import { MyHand } from "./MiniCard";
 import { icons } from "./icons";
+import { GAME_LOOP_ENABLED } from "../app/flags";
 
 const FILTERS = ["Tech", "IA", "SEO", "Dev", "Productivité"];
 
@@ -20,12 +21,37 @@ export async function EtreDecouvert() {
         <ScreenHeader
           title="Soyez découvert"
           subtitle="Dépensez des crédits pour que l'IA vous propose à des éditeurs alignés."
-          right={<CreditsBadge value={ME.credits} size="lg" />}
+          right={GAME_LOOP_ENABLED ? <CreditsBadge value={ME.credits} size="lg" /> : undefined}
         />
 
         <SectionLabel>QUELLE CARTE BRANDIR ?</SectionLabel>
         <MyHand sites={MY_SITES} />
 
+        {!GAME_LOOP_ENABLED && (
+          <div
+            style={{
+              marginTop: 18,
+              padding: "14px 16px",
+              background: "rgba(138,43,226,0.08)",
+              border: "1px dashed rgba(138,43,226,0.4)",
+              borderRadius: 10,
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: "var(--hub-fg-soft)",
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-pixel-display)", fontSize: 8, letterSpacing: 1.5, color: ACCENT_VIOLET }}>
+              BIENTÔT
+            </span>
+            <div style={{ marginTop: 6 }}>
+              L&apos;économie de découverte (crédits, ciblage IA, étendard) arrive avec le matching.
+              Pour l&apos;instant, déclarez vos sites et explorez l&apos;écosystème.
+            </div>
+          </div>
+        )}
+
+        {GAME_LOOP_ENABLED && (
+          <>
         <SectionLabel>BUDGET D’ÉTENDARD</SectionLabel>
         <div style={{ padding: 14, background: "rgba(138,43,226,0.08)", border: "1px solid rgba(138,43,226,0.4)", borderRadius: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -91,6 +117,8 @@ export async function EtreDecouvert() {
             Brandir l’étendard
           </button>
         </div>
+          </>
+        )}
       </Body>
       <BottomNav />
     </>

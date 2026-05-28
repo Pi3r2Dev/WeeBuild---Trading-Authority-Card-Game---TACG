@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Card } from "../components/card/Card";
+import { RND_ENABLED } from "../components/app/flags";
 // R&D (cf. plan 4b) : reste sur fixtures. Import direct (page "use client" → ne
 // peut pas importer l'accesseur async couplé à Prisma).
 import { DEMO_CARDS } from "@/lib/data/fixtures";
@@ -34,6 +36,7 @@ const ROWS: { critere: string; css: string; r3f: string; verdict: string }[] = [
 ];
 
 export default function RndPage() {
+  if (!RND_ENABLED) notFound();
   return (
     <main style={{ minHeight: "100dvh", padding: "56px 16px 80px", maxWidth: 1100, margin: "0 auto" }}>
       <DevNav />

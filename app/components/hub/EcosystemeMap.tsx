@@ -7,6 +7,7 @@ import { CreditsBadge, StatusBar } from "./primitives";
 import { BottomNav } from "./BottomNav";
 import { MiniCardTCG } from "./MiniCard";
 import { icons } from "./icons";
+import { GAME_LOOP_ENABLED } from "../app/flags";
 
 const LINKS: [string, string][] = [
   ["tom-tech", "jdg"],
@@ -50,7 +51,7 @@ export function EcosystemeMap({ me: ME, navDeck: NAV_DECK }: { me: Me; navDeck: 
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--hub-fg)", marginTop: 4, letterSpacing: -0.2 }}>5 biomes · {NAV_DECK.length} sites alliés</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <CreditsBadge value={ME.credits} />
+          {GAME_LOOP_ENABLED && <CreditsBadge value={ME.credits} />}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 4, fontFamily: "var(--font-pixel-display)", fontSize: 7, color: "var(--hub-fg)", letterSpacing: 1 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT_GREEN, boxShadow: `0 0 5px ${ACCENT_GREEN}` }} />
             VOUS

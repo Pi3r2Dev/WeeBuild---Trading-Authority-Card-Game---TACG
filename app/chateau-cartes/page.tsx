@@ -1,11 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 // R&D (cf. plan 4b) : reste sur fixtures. Import direct (page "use client" → ne
 // peut pas importer l'accesseur async couplé à Prisma).
 import { DEMO_CARDS } from "@/lib/data/fixtures";
 import { DevNav } from "../components/DevNav";
+import { RND_ENABLED } from "../components/app/flags";
 
 const loader = (
   <div style={{ width: 320, height: 540, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--hub-fg-soft)", fontSize: 12, border: "1px dashed var(--hub-line)", borderRadius: 12 }}>
@@ -19,6 +21,7 @@ const CardDomLive = dynamic(() => import("../components/r3f/CardDomLive"), { ssr
 const N4 = DEMO_CARDS[3]; // lemonde.fr — niveau 4 Holo
 
 export default function ChateauCartesPage() {
+  if (!RND_ENABLED) notFound();
   return (
     <main style={{ minHeight: "100dvh", padding: "56px 16px 80px", maxWidth: 1100, margin: "0 auto" }}>
       <DevNav />

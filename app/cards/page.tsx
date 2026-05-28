@@ -1,7 +1,9 @@
+import { notFound } from "next/navigation";
 import { Card } from "../components/card/Card";
 import { getDemoCards } from "@/lib/data";
 import type { CardState } from "../components/card/types";
 import { DevNav } from "../components/DevNav";
+import { RND_ENABLED } from "../components/app/flags";
 
 const STATES: { state: CardState; label: string }[] = [
   { state: "dispo", label: "Disponible" },
@@ -18,6 +20,7 @@ const PIXEL_LABEL = {
 } as const;
 
 export default async function CardsShowcase() {
+  if (!RND_ENABLED) notFound();
   const DEMO_CARDS = await getDemoCards();
   const sample = DEMO_CARDS[1];
 

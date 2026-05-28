@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { notFound } from "next/navigation";
 import { DevNav } from "../components/DevNav";
+import { RND_ENABLED } from "../components/app/flags";
 
 const CardCastle = dynamic(() => import("../components/r3f/CardCastle"), {
   ssr: false,
@@ -13,6 +15,7 @@ const CardCastle = dynamic(() => import("../components/r3f/CardCastle"), {
 });
 
 export default function ChateauPage() {
+  if (!RND_ENABLED) notFound();
   return (
     <main style={{ minHeight: "100dvh", padding: "56px 16px 64px", maxWidth: 760, margin: "0 auto" }}>
       <DevNav />
