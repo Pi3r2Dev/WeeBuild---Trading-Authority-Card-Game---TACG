@@ -61,7 +61,7 @@ AS = w_seo · S_seo  +  w_geo · S_geo
 
 ## 5. Mapping AS → niveau & boucle de recalcul
 
-- **Bandes calibrées sur 0–100, rare-en-haut** (piste : N1 0-40 / N2 40-65 / N3 65-85 / N4 85-100) — à calibrer *après* données réelles, sinon tout cluster en N1.
+- **Bandes calibrées sur 0–100, rare-en-haut** (implémenté 2026-05-28 : N1 0-44 / N2 45-59 / N3 60-79 / N4 80-100, source `lib/authority/score.ts` + `score-v2.ts`) — à calibrer *après* données réelles, sinon tout cluster en N1. *(Plancher N2 remonté 35→45 le 2026-05-28 : un site à contenu mince / quasi sans liens mais bon GSC, score ~44, doit rester N1.)*
 - **Job Celery périodique** recalcule l'AS → si le niveau change, re-rendu carte (chemin filtre = gratuit) + **notif au membre** (« ta carte a évolué ! » = engagement).
 - **Historique d'AS** → alimente la **progression / méta-jeu**.
 

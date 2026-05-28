@@ -58,7 +58,7 @@ const WEIGHTS = {
 const BANDS: { min: number; level: Level }[] = [
   { min: 80, level: 4 },
   { min: 60, level: 3 },
-  { min: 35, level: 2 },
+  { min: 45, level: 2 },
   { min: 0, level: 1 },
 ];
 
