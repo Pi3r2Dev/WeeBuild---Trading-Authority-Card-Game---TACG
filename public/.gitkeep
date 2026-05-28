@@ -1,0 +1,3 @@
+# Dossier des assets statiques servis tels quels par Next.js.
+# Présent (même vide) car le Dockerfile fait `COPY /app/public ./public` :
+# sans ce dossier, le build Docker échoue à l'étape runner ("/app/public": not found).
