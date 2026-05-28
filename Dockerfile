@@ -3,6 +3,13 @@
 # Next.js 15 (output: "standalone") + React 19 + Prisma 7 (driver adapter pg).
 # Multi-stage : deps → builder → runner. `node server.js` sur le port 3000.
 #
+# Optimisations build (2026-05-28) :
+#  - Cache BuildKit npm (`/root/.npm`) + `.next/cache` → rebuilds incrémentaux.
+#  - Stage `proddeps` = `npm prune --omit=dev` sur le node_modules de `deps`
+#    (évite un 2e `npm ci` réseau ~30 s sur hôte Celeron).
+#  - `.dockerignore` exclut docs/design_handoff → contexte léger.
+#  - `leva` / `r3f-perf` / `tsx` en devDependencies → absent du runtime prod.
+#
 # Décisions clés (cf. docs/plans/p1-coolify-deploy-plan.md) :
 #  - Prisma 7 : client généré dans lib/generated/prisma (gitignoré) → `prisma
 #    generate` est OBLIGATOIRE au build, sinon le client n'existe pas dans l'image.
@@ -52,18 +59,19 @@ COPY . .
 # contexte de build, doit être (re)généré ici).
 RUN npx prisma generate
 # Produit .next/standalone (server.js) + .next/static.
-RUN npm run build
+# Cache BuildKit sur .next/cache → rebuilds incrémentaux plus rapides sur Coolify.
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # ---- Prod deps (pour le CLI prisma au boot) ----
 # Le standalone n'embarque QUE les modules tracés à l'exécution applicative — il
 # n'inclut PAS le CLI `prisma` (appelé via `npx prisma migrate deploy` au boot).
-# On reconstruit donc un node_modules pruné (prod only) que l'on dépose à la
-# RACINE de l'app runtime ; le standalone (./.next/standalone/node_modules tracé)
-# est copié PAR-DESSUS et garde la priorité pour le code applicatif.
+# On pruné le node_modules du stage `deps` (prod only) au lieu d'un 2e `npm ci`
+# → pas de re-téléchargement réseau (~30 s gagnées sur hôte Celeron).
 FROM base AS proddeps
 COPY package.json package-lock.json* ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+COPY --from=deps /app/node_modules ./node_modules
+RUN npm prune --omit=dev
 
 # ---- Runner ----
 FROM base AS runner

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Perf } from "r3f-perf";
-import { useControls } from "leva";
+import { useDevControls } from "@/lib/r3f/useDevControls";
+import { DevPerf } from "./DevPerf";
 import * as THREE from "three";
 import type { CardData } from "../card/types";
 
@@ -211,7 +211,7 @@ function CardMesh({ data }: { data: CardData }) {
   const tex = useContentTexture(data);
   const pointer = useThree((s) => s.pointer);
 
-  const { foil, fresnel, bands } = useControls("Holo R3F", {
+  const { foil, fresnel, bands } = useDevControls("Holo R3F", {
     foil: { value: HOLO_DEFAULTS.foil, min: 0, max: 1.8, step: 0.05 },
     fresnel: { value: HOLO_DEFAULTS.fresnel, min: 0.5, max: 6, step: 0.1 },
     bands: { value: HOLO_DEFAULTS.bands, min: 1, max: 8, step: 0.5 },
@@ -269,7 +269,7 @@ export default function HoloCardR3F({ data, width = 340, height = 560 }: { data:
   return (
     <div style={{ width, height }}>
       <Canvas camera={{ position: [0, 0, 7.5], fov: 35 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
-        <Perf position="top-left" minimal />
+        <DevPerf position="top-left" minimal />
         <CardMesh data={data} />
       </Canvas>
     </div>

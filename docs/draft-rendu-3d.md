@@ -13,7 +13,7 @@
   - **CSS** : gagne sur **bundle (~0)**, **GPU (~0 vs WebGL/frame)**, **effort**. 
   - **→ CSS-first pour les cartes en production. R3F réservé à un moment « hero » 3D** (ex. carte N4 vitrine, château de cartes).
   - **Variante hero N4 décidée (2026-05-27) : Voie A** — contenu DOM CSS + plan de foil WebGL fresnel collé (cf. [draft-cartes-couches-effets.md](draft-cartes-couches-effets.md) §4). Supprime la divergence de contenu de l'ancien `HoloCardR3F` (qui « lavait » le chrome). Composant : [HoloCard3D.tsx](../app/components/r3f/HoloCard3D.tsx).
-- **R3F isolé** aux routes `/rnd` et `/chateau` via `dynamic(() => import(...), { ssr: false })` → `three`/`@react-three/fiber`/`drei`/`rapier`/`leva`/`r3f-perf` **lazy-loadés**, hors du bundle de base des écrans produit.
+- **R3F isolé** aux routes `/rnd` et `/chateau` via `dynamic(() => import(...), { ssr: false })` → `three`/`@react-three/fiber`/`drei`/`rapier` **lazy-loadés**, hors du bundle de base des écrans produit. **`leva` / `r3f-perf`** = outils de calage dev uniquement (`devDependencies`, wrappers [useDevControls.ts](../lib/r3f/useDevControls.ts) + [DevPerf.tsx](../app/components/r3f/DevPerf.tsx) — tree-shaken en prod).
 
 ---
 
@@ -96,7 +96,7 @@ Un vrai château de cartes est **quasi-instable** en rigid-body sim : placé en 
 - **Lisibilité = blend type *screen*** : `col = content + (1 - content) * foil * strength`. Les pixels **clairs** (texte, barres) survivent ; les pixels **sombres** se remplissent de foil. → contenu lisible même avec un foil fort.
 - **Iridescence sur TOUTE la carte** (pas seulement au fresnel/bords, sinon la carte reste sombre) : une base `sheen` (~0.4–0.8) + un **boost `rim` au fresnel** (angle rasant / tilt).
 - Fresnel = `pow(1 - dot(normalize(vN), normalize(vV)), uFresnel)` → l'iridescence **suit l'angle de vue 3D réel** (la normale tourne avec le tilt). C'est l'atout que le CSS ne fait qu'approximer au pointeur.
-- Paramètres exposés via **`leva`** (foil, fresnel, bands) pour régler en live ; **`r3f-perf`** pour le FPS.
+- Paramètres exposés via **`useDevControls`** (wrapper leva, dev only) pour régler foil/fresnel/bands en live ; **`DevPerf`** (wrapper r3f-perf, dev only) pour le FPS.
 - **Erreurs vécues** : (a) foil trop fort partout → carte illisible (arc-en-ciel qui masque tout) ; (b) sur-correction → trop sombre/subtil. Le bon point = voile vibrant **+** blend screen qui préserve le contenu.
 
 ---

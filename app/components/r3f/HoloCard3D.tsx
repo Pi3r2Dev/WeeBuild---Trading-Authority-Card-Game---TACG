@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useControls } from "leva";
+import { useDevControls } from "@/lib/r3f/useDevControls";
 import * as THREE from "three";
 import { CardFront } from "../card/CardFront";
 import type { CardData } from "../card/types";
@@ -40,7 +40,7 @@ function FoilMesh({ tilt, wrap }: { tilt: React.MutableRefObject<Tilt>; wrap: Re
   const mesh = useRef<THREE.Mesh>(null);
   const cur = useRef({ rx: 0, ry: 0, active: 0 });
 
-  const ctrl = useControls("Foil A (voie A)", {
+  const ctrl = useDevControls("Foil A (voie A)", {
     foil: { value: FOIL_DEFAULTS.foil, min: 0, max: 1.8, step: 0.05 },
     fresnel: { value: FOIL_DEFAULTS.fresnel, min: 0.5, max: 6, step: 0.1 },
     bands: { value: FOIL_DEFAULTS.bands, min: 1, max: 8, step: 0.5 },

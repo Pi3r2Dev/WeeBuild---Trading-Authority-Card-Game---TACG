@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider, type RapierRigidBody } from "@react-three/rapier";
 import { ContactShadows } from "@react-three/drei";
-import { Perf } from "r3f-perf";
+import { DevPerf } from "./DevPerf";
 import { getFontEmbedCSS, toCanvas } from "html-to-image";
 import * as THREE from "three";
 import { LEVEL_COLORS } from "@/lib/levels";
@@ -563,7 +563,7 @@ export default function CardCastle({ width = 680, height = 540, cards }: CardCas
             <Grabbable live={live} grabbedId={grabbedId} setLive={setLive} setGrabbedId={setGrabbedId} bodies={bodies} textures={textures} deck={deck} />
           </Physics>
         </Suspense>
-        {process.env.NODE_ENV === "development" && <Perf position="top-left" minimal />}
+        <DevPerf position="top-left" minimal />
       </Canvas>
 
       <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 12, alignItems: "center", pointerEvents: "none" }}>

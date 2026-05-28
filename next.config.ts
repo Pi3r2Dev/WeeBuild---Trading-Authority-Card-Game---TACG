@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -9,6 +10,17 @@ const nextConfig: NextConfig = {
   // `pg` (driver natif, sockets TCP) et l'adapter Prisma. Sans ça le
   // tree-shaking standalone peut casser le driver à l'exécution (cf. lib/db.ts).
   serverExternalPackages: ["@prisma/adapter-pg", "pg"],
+  // Stubs prod pour outils R&D (leva, r3f-perf) déclarés en devDependencies.
+  webpack: (config, { dev }) => {
+    if (!dev) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        leva: path.resolve("./lib/r3f/stubs/leva.ts"),
+        "r3f-perf": path.resolve("./lib/r3f/stubs/r3f-perf.tsx"),
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

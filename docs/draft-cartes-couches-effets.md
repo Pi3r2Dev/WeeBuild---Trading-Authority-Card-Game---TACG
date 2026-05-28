@@ -135,8 +135,8 @@ On refait `useContentTexture` couche-pour-couche selon §1 (mêmes polices, Site
 - [x] Voie A : plan de foil fresnel + synchro d'angle avec `<CardFront>` — fait (un seul rAF lisse `--rx/--ry/--active`, pilote DOM + mesh).
 - [x] **Voie B (DOM→texture) tranchée pour le château** — **bake** (vs DOM vivant drei), câblée dans [CardCastle.tsx](../app/components/r3f/CardCastle.tsx). Cf. [draft-rendu-3d.md](draft-rendu-3d.md) §10.
 - [ ] Ajouter le **flip recto/verso** à la Voie A `/rnd` (proto = recto seul). *(Côté château : verso `CardBack` baké + posé sur la face arrière — fait, cf. [draft-rendu-3d.md](draft-rendu-3d.md) §10.)*
-- [ ] Retirer `leva` du chemin prod (le garder sur `/rnd`).
+- [x] Retirer `leva` du chemin prod (le garder sur `/rnd`). *(2026-05-28 : `devDependencies` + `useDevControls` — defaults figés en prod.)*
 - [ ] Si B/C : implémenter le **masque foil** (zones sombres + portrait) pour cesser de laver le chrome/texte.
 - [ ] Retirer le letterbox du conteneur R3F (340×560 → ratio 0.593).
-- [ ] Retirer `leva` / `r3f-perf` du chemin prod (garder en `/rnd` seulement).
+- [x] Retirer `leva` / `r3f-perf` du chemin prod (garder en `/rnd` seulement). *(2026-05-28 : `devDependencies` + [DevPerf.tsx](../app/components/r3f/DevPerf.tsx) / [useDevControls.ts](../lib/r3f/useDevControls.ts).)*
 - [x] Mettre à jour [draft-rendu-3d.md](draft-rendu-3d.md) — Voie A en §1/§4, château DOM→texture en §10, reste en §11.
