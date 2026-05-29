@@ -97,7 +97,11 @@ export async function runMatching(
       articleTopic: placeholderTopic(source.domain, m.domain),
       proposedAnchor: "[À GÉNÉRER]",
       relevanceScore: m.relevanceScore,
-      // proposedAnchorType / naturalScore / embedding : posés à la génération.
+      // P4-A : naturalScore plateforme (snapshot per-suggestion). La génération
+      // éditoriale l'écrasera ensuite avec un score affiné (dédup sémantique) ;
+      // ici on garantit qu'il est non-null dès l'émission. embedding /
+      // proposedAnchorType : posés à la génération.
+      naturalScore: outcome.naturalityScore ?? null,
     })),
   });
 

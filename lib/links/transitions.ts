@@ -10,6 +10,7 @@
  */
 
 import { validateAnchor, brandTokensFromDomain, type AnchorType } from "./anchor-policy";
+import { isRedScore } from "@/lib/naturality/policy";
 import type { LinkDecisionInput } from "./types";
 
 /** URL http(s) valide → objet `URL`, sinon `null`. */
@@ -71,7 +72,12 @@ export interface CreateLinkContext {
   beneficiaryUserId: string;
   beneficiaryDomain: string;
   existingLinkId: string | null;
+  /** Score de naturalité de la suggestion (P4-A) — pilote le soft-gate D1. */
+  naturalScore: number | null;
 }
+
+/** Longueur minimale d'une justification de soft-gate (D1) — anti-vide. */
+export const MIN_JUSTIFICATION_LENGTH = 10;
 
 export type CreateLinkDecision =
   | { kind: "error"; error: string }
@@ -98,6 +104,20 @@ export function decideCreateLink(
   }
   if (ctx.status !== "GENERATED") {
     return { kind: "error", error: "Cette suggestion n’est plus en attente de validation." };
+  }
+
+  // Soft-gate P4-A (D1) : si le score de naturalité est ROUGE (< 0.45), on EXIGE
+  // une confirmation explicite + une justification avant de publier. Friction, pas
+  // blocage (le blocage dur est P4-B). Une suggestion sans score n'est jamais rouge.
+  if (isRedScore(ctx.naturalScore)) {
+    const justification = input.justification?.trim() ?? "";
+    if (!input.confirmedDespiteRed || justification.length < MIN_JUSTIFICATION_LENGTH) {
+      return {
+        kind: "error",
+        error:
+          "Score de naturalité ROUGE : confirme explicitement et justifie (≥ 10 caractères) pourquoi publier ce lien malgré le risque d’empreinte.",
+      };
+    }
   }
 
   const anchor = validateAnchor(input.editedAnchor, {

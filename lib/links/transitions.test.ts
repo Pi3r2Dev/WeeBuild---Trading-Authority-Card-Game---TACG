@@ -22,10 +22,20 @@ const createCtx = (over: Partial<CreateLinkContext> = {}): CreateLinkContext => 
   beneficiaryUserId: "user-2",
   beneficiaryDomain: "exemple.com",
   existingLinkId: null,
+  naturalScore: null,
   ...over,
 });
 
-const input = (over: Partial<{ userId: string; suggestionId: string; editedAnchor: string; targetUrl: string }> = {}) => ({
+const input = (
+  over: Partial<{
+    userId: string;
+    suggestionId: string;
+    editedAnchor: string;
+    targetUrl: string;
+    confirmedDespiteRed: boolean;
+    justification: string;
+  }> = {},
+) => ({
   userId: "user-1",
   suggestionId: "sugg-1",
   editedAnchor: "notre comparatif des outils SEO",
@@ -75,6 +85,38 @@ describe("decideCreateLink", () => {
   it("refuse une URL cible invalide", () => {
     const d = decideCreateLink(createCtx(), input({ targetUrl: "pas-une-url" }));
     expect(d.kind).toBe("error");
+  });
+
+  // ── Soft-gate P4-A (D1) ──
+  it("soft-gate : score ROUGE sans confirmation → erreur", () => {
+    const d = decideCreateLink(createCtx({ naturalScore: 0.3 }), input());
+    expect(d.kind).toBe("error");
+    if (d.kind === "error") expect(d.error).toMatch(/naturalité ROUGE/i);
+  });
+
+  it("soft-gate : score ROUGE coché mais justification trop courte → erreur", () => {
+    const d = decideCreateLink(
+      createCtx({ naturalScore: 0.3 }),
+      input({ confirmedDespiteRed: true, justification: "court" }),
+    );
+    expect(d.kind).toBe("error");
+  });
+
+  it("soft-gate : score ROUGE confirmé + justifié → création autorisée", () => {
+    const d = decideCreateLink(
+      createCtx({ naturalScore: 0.3 }),
+      input({ confirmedDespiteRed: true, justification: "lien éditorial réellement pertinent pour nos lecteurs" }),
+    );
+    expect(d.kind).toBe("create");
+  });
+
+  it("soft-gate : score ORANGE/VERT ne déclenche aucune friction", () => {
+    expect(decideCreateLink(createCtx({ naturalScore: 0.6 }), input()).kind).toBe("create");
+    expect(decideCreateLink(createCtx({ naturalScore: 0.9 }), input()).kind).toBe("create");
+  });
+
+  it("soft-gate : score null (non calculé) n'est jamais rouge", () => {
+    expect(decideCreateLink(createCtx({ naturalScore: null }), input()).kind).toBe("create");
   });
 });
 

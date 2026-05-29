@@ -103,6 +103,33 @@ export async function HubDashboard() {
           </div>
         )}
 
+        {/* CTA promotion (B5) — visible dès qu'on a des crédits à dépenser. */}
+        {GAME_LOOP_ENABLED && ME.credits > 0 && (
+          <Link
+            href="/promotions"
+            style={{
+              marginTop: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 12px",
+              background: "rgba(57,255,20,0.07)",
+              border: "1px solid rgba(57,255,20,0.4)",
+              borderRadius: 8,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ display: "inline-flex", color: "var(--hub-accent-2)" }}>{icons.diamond(16)}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--hub-fg)" }}>Promouvoir un site</div>
+              <div style={{ fontSize: 10, color: "var(--hub-fg-soft)", marginTop: 2 }}>
+                Dépense tes crédits pour remonter dans les suggestions de partenaires.
+              </div>
+            </div>
+            <span style={{ fontSize: 16, color: "var(--hub-accent-2)" }}>→</span>
+          </Link>
+        )}
+
         {hasCards ? (
           <>
             {/* Ma main */}

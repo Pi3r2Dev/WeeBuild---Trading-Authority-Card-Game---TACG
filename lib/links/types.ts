@@ -58,6 +58,14 @@ export interface SuggestionReviewView {
   defaultTargetUrl: string;
   /** Lien déjà créé si la suggestion a déjà été validée (reprise du flux). */
   existingLink: EditorialLinkView | null;
+  /** Score de naturalité anti-footprint de la suggestion (P4-A), `null` si non calculé. */
+  naturalScore: number | null;
+  /**
+   * Soft-gate P4-A (D1) : `true` si `naturalScore` est ROUGE (< 0.45). L'UI exige
+   * alors une confirmation explicite + une justification avant de publier le lien
+   * (friction, pas blocage — le blocage dur est P4-B).
+   */
+  naturalScoreIsRed: boolean;
 }
 
 /** DTO d'un EditorialLink renvoyé au client après création/publication. */
@@ -79,6 +87,13 @@ export interface LinkDecisionInput {
   editedAnchor: string;
   /** URL pointée chez le bénéficiaire (défaut = racine, éditable). */
   targetUrl: string;
+  /**
+   * Soft-gate P4-A (D1) : confirmation explicite malgré un `naturalScore` ROUGE.
+   * Requise (avec `justification`) seulement quand le score est rouge — sinon ignorée.
+   */
+  confirmedDespiteRed?: boolean;
+  /** Justification libre saisie par l'humain lorsque le score est rouge (soft-gate D1). */
+  justification?: string;
 }
 
 /** Miroir littéral de l'enum Prisma `ProofStatus` (côté client). */

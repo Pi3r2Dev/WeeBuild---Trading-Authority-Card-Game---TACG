@@ -29,6 +29,7 @@ export async function createLinkFromSuggestion(
         proposedAnchor: true,
         sourceSiteId: true,
         targetSiteId: true,
+        naturalScore: true,
         sourceSite: { select: { userId: true } },
         targetSite: { select: { userId: true, domain: true } },
         link: { select: { id: true } },
@@ -47,11 +48,21 @@ export async function createLinkFromSuggestion(
         beneficiaryUserId: s.targetSite.userId,
         beneficiaryDomain: s.targetSite.domain,
         existingLinkId: s.link?.id ?? null,
+        naturalScore: s.naturalScore,
       },
       input,
     );
 
     if (decision.kind === "error") return { ok: false, error: decision.error };
+
+    // Soft-gate P4-A (D1) : trace la justification d'une publication malgré un
+    // score ROUGE (pas de colonne dédiée → log d'audit ; persistance durable = P4-B).
+    if (decision.kind === "create" && input.confirmedDespiteRed && input.justification) {
+      console.warn(
+        `[naturality] soft-gate D1 franchi pour suggestion ${input.suggestionId} ` +
+          `(naturalScore=${s.naturalScore}) — justification: ${input.justification.trim()}`,
+      );
+    }
 
     if (decision.kind === "idempotent") {
       const link = await tx.editorialLink.findUniqueOrThrow({ where: { id: decision.linkId }, select: LINK_SELECT });

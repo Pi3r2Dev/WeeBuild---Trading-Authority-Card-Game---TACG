@@ -20,6 +20,7 @@ import { embed, toPgVector } from "@/lib/services/embeddings";
 import { siteText } from "./embed-site";
 import { rerank } from "./rerank";
 import { findForbiddenTargets, DEFAULT_ANTI_CYCLE, type AntiCycleConfig } from "./anti-cycle";
+import { computeSuggestionNaturalScore, computeAndPersistSnapshot } from "@/lib/naturality/write";
 
 /** Un candidat partenaire classé, sortie du matching. */
 export interface PartnerMatch {
@@ -43,6 +44,13 @@ export interface FindPartnersOptions {
   minRelevance?: number;
   /** Config anti-cycle (seuils). */
   antiCycle?: AntiCycleConfig;
+  /**
+   * `MatchingSession.id` de la session courante (P4-A). Si fourni, on patche
+   * `naturalScore` sur ses suggestions encore nulles (bulk UPDATE). Optionnel —
+   * le caller dans `run.ts` crée la session APRÈS `findPartners` : il consomme
+   * alors `MatchOutcome.naturalityScore` directement (cf. §7.3).
+   */
+  sessionId?: string;
 }
 
 const DEFAULT_LIMIT = 6;
@@ -61,6 +69,8 @@ export interface MatchOutcome {
   candidatesFetched: number;
   /** Nb de candidats exclus par l'anti-cycle. */
   excludedByAntiCycle: number;
+  /** Score de naturalité plateforme au moment du matching (P4-A). */
+  naturalityScore?: number;
 }
 
 interface SourceRow {
@@ -80,6 +90,8 @@ interface CandidateRow {
   description: string | null;
   level: number | null;
   distance: number; // cosine `<=>` ∈ [0,2]
+  /** 1 si une Promotion ACTIVE (lazy : expiresAt > now) cible ce candidat (B5). */
+  is_promoted: number;
 }
 
 /**
@@ -133,16 +145,30 @@ export async function findPartners(
 
   // 2) pgvector search 3× over-fetch (distance cosine `<=>`). On exclut la
   //    source et les sites sans embedding ; on joint la carte pour le level.
+  //    Visibilité B5 (Q-P3-5) : `is_promoted` = 1 si une Promotion ACTIVE (lazy,
+  //    `expiresAt > NOW()`) cible ce candidat. C'est un ORDER BY SECONDAIRE — à
+  //    égalité de pertinence cosine, les sites promus remontent ; le score de
+  //    pertinence n'est jamais faussé. `targetThematique` non filtré (nécessite
+  //    la thématique source en param) → affinage P4.
   const overFetch = limit * 3;
   const candidates = await db.$queryRaw<CandidateRow[]>`
     SELECT s.id, s.domain, s.element, s.thematique, s.title, s.description,
            c.level AS level,
-           (s.embedding <=> ${pgVec}::vector) AS distance
+           (s.embedding <=> ${pgVec}::vector) AS distance,
+           CASE WHEN EXISTS (
+             SELECT 1 FROM promotion p
+             WHERE p."siteId" = s.id
+               AND p.status = 'ACTIVE'
+               AND (p."expiresAt" IS NULL OR p."expiresAt" > NOW())
+               AND (p."targetLevel" IS NULL OR p."targetLevel" = c.level)
+               AND (p."targetElement" IS NULL OR p."targetElement" = s.element)
+           ) THEN 1 ELSE 0 END AS is_promoted
     FROM site s
     LEFT JOIN card c ON c."siteId" = s.id
     WHERE s.id <> ${siteId}
       AND s.embedding IS NOT NULL
-    ORDER BY s.embedding <=> ${pgVec}::vector
+    ORDER BY is_promoted DESC,
+             s.embedding <=> ${pgVec}::vector
     LIMIT ${overFetch}
   `;
   const candidatesFetched = candidates.length;
@@ -185,11 +211,36 @@ export async function findPartners(
     cosineDistance: r.row.distance,
   }));
 
+  // 6) P4-A : score de naturalité plateforme (synchrone / lazy, best-effort).
+  //    Anti-régression : tout échec (DB injoignable, etc.) est silencieux — le
+  //    matching ne bloque JAMAIS l'utilisateur sur le score de naturalité.
+  let naturalityScore: number | undefined;
+  try {
+    const ns = await computeSuggestionNaturalScore();
+    naturalityScore = ns.score;
+    // Patch des suggestions de la session courante si le caller la connaît déjà
+    // (run.ts crée la session APRÈS et consomme `naturalityScore` directement).
+    if (opts.sessionId) {
+      await db.$executeRaw`
+        UPDATE editorial_suggestion
+        SET    "naturalScore" = ${ns.score}
+        WHERE  "matchingSessionId" = ${opts.sessionId}
+          AND  "naturalScore" IS NULL
+      `;
+    }
+    // Snapshot plateforme best-effort (n'échoue pas le matching si erreur).
+    // TODO(P4-B): remplacer cet appel synchrone par un enqueue (Celery/BullMQ).
+    void computeAndPersistSnapshot({ triggeredBy: "matching-session" }).catch(() => {});
+  } catch {
+    /* best-effort : score de naturalité indisponible → matching inchangé */
+  }
+
   return {
     matches,
     rerankStatus,
     embeddedOnTheFly,
     candidatesFetched,
     excludedByAntiCycle: forbidden.size,
+    naturalityScore,
   };
 }

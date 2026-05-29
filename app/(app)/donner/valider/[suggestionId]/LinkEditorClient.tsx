@@ -36,6 +36,9 @@ export function LinkEditorClient({ review }: { review: SuggestionReviewView }) {
   const [publishedUrl, setPublishedUrl] = useState(review.existingLink?.publishedUrl ?? "");
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Soft-gate P4-A (D1) : friction quand le score de naturalité est ROUGE.
+  const [confirmedDespiteRed, setConfirmedDespiteRed] = useState(false);
+  const [justification, setJustification] = useState("");
 
   const verdict = useMemo(
     () =>
@@ -51,12 +54,20 @@ export function LinkEditorClient({ review }: { review: SuggestionReviewView }) {
     !link ? "create" : link.status === "HUMAN_VALIDATED" ? "publish" : "published";
 
   const anchorTouched = editedAnchor.trim().length > 0;
-  const canValidate = anchorTouched && verdict.ok && targetUrl.trim().length > 0 && !pending;
+  // Soft-gate D1 : si rouge, exiger la coche + une justification (≥ 10 car.).
+  const redGateCleared = !review.naturalScoreIsRed || (confirmedDespiteRed && justification.trim().length >= 10);
+  const canValidate = anchorTouched && verdict.ok && targetUrl.trim().length > 0 && redGateCleared && !pending;
 
   function onValidate() {
     setError(null);
     start(async () => {
-      const res = await validateAndCreateLinkAction({ suggestionId: review.suggestionId, editedAnchor, targetUrl });
+      const res = await validateAndCreateLinkAction({
+        suggestionId: review.suggestionId,
+        editedAnchor,
+        targetUrl,
+        confirmedDespiteRed: review.naturalScoreIsRed ? confirmedDespiteRed : undefined,
+        justification: review.naturalScoreIsRed ? justification : undefined,
+      });
       if (!res.ok) return setError(res.error);
       setLink(res.link);
       setPublishedUrl(res.link.publishedUrl ?? "");
@@ -115,6 +126,12 @@ export function LinkEditorClient({ review }: { review: SuggestionReviewView }) {
             pending={pending}
             onValidate={onValidate}
             onReject={onReject}
+            naturalScoreIsRed={review.naturalScoreIsRed}
+            naturalScore={review.naturalScore}
+            confirmedDespiteRed={confirmedDespiteRed}
+            setConfirmedDespiteRed={setConfirmedDespiteRed}
+            justification={justification}
+            setJustification={setJustification}
           />
         )}
 
@@ -148,6 +165,12 @@ function CreatePhase({
   pending,
   onValidate,
   onReject,
+  naturalScoreIsRed,
+  naturalScore,
+  confirmedDespiteRed,
+  setConfirmedDespiteRed,
+  justification,
+  setJustification,
 }: {
   editedAnchor: string;
   setEditedAnchor: (v: string) => void;
@@ -158,6 +181,12 @@ function CreatePhase({
   pending: boolean;
   onValidate: () => void;
   onReject: () => void;
+  naturalScoreIsRed: boolean;
+  naturalScore: number | null;
+  confirmedDespiteRed: boolean;
+  setConfirmedDespiteRed: (v: boolean) => void;
+  justification: string;
+  setJustification: (v: string) => void;
 }) {
   return (
     <>
@@ -198,6 +227,16 @@ function CreatePhase({
         Pré-rempli sur l’accueil du partenaire. Précise une page si tu veux pointer plus finement.
       </p>
 
+      {naturalScoreIsRed && (
+        <RedSoftGate
+          naturalScore={naturalScore}
+          confirmedDespiteRed={confirmedDespiteRed}
+          setConfirmedDespiteRed={setConfirmedDespiteRed}
+          justification={justification}
+          setJustification={setJustification}
+        />
+      )}
+
       <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
         <button type="button" onClick={onValidate} disabled={!canValidate} style={primaryBtn(canValidate)}>
           {pending ? "Validation…" : "Valider et créer le lien"}
@@ -207,6 +246,71 @@ function CreatePhase({
         </button>
       </div>
     </>
+  );
+}
+
+// ── Soft-gate P4-A (D1) : friction sur score de naturalité ROUGE ──
+function RedSoftGate({
+  naturalScore,
+  confirmedDespiteRed,
+  setConfirmedDespiteRed,
+  justification,
+  setJustification,
+}: {
+  naturalScore: number | null;
+  confirmedDespiteRed: boolean;
+  setConfirmedDespiteRed: (v: boolean) => void;
+  justification: string;
+  setJustification: (v: string) => void;
+}) {
+  const red = "#fca5a5";
+  const justifTooShort = justification.trim().length > 0 && justification.trim().length < 10;
+  return (
+    <div
+      style={{
+        marginTop: 16,
+        padding: 12,
+        background: "rgba(248,113,113,0.08)",
+        border: `1px solid ${red}66`,
+        borderRadius: 10,
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-pixel-display)", fontSize: 8, color: red, letterSpacing: 1.5 }}>
+        SCORE DE NATURALITÉ ROUGE{naturalScore != null ? ` · ${(naturalScore * 100).toFixed(0)}/100` : ""}
+      </div>
+      <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--hub-fg)", lineHeight: 1.5 }}>
+        Ce lien présente un risque d’empreinte de réseau (anti-footprint). Tu peux quand même le publier, mais
+        confirme et explique pourquoi — ta justification est tracée.
+      </p>
+
+      <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 10, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={confirmedDespiteRed}
+          onChange={(e) => setConfirmedDespiteRed(e.target.checked)}
+          style={{ marginTop: 2 }}
+        />
+        <span style={{ fontSize: 12, color: "var(--hub-fg)", lineHeight: 1.4 }}>
+          Je confirme vouloir publier malgré le risque d’empreinte.
+        </span>
+      </label>
+
+      <textarea
+        value={justification}
+        onChange={(e) => setJustification(e.target.value)}
+        placeholder="Justifie (≥ 10 caractères) : pourquoi ce lien reste éditorial et pertinent ?"
+        rows={3}
+        style={{
+          ...inputBase,
+          marginTop: 10,
+          resize: "vertical",
+          borderColor: justifTooShort ? `${red}88` : "rgba(255,255,255,0.14)",
+        }}
+      />
+      {justifTooShort && (
+        <p style={{ margin: "6px 0 0", fontSize: 11, color: red }}>Justification trop courte (≥ 10 caractères).</p>
+      )}
+    </div>
   );
 }
 

@@ -10,6 +10,7 @@
 
 import { db } from "@/lib/db";
 import { estimateLinkCredits } from "@/lib/credits/estimate";
+import { isRedScore } from "@/lib/naturality/policy";
 import type {
   EditorialLinkView,
   LinkStatus,
@@ -129,6 +130,7 @@ export async function getSuggestionForReview(
       proposedAnchor: true,
       humanEditedAnchor: true,
       rationale: true,
+      naturalScore: true,
       sourceSite: { select: { domain: true, url: true, userId: true } },
       targetSite: {
         select: {
@@ -158,6 +160,8 @@ export async function getSuggestionForReview(
     brandTokens: brandTokensFromDomain(row.targetSite.domain),
     defaultTargetUrl: row.targetSite.url,
     existingLink: row.link ? toLinkView(row.link) : null,
+    naturalScore: row.naturalScore,
+    naturalScoreIsRed: isRedScore(row.naturalScore),
   };
 }
 
